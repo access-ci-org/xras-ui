@@ -1,5 +1,5 @@
 import { useProject, useRequest } from "./helpers/hooks";
-import { getResourceUsagePercent } from "./helpers/utils";
+import { getResourceUsagePercent } from "../shared/helpers/utils";
 
 import Modal from "react-bootstrap/Modal";
 

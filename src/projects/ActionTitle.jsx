@@ -1,5 +1,5 @@
-import { formatDate } from "./helpers/utils";
-import config from "./helpers/config";
+import { formatDate } from "../shared/helpers/utils";
+import config from "../shared/helpers/config";
 
 import InlineButton from "../shared/InlineButton";
 

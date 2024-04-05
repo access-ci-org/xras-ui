@@ -5,8 +5,8 @@ import {
   roundNumber,
   sortResources,
   xrasRolesMap,
-} from "./utils";
-import config from "./config";
+} from "../../shared/helpers/utils";
+import config from "../../shared/helpers/config";
 
 export const statuses = {
   error: "error",

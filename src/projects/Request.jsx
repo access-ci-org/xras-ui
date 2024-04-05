@@ -1,5 +1,5 @@
 import { useRequest, useProject } from "./helpers/hooks";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";

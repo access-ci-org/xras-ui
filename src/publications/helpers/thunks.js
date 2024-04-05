@@ -10,7 +10,7 @@ import {
   addProject,
   setGrantNumber,
 } from "./actions";
-import config from "./config";
+import config from "../../shared/helpers/config";
 import { invalidFormAlert, validateForm } from "../FormValidation";
 
 export const doiLookup = () => async (dispatch, getState) => {

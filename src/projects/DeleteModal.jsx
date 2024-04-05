@@ -1,6 +1,6 @@
 import { statuses } from "./helpers/apiSlice";
 import { useRequest } from "./helpers/hooks";
-import { formatDate, formatRequestName } from "./helpers/utils";
+import { formatDate, formatRequestName } from "../shared/helpers/utils";
 
 import Alert from "../shared/Alert";
 import Modal from "react-bootstrap/Modal";

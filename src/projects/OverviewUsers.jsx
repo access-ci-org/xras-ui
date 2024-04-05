@@ -1,6 +1,6 @@
 import { useProject } from "./helpers/hooks";
-import config from "./helpers/config";
-import { icon, formatNumber, roles } from "./helpers/utils";
+import config from "../shared/helpers/config";
+import { icon, formatNumber, roles } from "../shared/helpers/utils";
 
 import Grid from "../shared/Grid";
 

@@ -1,7 +1,5 @@
 import config from "./config";
 
-import InlineButton from "../../shared/InlineButton";
-
 export const roundNumber = (value, decimalPlaces, mode = "round") => {
   const roundingFactor = Math.pow(10, decimalPlaces || 0);
   return Math[mode](value * roundingFactor) / roundingFactor;
@@ -48,24 +46,6 @@ export const icon = (name) => <i className={`bi bi-${name}`} />;
 export const parseResourceName = (name) => {
   const matches = name.match(/^([^\(\)]+) (\(([^\)]+)\))?$/);
   return { full: name, short: (matches && matches[3]) || null };
-};
-
-export const formatResource = (res, { userGuide = true } = {}) => {
-  const { full, short } = parseResourceName(res.name);
-  const displayName = short ? <abbr title={full}>{short}</abbr> : full;
-  return (
-    <>
-      {icon(config.resourceTypeIcons[res.icon])} {displayName}
-      {!res.isCredit && res.userGuideUrl && userGuide ? (
-        <InlineButton
-          icon="book"
-          href={res.userGuideUrl}
-          target="_blank"
-          title={`${res.name} User Guide`}
-        />
-      ) : null}
-    </>
-  );
 };
 
 const getSortResourceName = (res) => {
@@ -165,4 +145,9 @@ export function getCost(res, type = "total") {
   let cost = (res.requested - res.allocated) * differenceUnitCost;
   if (type != "total") return cost;
   return cost + res.allocated * res.exchangeRates.base.unitCost;
+}
+
+export function addRoutes(routes) {
+  // Override the default routes with the ones from Rails.
+  if (routes) config.routes = { ...config.routes, ...routes };
 }

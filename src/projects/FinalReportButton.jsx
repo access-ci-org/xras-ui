@@ -1,5 +1,5 @@
 import { useRequest } from "./helpers/hooks";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 
 export default function FinalReportButton({ requestId, grantNumber }) {
   const { request } = useRequest(requestId, grantNumber);

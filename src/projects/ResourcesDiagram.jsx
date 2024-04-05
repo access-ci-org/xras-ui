@@ -1,11 +1,8 @@
 import { useRequest } from "./helpers/hooks";
-import {
-  formatNumber,
-  formatResource,
-  getCost,
-  resourceColors,
-} from "./helpers/utils";
+import { formatNumber, getCost, resourceColors } from "../shared/helpers/utils";
 import style from "./ResourcesDiagram.module.scss";
+
+import ResourceName from "../shared/ResourceName";
 
 const circleCoords = (pct, radius) =>
   `${Math.cos(2 * Math.PI * pct) * radius} ${
@@ -129,7 +126,8 @@ export default function ResourcesDiagram({
           ></span>
         </span>
         <strong className={style.name}>
-          {formatResource(res, { userGuide: false })}:&nbsp;
+          <ResourceName resource={res} userGuide={false} />
+          :&nbsp;
         </strong>
         {
           <span className={style.details}>
