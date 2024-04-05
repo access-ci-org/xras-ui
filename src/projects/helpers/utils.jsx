@@ -119,8 +119,9 @@ export const getResourceUsagePercent = (request) => {
 
   for (let res of request.resources) {
     if (res.isBoolean) continue;
-    total += res.allocated * res.unitCost;
-    used += Math.min(res.used, res.allocated) * res.unitCost;
+    let { unitCost } = res.exchangeRates.base;
+    total += res.allocated * unitCost;
+    used += Math.min(res.used, res.allocated) * unitCost;
   }
 
   return total > 0 ? used / total : 0;

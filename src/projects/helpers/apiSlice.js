@@ -243,7 +243,6 @@ const addRequest = (
       requires: [],
       resourceId: 0,
       unit: "Credit Equivalents",
-      unitCost: 1.0,
       used: 0,
     });
   state.requests[requestId] = request;
@@ -367,7 +366,6 @@ const makeResource = ({
   startDate,
   type: resourceType,
   unit: unitType,
-  unitCost: unitType != "[Yes = 1, No = 0]" && exchangeRate ? exchangeRate : 0,
   used: roundNumber(amountUsed || 0, 0, "ceil"),
   userGuideUrl,
 });
