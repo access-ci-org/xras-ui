@@ -3,6 +3,7 @@ import { useProject, useRequest } from "./helpers/hooks";
 import config from "./helpers/config";
 import {
   formatArray,
+  formatExchangeRate,
   formatManagers,
   formatNumber,
   formatResource,
@@ -10,13 +11,13 @@ import {
   icon,
   parseResourceName,
   roundNumber,
-  singularize,
 } from "./helpers/utils";
 import gridStyle from "../shared/Grid.module.scss";
 
 import Select from "react-select";
 
 import Alert from "../shared/Alert";
+import DiscountBadge from "./DiscountBadge";
 import Grid from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
 import InlineButton from "../shared/InlineButton";
@@ -136,11 +137,13 @@ export default function Resources({ requestId, grantNumber }) {
   }
 
   const resourceIds = resources.map((res) => res.resourceId);
+  const availableResourcesMap = {};
   const availableResourceOptions =
     canExchange && !saved && !previous
       ? request.allowedActions.Exchange.resources
           .filter((res) => !resourceIds.includes(res.resourceId))
           .map((res) => {
+            availableResourcesMap[res.resourceId] = res;
             const parsed = parseResourceName(res.name);
             const label = parsed.short
               ? `${parsed.short} (${parsed.full.replace(/ \([^(]+\)/, "")})`
@@ -236,13 +239,24 @@ export default function Resources({ requestId, grantNumber }) {
         row.isBoolean ? (
           <>&mdash;</>
         ) : (
-          <abbr
-            title={`1 ${singularize(value, 1)} = ${formatNumber(
-              row.exchangeRates.base.unitCost
-            )} ${singularize(credit.name, row.exchangeRates.base.unitCost)}`}
-          >
-            {value}
-          </abbr>
+          [
+            <abbr
+              key="base"
+              title={formatExchangeRate(
+                value,
+                row.exchangeRates.base.unitCost,
+                credit.name
+              )}
+            >
+              {value}
+            </abbr>,
+            <DiscountBadge
+              creditResource={credit}
+              key="discount"
+              resource={row}
+              short={true}
+            />,
+          ]
         ),
     },
     {
@@ -389,6 +403,14 @@ export default function Resources({ requestId, grantNumber }) {
               placeholder={resourceAddMessage}
               value={null}
               aria-label={resourceAddMessage}
+              formatOptionLabel={({ value, label }) => [
+                label,
+                <DiscountBadge
+                  creditResource={credit}
+                  key="discount"
+                  resource={availableResourcesMap[value]}
+                />,
+              ]}
             />
           </div>
           {!rows.length ? (

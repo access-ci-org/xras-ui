@@ -113,6 +113,12 @@ export const singularize = (name, count) => {
   return count == 1 && name.endsWith("s") ? name.slice(0, -1) : name;
 };
 
+export const formatExchangeRate = (unit, unitCost, creditResourceName) =>
+  `1 ${singularize(unit, 1)} = ${formatNumber(unitCost)} ${singularize(
+    creditResourceName,
+    unitCost
+  )}`;
+
 export const getResourceUsagePercent = (request) => {
   let total = 0;
   let used = 0;

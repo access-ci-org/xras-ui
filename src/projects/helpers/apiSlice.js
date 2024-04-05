@@ -325,7 +325,7 @@ const makeResource = ({
           }
         : {
             type: "discount-time",
-            expirationDate: "2024-05-01",
+            endDate: "2024-05-01",
             unitCost:
               (unitType != "[Yes = 1, No = 0]" && exchangeRate
                 ? exchangeRate
