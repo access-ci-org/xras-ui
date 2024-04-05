@@ -150,3 +150,12 @@ export const resourceColors = [
   "warning",
   "danger",
 ];
+
+export function getCost(res, type = "total") {
+  const differenceUnitCost =
+    res.exchangeRates[res.requested <= res.allocated ? "base" : "current"]
+      .unitCost;
+  let cost = (res.requested - res.allocated) * differenceUnitCost;
+  if (type != "total") return cost;
+  return cost + res.allocated * res.exchangeRates.base.unitCost;
+}

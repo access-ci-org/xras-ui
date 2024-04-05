@@ -1,5 +1,11 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { coalesce, roundNumber, sortResources, xrasRolesMap } from "./utils";
+import {
+  coalesce,
+  getCost,
+  roundNumber,
+  sortResources,
+  xrasRolesMap,
+} from "./utils";
 import config from "./config";
 
 export const statuses = {
@@ -217,6 +223,16 @@ const addRequest = (
     request.resources.push({
       allocated: 0,
       decimalPlaces: 0,
+      exchangeRates: {
+        base: {
+          type: "base",
+          unitCost: 1.0,
+        },
+        current: {
+          type: "base",
+          unitCost: 1.0,
+        },
+      },
       icon: "credit",
       isActive: true,
       isBoolean: false,
@@ -292,6 +308,31 @@ const makeResource = ({
   ),
   decimalPlaces: 0,
   endDate,
+  // FIXME: Replace with actual exchange rate data from the API.
+  exchangeRates: {
+    base: {
+      type: "base",
+      unitCost:
+        unitType != "[Yes = 1, No = 0]" && exchangeRate ? exchangeRate : 0,
+    },
+    current:
+      unitType == "ACCESS Credits"
+        ? {
+            type: "base",
+            unitCost:
+              unitType != "[Yes = 1, No = 0]" && exchangeRate
+                ? exchangeRate
+                : 0,
+          }
+        : {
+            type: "discount-time",
+            expirationDate: "2024-05-01",
+            unitCost:
+              (unitType != "[Yes = 1, No = 0]" && exchangeRate
+                ? exchangeRate
+                : 0) * 0.9,
+          },
+  },
   icon: unitType == "ACCESS Credits" ? "credit" : resourceType.toLowerCase(),
   isActive: allocationState == "active",
   isBoolean: unitType == "[Yes = 1, No = 0]",
@@ -724,10 +765,10 @@ export const apiSlice = createSlice({
         }
         if (resource.isCredit) {
           credit = resource;
-          availableCredits += resource.allocated * resource.unitCost;
+          availableCredits +=
+            resource.allocated * resource.exchangeRates.base.unitCost;
         } else {
-          availableCredits -=
-            (resource.requested - resource.allocated) * resource.unitCost;
+          availableCredits -= getCost(resource, "difference");
         }
       }
 

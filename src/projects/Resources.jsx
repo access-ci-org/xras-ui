@@ -178,27 +178,36 @@ export default function Resources({ requestId, grantNumber }) {
 
   const getBalance = (row) => row.requested - row.used;
 
-  const getRequested = (balanceString, row) => {
-    let requested = roundNumber(
-      Number(balanceString.replace(/[^0-9-.]/g, "")) + row.used,
+  const cleanBalance = (balanceString, row) => {
+    const allocatedBalance = row.allocated - row.used;
+    const desiredBalance = roundNumber(
+      Number(balanceString.replace(/[^0-9-.]/g, "")),
       row.decimalPlaces
     );
-    if (isNaN(requested)) requested = row.allocated;
+    const minBalance = Math.min(0, allocatedBalance);
+    if (desiredBalance < minBalance) return minBalance;
 
-    const minRequest = Math.min(row.allocated, row.used);
-    if (requested < minRequest) return minRequest;
+    // We use the base exchange rate when the allocation is being reduced below the
+    // current allocation, and the current exchange rate when the allocations is
+    // being increased above the current allocation. To handle cases where the user
+    // reduces the allocation and then later increases it before submitting, we need
+    // to split the increase at the current allocation and apply the base exchange rate
+    // to the lower portion and the current exchange rate to the upper portion.
+    let availableCredits =
+      credit.requested * credit.exchangeRates.base.unitCost;
+    const costToAllocated =
+      (row.allocated - row.requested) * row.exchangeRates.base.unitCost;
+    const baseCost = Math.min(availableCredits, costToAllocated);
 
-    let cost = row.unitCost * (requested - row.requested);
-    if (cost > credit.requested)
-      return (
-        roundNumber(
-          credit.requested / row.unitCost,
-          row.decimalPlaces,
-          "floor"
-        ) + row.requested
-      );
+    availableCredits -= baseCost;
+    let maxBalance =
+      row.requested - row.used + baseCost / row.exchangeRates.base.unitCost;
+    if (availableCredits > 0)
+      maxBalance += availableCredits / row.exchangeRates.current.unitCost;
 
-    return requested;
+    if (desiredBalance > maxBalance)
+      return roundNumber(maxBalance, row.decimalPlaces, "floor");
+    return desiredBalance;
   };
 
   // Grid columns
@@ -229,8 +238,8 @@ export default function Resources({ requestId, grantNumber }) {
         ) : (
           <abbr
             title={`1 ${singularize(value, 1)} = ${formatNumber(
-              row.unitCost
-            )} ${singularize(credit.name, row.unitCost)}`}
+              row.exchangeRates.base.unitCost
+            )} ${singularize(credit.name, row.exchangeRates.base.unitCost)}`}
           >
             {value}
           </abbr>
@@ -291,10 +300,7 @@ export default function Resources({ requestId, grantNumber }) {
         ) : editable ? (
           <BlurInput
             classes="text-end w-100"
-            clean={(balanceString) => {
-              const requested = getRequested(balanceString, row);
-              return requested - row.used;
-            }}
+            clean={(balanceString) => cleanBalance(balanceString, row)}
             format={formatNumber}
             label={`Balance for ${row.name}`}
             setValue={(cleaned) => {
