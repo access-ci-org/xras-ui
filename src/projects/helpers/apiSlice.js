@@ -355,6 +355,11 @@ const makeResource = ({
       resourceId: xrasResourceId,
       values: [],
     })),
+  // FIXME: Replace with information about the resource provider from the API.
+  resourceProvider: {
+    name: "ACCESS",
+    favicon: "https://access-ci.org/favicon.ico",
+  },
   requested: roundNumber(
     coalesce(amountRequested, amountAllocated) || 0,
     0,

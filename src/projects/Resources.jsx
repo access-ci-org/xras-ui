@@ -21,6 +21,7 @@ import Grid from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
 import InlineButton from "../shared/InlineButton";
 import ResourceName from "../shared/ResourceName";
+import ResourceDiscountsBanner from "./ResourceDiscountsBanner";
 import ResourcesDiagram from "./ResourcesDiagram";
 import StatusBadge from "../shared/StatusBadge";
 import BlurInput from "../shared/BlurInput";
@@ -393,6 +394,11 @@ export default function Resources({ requestId, grantNumber }) {
       )}
       {availableResourceOptions.length ? (
         <>
+          <ResourceDiscountsBanner
+            resources={
+              (canExchange && request.allowedActions.Exchange.resources) || []
+            }
+          />
           <div
             className="p-2"
             style={{
