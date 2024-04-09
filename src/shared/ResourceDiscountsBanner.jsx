@@ -1,6 +1,6 @@
-import config from "../shared/helpers/config";
-import { singularize } from "../shared/helpers/utils";
-import { formatNumber } from "../shared/helpers/utils";
+import config from "./helpers/config";
+import { singularize } from "./helpers/utils";
+import { formatNumber } from "./helpers/utils";
 
 export default function ResourceDiscountsBanner({ resources }) {
   const discountResources = resources.filter((res) => {

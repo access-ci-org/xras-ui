@@ -21,7 +21,7 @@ import Grid from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
 import InlineButton from "../shared/InlineButton";
 import ResourceName from "../shared/ResourceName";
-import ResourceDiscountsBanner from "./ResourceDiscountsBanner";
+import ResourceDiscountsBanner from "../shared/ResourceDiscountsBanner";
 import ResourcesDiagram from "./ResourcesDiagram";
 import StatusBadge from "../shared/StatusBadge";
 import BlurInput from "../shared/BlurInput";
