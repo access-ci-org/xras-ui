@@ -293,6 +293,9 @@ const makeResource = ({
   displayResourceName,
   endDate,
   exchangeRate,
+  organizationId,
+  organizationFaviconUrl,
+  organizationName,
   resourceRepositoryKey,
   resourceType,
   startDate,
@@ -357,8 +360,9 @@ const makeResource = ({
     })),
   // FIXME: Replace with information about the resource provider from the API.
   resourceProvider: {
-    name: "ACCESS",
-    favicon: "https://access-ci.org/favicon.ico",
+    organizationId: organizationId,
+    name: organizationName,
+    favicon: organizationFaviconUrl,
   },
   requested: roundNumber(
     coalesce(amountRequested, amountAllocated) || 0,
