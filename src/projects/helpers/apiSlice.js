@@ -289,6 +289,10 @@ const makeResource = ({
   amountRequested,
   amountUsed,
   attributeSets,
+  baseExchangeRate,
+  currentExchangeRate,
+  currentExchangeRateEndDate,
+  currentExchangeRateType,
   dependentResourceXrasIds,
   displayResourceName,
   endDate,
@@ -302,82 +306,71 @@ const makeResource = ({
   unitType,
   userGuideUrl,
   xrasResourceId,
-}) => ({
-  allocated: roundNumber(
-    coalesce(amountAllocated, amountApproved) || 0,
-    0,
-    "floor"
-  ),
-  decimalPlaces: 0,
-  endDate,
-  // FIXME: Replace with actual exchange rate data from the API.
-  exchangeRates: {
-    base: {
-      type: "base",
-      unitCost:
-        unitType != "[Yes = 1, No = 0]" && exchangeRate ? exchangeRate : 0,
+}) => {
+  const isBoolean = unitType == "[Yes = 1, No = 0]";
+  const isCredit = unitType == "ACCESS Credits";
+  return {
+    allocated: roundNumber(
+      coalesce(amountAllocated, amountApproved) || 0,
+      0,
+      "floor"
+    ),
+    decimalPlaces: 0,
+    endDate,
+    exchangeRates: {
+      base: {
+        type: "base",
+        unitCost: !isBoolean ? baseExchangeRate || exchangeRate : 0,
+      },
+      current: {
+        endDate: currentExchangeRateEndDate,
+        type: (currentExchangeRateType || "base").toLowerCase(),
+        unitCost: !isBoolean ? currentExchangeRate || exchangeRate : 0,
+      },
     },
-    current:
-      unitType == "ACCESS Credits"
-        ? {
-            type: "base",
-            unitCost:
-              unitType != "[Yes = 1, No = 0]" && exchangeRate
-                ? exchangeRate
-                : 0,
-          }
-        : {
-            type: "discount-time",
-            endDate: "2024-05-01",
-            unitCost:
-              (unitType != "[Yes = 1, No = 0]" && exchangeRate
-                ? exchangeRate
-                : 0) * 0.9,
-          },
-  },
-  icon: unitType == "ACCESS Credits" ? "credit" : resourceType.toLowerCase(),
-  isActive: allocationState == "active",
-  isBoolean: unitType == "[Yes = 1, No = 0]",
-  isCredit: unitType == "ACCESS Credits",
-  isFake: false,
-  isUnderReview: false,
-  isNew: false,
-  name: displayResourceName.trim(),
-  questions: (attributeSets || [])
-    .filter(({ isActive }) => isActive)
-    .sort(sortRelativeOrder)
-    .map((attrSet) => ({
-      attributeSetId: attrSet.attributeSetId,
-      attributes: attrSet.attributes.sort(sortRelativeOrder).map((attr) => ({
-        required: attr.isRequired,
-        resourceAttributeId: attr.resourceAttributeId,
-        label: attr.attributeName,
+    icon: isCredit ? "credit" : resourceType.toLowerCase(),
+    isActive: allocationState == "active",
+    isBoolean,
+    isCredit,
+    isFake: false,
+    isUnderReview: false,
+    isNew: false,
+    name: displayResourceName.trim(),
+    questions: (attributeSets || [])
+      .filter(({ isActive }) => isActive)
+      .sort(sortRelativeOrder)
+      .map((attrSet) => ({
+        attributeSetId: attrSet.attributeSetId,
+        attributes: attrSet.attributes.sort(sortRelativeOrder).map((attr) => ({
+          required: attr.isRequired,
+          resourceAttributeId: attr.resourceAttributeId,
+          label: attr.attributeName,
+        })),
+        fieldType: attrSet.attributeSetRelationType,
+        label: attrSet.attributeSetName,
+        resourceId: xrasResourceId,
+        values: [],
       })),
-      fieldType: attrSet.attributeSetRelationType,
-      label: attrSet.attributeSetName,
-      resourceId: xrasResourceId,
-      values: [],
-    })),
-  // FIXME: Replace with information about the resource provider from the API.
-  resourceProvider: {
-    organizationId: organizationId,
-    name: organizationName,
-    favicon: organizationFaviconUrl,
-  },
-  requested: roundNumber(
-    coalesce(amountRequested, amountAllocated) || 0,
-    0,
-    "floor"
-  ),
-  requires: dependentResourceXrasIds || [],
-  resourceId: xrasResourceId,
-  resourceRepositoryKey,
-  startDate,
-  type: resourceType,
-  unit: unitType,
-  used: roundNumber(amountUsed || 0, 0, "ceil"),
-  userGuideUrl,
-});
+    resourceProvider: {
+      organizationId: organizationId,
+      name: organizationName,
+      favicon: organizationFaviconUrl,
+    },
+    requested: roundNumber(
+      coalesce(amountRequested, amountAllocated) || 0,
+      0,
+      "floor"
+    ),
+    requires: dependentResourceXrasIds || [],
+    resourceId: xrasResourceId,
+    resourceRepositoryKey,
+    startDate,
+    type: resourceType,
+    unit: unitType,
+    used: roundNumber(amountUsed || 0, 0, "ceil"),
+    userGuideUrl,
+  };
+};
 
 const arrayEquals = (a, b) => {
   a = [...a].sort();
