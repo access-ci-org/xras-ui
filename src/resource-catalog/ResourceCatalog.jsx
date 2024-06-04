@@ -2,35 +2,54 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getResources,
-  selecthasErrors,
+  selectCatalogs,
+  selectHasErrors,
   selectResourcesLoaded,
 } from "./helpers/catalogSlice";
+import { accessText } from "./helpers/accessText";
 import ResourceList from "./ResourceList";
-import Filters from "./Filters";
 import LoadingSpinner from "../shared/LoadingSpinner";
 
 const ResourceCatalog = ({
-  apiUrl,
-  excludedCategories = [],
-  excludedFilters = [],
-  allowedCategories = [],
-  allowedFilters = [],
+  catalogSources = [],
+  onRamps = false
 }) => {
   const dispatch = useDispatch();
   const resourcesLoaded = useSelector(selectResourcesLoaded);
-  const hasErrors = useSelector(selecthasErrors);
+  const hasErrors = useSelector(selectHasErrors);
+  const stateCatalogs = useSelector(selectCatalogs);
+  const catalogs = Object.keys(stateCatalogs).map((k) => stateCatalogs[k]);
+
 
   useEffect(() => {
     dispatch(
       getResources({
-        apiUrl,
-        excludedCategories,
-        excludedFilters,
-        allowedCategories,
-        allowedFilters,
+        catalogSources,
+        onRamps
       })
     );
   }, []);
+
+  const renderCatalogDescriptions = () => {
+    if(onRamps && catalogs.length > 1){
+      return (
+        <>
+          {catalogs.filter((c) => c.catalogLabel != "ACCESS").map((c, i) =>
+            <div className="row mb-3" key={`catalog_${i}`}>
+              <div className="col">
+                <h4 className="border-bottom">
+                  About {c.catalogLabel}
+                </h4>
+                <div dangerouslySetInnerHTML={{__html: c.description}}></div>
+              </div>
+            </div>
+          )}
+        </>
+      )
+    }
+
+    return '';
+  }
 
   if (hasErrors) {
     return (
@@ -45,16 +64,16 @@ const ResourceCatalog = ({
   if (!resourcesLoaded) return <LoadingSpinner />;
 
   return (
-    <>
-      <div className="row mt-3">
-        <div className="col-sm-4">
-          <Filters />
-        </div>
-        <div className="col-sm-8">
+    <div className="container mt-3">
+      { onRamps ? accessText : ''}
+      { renderCatalogDescriptions() }
+      <div className="row">
+        <div className="col">
+          <button className="btn btn-primary">Button!</button>
           <ResourceList />
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

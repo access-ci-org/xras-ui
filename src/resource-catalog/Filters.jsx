@@ -1,17 +1,21 @@
 import { useSelector, useDispatch } from "react-redux";
-import { resetFilters, selectFilters } from "./helpers/catalogSlice";
+import { resetFilters, selectFilters, selectCatalogs } from "./helpers/catalogSlice";
 import FilterCategory from "./FilterCategory";
+import CatalogList from "./CatalogList";
 
 const Filters = () => {
   const dispatch = useDispatch();
-  const filters = useSelector(selectFilters);
+  const catalogs = useSelector( selectCatalogs );
+  const filters = useSelector( selectFilters );
   const selected = filters.filter(
     (f) => f.features.filter((fl) => fl.selected).length > 0
   );
 
+  const catalogFilters = Object.keys(catalogs).map((c) => catalogs[c]);
+
   return (
     <div>
-      <h4 className="mb-0">Filters</h4>
+      {/* {catalogFilters.length > 0 ? <CatalogList catalogs={catalogFilters} /> : ''} */}
       {filters.map((f) => (
         <FilterCategory category={f} key={f.categoryId} />
       ))}

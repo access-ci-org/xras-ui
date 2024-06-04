@@ -1,0 +1,35 @@
+.resourceName {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.description {
+  white-space: pre-wrap;
+}
+
+.filterBar {
+  position: sticky;
+  top: 5px;
+  z-index: 30;
+}
+
+.cardBg {
+  // background-color: #1a5b6e;
+  // color: #fff;
+  color: #000;
+}
+
+.active {
+  background-color: #1a5b6e;
+  color: #fff !important;
+}
+
+.plainButton {
+  background: none;
+  border: none;
+  margin: unset;
+  text-decoration: underline;
+  color: #069;
+  padding: 0;
+  cursor: pointer;
+}

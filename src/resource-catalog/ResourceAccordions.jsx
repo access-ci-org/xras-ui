@@ -1,9 +1,9 @@
 import { useSelector } from "react-redux";
+import ResourceAccordion from "./ResourceAccordion";
 import { selectResources } from "./helpers/catalogSlice";
-import Resource from "./Resource";
-import FilterBar from "./FilterBar";
+import Accordion from "react-bootstrap/Accordion";
 
-const ResourceList = () => {
+const ResourceAccordions = () => {
   const resources = useSelector(selectResources);
 
   if (resources.length == 0) {
@@ -11,15 +11,15 @@ const ResourceList = () => {
   }
 
   return (
-    <div className="card shadow">
-      <div className="card-body">
-        <FilterBar />
+    <div>
+      <h4 className="mb-0">Resources</h4>
+      <Accordion>
         {resources.map((r) => (
-          <Resource resource={r} key={r.resourceId} />
+          <ResourceAccordion resource={r} key={r.resourceId} />
         ))}
-      </div>
+      </Accordion>
     </div>
   );
 };
 
-export default ResourceList;
+export default ResourceAccordions;
