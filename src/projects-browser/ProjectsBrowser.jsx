@@ -1,26 +1,26 @@
-import { useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Filters from "./Filters";
 import ProjectList from "./ProjectList";
 import Pagination from "./Pagination";
-import {
-  getProjects,
-  selectProjectsLoaded,
-  selectShowPagination,
-} from "./helpers/browserSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { initApp, selectFiltersLoaded, selectProjectsLoaded, selectShowPagination } from "./helpers/browserSlice"
 
-import LoadingSpinner from "../shared/LoadingSpinner";
-
-const ProjectsBrowser = () => {
+const ProjectsBrowser = ({ api_url }) => {
   const dispatch = useDispatch();
-  const projectsLoaded = useSelector(selectProjectsLoaded);
-  const showPagination = useSelector(selectShowPagination);
+  const projectsLoaded = useSelector( selectProjectsLoaded );
+  const filtersLoaded = useSelector( selectFiltersLoaded );
+  const showPagination = useSelector( selectShowPagination );
+  const loadingScreen = (
+    <div className="loadingDiv">
+      Loading ...
+    </div>
+  )
 
   useEffect(() => {
-    dispatch(getProjects());
-  }, []);
+    dispatch( initApp() );
+  }, [])
 
-  return (
+  return(
     <div className="container-fluid">
       <div className="row">
         <div className="col-sm-3">
@@ -28,22 +28,27 @@ const ProjectsBrowser = () => {
         </div>
         <div className="col-sm-9">
           <div className="row">
-            <div className="col">{showPagination ? <Pagination /> : ""}</div>
+            <div className="col">
+              {showPagination ? <Pagination /> : ''}
+            </div>
           </div>
 
-          <div className="row">
+          <div className="row" id="projectListRow">
             <div className="col">
-              {projectsLoaded ? <ProjectList /> : <LoadingSpinner />}
+              {projectsLoaded && filtersLoaded ? <ProjectList /> : loadingScreen }
             </div>
           </div>
 
           <div className="row">
-            <div className="col">{showPagination ? <Pagination /> : ""}</div>
+            <div className="col">
+              {showPagination ? <Pagination scroll="projects_browser_app" /> : ''}
+            </div>
           </div>
+
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default ProjectsBrowser;

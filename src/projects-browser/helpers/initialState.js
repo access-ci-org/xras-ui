@@ -1,20 +1,24 @@
 export const initialState = {
+  apiUrl: null,
   pages: 1,
   projects: [],
   projectsLoaded: false,
+  filtersLoaded: true,
   showPagination: false,
   filters: {
-    org: "",
-    allocationType: "",
+    org: '',
+    allocationType: '',
     allFosToggled: true,
+    resource: ''
   },
   pageData: {
     current_page: 1,
-    last_page: 1,
+    last_page: 1
   },
   typeLists: {
-    orgs: [], // Replaced by data from host element.
-    fosTypes: [], // Replaced by data from host element.
-    allocationTypes: [], // Replaced by data from host element.
-  },
+    orgs: [],
+    fosTypes: [],
+    allocationTypes: [],
+    resources: []
+  }
 };

@@ -16,11 +16,11 @@
       <div id="projects-react"></div>
     </div>
     <script type="module">
-      import { projects } from "/src/main.jsx";
-      projects(
-        { target: document.getElementById("projects-react") },
-        "testuser1"
-      );
+      import { projectsBrowser } from "/src/main.jsx";
+      projectsBrowser({
+        apiUrl: "http://localhost:3007/current-projects.json",
+        target: document.getElementById("projects-react")
+      });
     </script>
   </body>
 </html>

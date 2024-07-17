@@ -69,18 +69,15 @@ export function projects({ target, username, routes }) {
   );
 }
 
-export function projectsBrowser({ target }) {
-  const typeLists = {};
-  for (let key in target.dataset)
-    typeLists[key] = JSON.parse(target.dataset[key]);
+export function projectsBrowser({ target, apiUrl }) {
   const projectsBrowserStore = configureStore({
     reducer: {
-      projectBrowser: browserSlice,
+      projectsBrowser: browserSlice,
     },
     preloadedState: {
-      projectBrowser: {
+      projectsBrowser: {
         ...projectsBrowserInitialState,
-        typeLists,
+        apiUrl
       },
     },
   });
