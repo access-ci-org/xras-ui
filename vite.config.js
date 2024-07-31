@@ -10,6 +10,7 @@ export default defineConfig({
       entry: [
         resolve(__dirname, "src/main.jsx"),
         resolve(__dirname, "src/bootstrap/bootstrap-namespaced.scss"),
+        resolve(__dirname, "src/bootstrap/access.scss"),
       ],
       name: "XrasUi",
       fileName: "xras-ui",
@@ -20,6 +21,7 @@ export default defineConfig({
           if (chunkInfo.name === "main.css") return "xras-ui.css";
           if (chunkInfo.name === "bootstrap-namespaced.css")
             return "bootstrap.css";
+          if (chunkInfo.name === "access.css") return "access.css";
         },
       },
     },

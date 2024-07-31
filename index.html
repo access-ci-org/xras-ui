@@ -21,9 +21,9 @@
       </div>
     </div>
     <script type="module">
-      import { resourceCatalog } from "/src/main.jsx";
+      import { resourceCatalog, shadowTarget } from "/src/main.jsx";
       resourceCatalog({
-        target: document.getElementById("resource-catalog-react"),
+        target: shadowTarget(document.getElementById("resource-catalog-react"), {bootstrapVariables: true, accessStyles: true}),
         onRamps: true,
       });
     </script>

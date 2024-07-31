@@ -22,7 +22,7 @@ import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
 export function shadowTarget(
   host,
-  { bootstrapFonts = true, bootstrapVariables = true } = {}
+  { bootstrapFonts = true, bootstrapVariables = true, access = false } = {}
 ) {
   const shadow = host.attachShadow({ mode: "open" });
   const bsOuter = document.createElement("div");
@@ -36,6 +36,8 @@ export function shadowTarget(
   bsStyle.href = `${baseUrl}/bootstrap.css`;
   uiStyle.rel = "stylesheet";
   uiStyle.href = `${baseUrl}/xras-ui.css`;
+  uiStyle.rel = "stylesheet";
+  uiStyle.href = `${baseUrl}/access.css`;
 
   bsInner.appendChild(target);
   bsOuter.appendChild(bsInner);
