@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import style from './ResourceCatalog.module.scss'
+
 const Resource = ({ resource }) => {
 
   const [showShortDesc, setShowShortDesc] = useState(true);
@@ -57,7 +57,7 @@ const Resource = ({ resource }) => {
         <button
           role='button'
           type='button'
-          className={style.plainButton}
+
           onClick={() => setShowShortDesc(false)}
         >
           Read More
@@ -72,7 +72,7 @@ const Resource = ({ resource }) => {
             </div>
           </div>
           <div className="row mb-3">
-            <div className={`col ${style.description}`}>
+            <div className={`col `}>
               <div dangerouslySetInnerHTML={{ __html: content }} />
               {truncated ? showMoreButton : ''}
             </div>
@@ -106,7 +106,8 @@ const Resource = ({ resource }) => {
   }
 
   const headerBg = () => {
-    return style.cardBg;
+    return "";
+    //return style.cardBg;
   }
 
   return (
@@ -115,7 +116,7 @@ const Resource = ({ resource }) => {
         <div className="col">
           <div className="card mb-3">
             <div className={`card-header ${headerBg()}`}>
-              <span className={`${style.resourceName}`}>
+              <span className={``}>
                 {resource.resourceName}
               </span>
               { renderResourceType() }

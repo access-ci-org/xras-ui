@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Filters from "./Filters";
 import { Offcanvas } from "react-bootstrap";
-import styles from "./ResourceCatalog.module.scss"
 
 const FilterBar = () => {
   const [show, setShow] = useState(false);
@@ -18,7 +17,7 @@ const FilterBar = () => {
           <Filters />
         </Offcanvas.Body>
       </Offcanvas>
-      <div className={`row ${styles.filterBar} mb-2`}>
+      <div className={`row mb-2`}>
         <div className="col pt-2 pb-2">
           <div className="p-1 pb-0 border-bottom bg-white shadow">
             <button className="btn btn-outline-primary mb-1 mt-1" type="button" onClick={handleOpen}>

@@ -23,7 +23,7 @@
     <script type="module">
       import { resourceCatalog, shadowTarget } from "/src/main.jsx";
       resourceCatalog({
-        target: shadowTarget(document.getElementById("resource-catalog-react"), {bootstrapVariables: true, accessStyles: true}),
+        target: shadowTarget(document.getElementById("resource-catalog-react"), {accessStyles: true}),
         onRamps: true,
       });
     </script>

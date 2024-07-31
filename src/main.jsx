@@ -30,20 +30,22 @@ export function shadowTarget(
   const target = document.createElement("div");
   const bsStyle = document.createElement("link");
   const uiStyle = document.createElement("link");
+  const accessStyle = document.createElement("link");
   const baseUrl = import.meta.url.replace(/\/[^/]+$/, "");
 
   bsStyle.rel = "stylesheet";
   bsStyle.href = `${baseUrl}/bootstrap.css`;
   uiStyle.rel = "stylesheet";
   uiStyle.href = `${baseUrl}/xras-ui.css`;
-  uiStyle.rel = "stylesheet";
-  uiStyle.href = `${baseUrl}/access.css`;
+  accessStyle.rel = "stylesheet";
+  accessStyle.href = `${baseUrl}/access.css`;
 
   bsInner.appendChild(target);
   bsOuter.appendChild(bsInner);
   shadow.appendChild(bsOuter);
   shadow.appendChild(bsStyle);
   shadow.appendChild(uiStyle);
+  shadow.appendChild(accessStyle);
 
   bsOuter.classList.add("bootstrap");
   if (bootstrapVariables) bsInner.classList.add("bootstrap-variables");

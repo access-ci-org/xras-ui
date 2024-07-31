@@ -2,7 +2,6 @@
 
 .bootstrap {
   .bootstrap-variables {
-    @import "access";
     @import "bootstrap";
     @extend :root;
   }
