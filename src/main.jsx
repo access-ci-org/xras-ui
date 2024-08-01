@@ -42,10 +42,10 @@ export function shadowTarget(
 
   bsInner.appendChild(target);
   bsOuter.appendChild(bsInner);
-  shadow.appendChild(bsOuter);
   shadow.appendChild(bsStyle);
   shadow.appendChild(uiStyle);
   shadow.appendChild(accessStyle);
+  shadow.appendChild(bsOuter);
 
   bsOuter.classList.add("bootstrap");
   if (bootstrapVariables) bsInner.classList.add("bootstrap-variables");
