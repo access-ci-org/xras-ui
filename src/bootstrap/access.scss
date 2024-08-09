@@ -9,7 +9,8 @@ $warning: #ef7537;
 $accordion-button-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='#1a5b6e'><path d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>");
 $accordion-button-active-icon: $accordion-button-icon;
 
-body {
+body,
+:root {
   --contrast: #232323;
   --contrast-2: #3f3f3f;
   --contrast-3: #707070;
@@ -18,14 +19,14 @@ body {
   --base-3: #ffffff;
   --black: #000000;
   --teal-200: #ecf9f8;
-  --teal-300: #CEE8E9;
+  --teal-300: #cee8e9;
   --teal-400: #48c0b9;
   --teal-600: #107180;
   --teal-700: #1a5b6e;
   --yellow-400: #ffc42d;
   --orange-400: #f07537;
   // Bootstrap
-  --bs-font-sans-serif: 'Archivo', sans-serif;
+  --bs-font-sans-serif: "Archivo", sans-serif;
   --bs-link-color: var(--teal-600);
   --bs-link-hover-color: var(--orange-400);
 }

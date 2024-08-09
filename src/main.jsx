@@ -26,6 +26,7 @@ export function shadowTarget(
 ) {
   const shadow = host.attachShadow({ mode: "open" });
   const bsOuter = document.createElement("div");
+  const bsMiddle = document.createElement("div");
   const bsInner = document.createElement("div");
   const target = document.createElement("div");
   const bsStyle = document.createElement("link");
@@ -41,15 +42,19 @@ export function shadowTarget(
   accessStyle.href = `${baseUrl}/access.css`;
 
   bsInner.appendChild(target);
-  bsOuter.appendChild(bsInner);
+  bsMiddle.appendChild(bsInner);
+  bsOuter.appendChild(bsMiddle);
   shadow.appendChild(bsStyle);
   shadow.appendChild(uiStyle);
   shadow.appendChild(accessStyle);
   shadow.appendChild(bsOuter);
 
   bsOuter.classList.add("bootstrap");
-  if (bootstrapVariables) bsInner.classList.add("bootstrap-variables");
-  if (bootstrapFonts) bsInner.classList.add("bootstrap-fonts");
+  if (bootstrapVariables) bsMiddle.classList.add("bootstrap-variables");
+  if (bootstrapFonts) {
+    bsInner.classList.add("bootstrap-fonts");
+    bsInner.setAttribute("data-bs-theme", "light");
+  }
 
   return target;
 }
@@ -123,11 +128,7 @@ export function publicationsSelect({ target, routes }) {
   );
 }
 
-export function resourceCatalog({
-  target,
-  catalogSources,
-  onRamps
-}) {
+export function resourceCatalog({ target, catalogSources, onRamps }) {
   const store = configureStore({
     reducer: {
       resourceCatalog: catalogSlice,
@@ -135,10 +136,7 @@ export function resourceCatalog({
   });
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
-      <ResourceCatalog
-        catalogSources={catalogSources}
-        onRamps={onRamps}
-      />
+      <ResourceCatalog catalogSources={catalogSources} onRamps={onRamps} />
     </Provider>
   );
 }

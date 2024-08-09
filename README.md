@@ -32,7 +32,7 @@ This component provides a user interface to browse available Resources and their
 | `allowedFilters`     | A list of filters you want users to see. Ex: `["GPU Compute"]`                                                         | **False** |
 | `excludedCategories` | A list of filter **categories** that you want hidden from users. Ex: `["Specialized Support", "Specialized Hardware"]` | **False** |
 | `excludedFilters`    | A list of filters that you want hidden from users. Ex: `["ACCESS Allocated", "ACCESS OnDemand"]`                       | **False** |
-| `excludedResources` | A list of Resources that you want hidden from users. Ex: `["ACCESS Credits"]`  | **False** |
+| `excludedResources`  | A list of Resources that you want hidden from users. Ex: `["ACCESS Credits"]`                                          | **False** |
 | `target`             | The DOM element where the component will be rendered.                                                                  | **True**  |
 
 Note: Avoid combining `allowedCategories` and `excludedCategories`, or `allowedFilters` and `excludedFilters`. If an invalid combination is found, it will default to what is specified in the `allowed*` options
@@ -65,8 +65,10 @@ In order for the Bootstrap styles to be applied, the component target element ne
 
 ```html
 <div class="bootstrap">
-  <div class="bootstrap-variables bootstrap-fonts">
-    <div id="resource-catalog-react"></div>
+  <div class="bootstrap-variables">
+    <div class="bootstrap-fonts">
+      <div id="resource-catalog-react"></div>
+    </div>
   </div>
 </div>
 ```
