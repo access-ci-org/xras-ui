@@ -9,14 +9,19 @@ const FilterBar = () => {
 
   return (
     <>
-      <Offcanvas show={show} onHide={handleClose}>
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Filters</Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body>
+      <div className={`offcanvas offcanvas-start ${show ? 'show' : ''}`} tabindex="-1" id="offcanvas" aria-labelledby="offcanvasLabel">
+        <div className="offcanvas-header">
+          <h5 className="offcanvas-title" id="offcanvasLabel">Filters</h5>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={handleClose}
+            aria-label="Close"></button>
+        </div>
+        <div className="offcanvas-body">
           <Filters />
-        </Offcanvas.Body>
-      </Offcanvas>
+        </div>
+      </div>
       <div className={`row mb-2`}>
         <div className="col pt-2 pb-2">
           <div className="p-1 pb-0 border-bottom bg-white shadow">

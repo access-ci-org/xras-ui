@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import styles from "./ResourceCatalog.module.scss";
 
 const Resource = ({ resource }) => {
 
@@ -9,7 +10,7 @@ const Resource = ({ resource }) => {
       "CPU Compute": "cpu-fill",
       "GPU Compute": "gpu-card",
       "Cloud" : "cloud-fill",
-      "Commercial Cloud" : "clouds-fill",
+      "Commercial Cloud" : "cloud-fill",
       "Storage": "database-fill",
       "Service / Other": "journal",
       "Innovative / Novel Compute": "pc",
@@ -57,7 +58,7 @@ const Resource = ({ resource }) => {
         <button
           role='button'
           type='button'
-
+          className={styles.plainButton}
           onClick={() => setShowShortDesc(false)}
         >
           Read More
@@ -73,7 +74,7 @@ const Resource = ({ resource }) => {
           </div>
           <div className="row mb-3">
             <div className={`col `}>
-              <div dangerouslySetInnerHTML={{ __html: content }} />
+              <div className={styles.description} dangerouslySetInnerHTML={{ __html: content }} />
               {truncated ? showMoreButton : ''}
             </div>
           </div>
@@ -95,7 +96,7 @@ const Resource = ({ resource }) => {
           </div>
           <div className='row mb-3'>
             <div className='col'>
-              <div dangerouslySetInnerHTML={{ __html: resource.recommendedUse }} />
+              <div className={styles.description} dangerouslySetInnerHTML={{ __html: resource.recommendedUse }} />
             </div>
           </div>
         </>
@@ -106,8 +107,7 @@ const Resource = ({ resource }) => {
   }
 
   const headerBg = () => {
-    return "";
-    //return style.cardBg;
+    return styles.cardBg;
   }
 
   return (
@@ -127,20 +127,11 @@ const Resource = ({ resource }) => {
                   {renderFeatures(resource.features)}
                 </div>
               </div>
-
-              { renderDescription() }
               { renderUse() }
-
-
-              {/* <div className='row'>
-                <div className='col'>
-                  <button className='btn btn-info me-2 fw-bold'>Learn More <i className='bi bi-box-arrow-up-right'></i></button>
-                  <button className='btn btn-warning fw-bold'>Request This Resource <i className='bi bi-box-arrow-up-right'></i></button>
-                </div>
-              </div> */}
+              { renderDescription() }
             </div>
             <div className='card-footer'>
-            <button className='btn btn-info me-2 fw-bold'>Learn More <i className='bi bi-box-arrow-up-right'></i></button>
+            <button className='btn btn-info me-2 fw-bold'>System Info <i className='bi bi-box-arrow-up-right'></i></button>
 
             </div>
           </div>

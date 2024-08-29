@@ -9,6 +9,7 @@ import {
 import { accessText } from "./helpers/accessText";
 import ResourceList from "./ResourceList";
 import LoadingSpinner from "../shared/LoadingSpinner";
+import styles from "./ResourceCatalog.module.scss";
 
 const ResourceCatalog = ({
   catalogSources = [],
@@ -64,12 +65,11 @@ const ResourceCatalog = ({
   if (!resourcesLoaded) return <LoadingSpinner />;
 
   return (
-    <div className="container mt-3">
+    <div className={`container mt-3 ${styles.access}`}>
       { onRamps ? accessText : ''}
       { renderCatalogDescriptions() }
       <div className="row">
         <div className="col">
-          <button className="btn btn-primary">Button!</button>
           <ResourceList />
         </div>
       </div>

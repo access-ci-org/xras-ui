@@ -1,3 +1,15 @@
+@import url('http://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,70,400;0,100,400;0,100,600;0,100,800;1,100,400&#038;display=swap');
+$primary: #1a5b6e;
+$secondary: #fec42d;
+$danger: #a70000;
+$info: #00a8d1;
+$warning: #ef7537;
+
+
+.access {
+  font-family: "Archivo", sans-serif;
+}
+
 .resourceName {
   font-size: 1.3rem;
   font-weight: bold;
@@ -14,9 +26,8 @@
 }
 
 .cardBg {
-  // background-color: #1a5b6e;
-  // color: #fff;
-  color: #000;
+  background-color: $primary !important;
+  color: #fff !important;
 }
 
 .active {

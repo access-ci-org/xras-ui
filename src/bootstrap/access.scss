@@ -1,4 +1,4 @@
-//@import url('http://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,70,400;0,100,400;0,100,600;0,100,800;1,100,400&#038;display=swap');
+@import url('http://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,70,400;0,100,400;0,100,600;0,100,800;1,100,400&#038;display=swap');
 
 $primary: #1a5b6e;
 $secondary: #fec42d;
@@ -25,6 +25,7 @@ body,
   --teal-700: #1a5b6e;
   --yellow-400: #ffc42d;
   --orange-400: #f07537;
+  --bs-primary: #1a5b6e;
   // Bootstrap
   --bs-font-sans-serif: "Archivo", sans-serif;
   --bs-link-color: var(--teal-600);
