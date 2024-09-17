@@ -1,5 +1,6 @@
 import { useRequest, useProject } from "./helpers/hooks";
 import config from "./helpers/config";
+import style from "./Request.module.scss";
 
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
@@ -37,7 +38,18 @@ export default function Request({ requestId, grantNumber }) {
 
   return (
     <div className="request">
-      {request.timeStatus != "current" ? (
+      {request.returnedForCorrections ?
+        <Alert color="warning">
+          <p>
+            Your request has been returned for corrections. These are the notes from the Allocations Team
+          </p>
+          <div className={style.returnedForCorrectionsNotes}>{request.returnedForCorrectionsNotes}</div>
+          <p className="mt-3">
+            Please address these issues by clicking the Edit button to edit your request.
+          </p>
+        </Alert>
+      : ""}
+      {request.timeStatus != "current" && !request.returnedForCorrections ? (
         <Alert color="warning">
           You are viewing {"aeiou".includes(displayStatus[0]) ? "an" : "a"}{" "}
           {displayStatus} request.{" "}
