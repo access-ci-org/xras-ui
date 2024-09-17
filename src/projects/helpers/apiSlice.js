@@ -162,6 +162,8 @@ const addRequest = (
       .filter((res) => res.isCredit || res.allocated > 0)
       .sort(sortResources),
     resourcesReason: "",
+    returnedForCorrections: actions.find((action) => action.returnedForCorrections) ? true : false,
+    returnedForCorrectionsNotes: actions.map((action) => action.adminComments).join(','),
     showActionsModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
