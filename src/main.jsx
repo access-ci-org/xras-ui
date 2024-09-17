@@ -4,6 +4,8 @@ import { Provider } from "react-redux";
 
 import AllocationsMap from "./allocations-map/AllocationsMap";
 
+import EditResource from "./edit-resource/EditResource";
+
 import Projects from "./projects/Projects";
 import apiSlice from "./projects/helpers/apiSlice";
 import projectsConfig from "./projects/helpers/config";
@@ -54,6 +56,10 @@ export function allocationsMap({ target }) {
   ReactDOM.createRoot(target).render(<AllocationsMap />);
 }
 
+export function editResource({ resourceId, target }) {
+  ReactDOM.createRoot(target).render(<EditResource resourceId={resourceId} />);
+}
+
 export function projects({ target, username, routes }) {
   // Override the default routes with the ones from Rails.
   if (routes) projectsConfig.routes = routes;
@@ -77,7 +83,7 @@ export function projectsBrowser({ target, apiUrl }) {
     preloadedState: {
       projectsBrowser: {
         ...projectsBrowserInitialState,
-        apiUrl
+        apiUrl,
       },
     },
   });
