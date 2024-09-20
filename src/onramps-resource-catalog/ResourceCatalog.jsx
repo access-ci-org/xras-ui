@@ -13,14 +13,14 @@ import styles from "./ResourceCatalog.module.scss";
 
 const ResourceCatalog = ({
   catalogSources = [],
-  onRamps = false
+  onRamps = false,
+  target
 }) => {
   const dispatch = useDispatch();
   const resourcesLoaded = useSelector(selectResourcesLoaded);
   const hasErrors = useSelector(selectHasErrors);
   const stateCatalogs = useSelector(selectCatalogs);
   const catalogs = Object.keys(stateCatalogs).map((k) => stateCatalogs[k]);
-
 
   useEffect(() => {
     dispatch(
@@ -29,7 +29,25 @@ const ResourceCatalog = ({
         onRamps
       })
     );
+    addStyleSheets();
   }, []);
+
+  const addStyleSheets = () => {
+
+    const bsStyle = document.createElement("link");
+    const uiStyle = document.createElement("link");
+    const accessStyle = document.createElement("link");
+    bsStyle.rel = "stylesheet";
+    bsStyle.href = `https://esm.sh/@xras/ui/dist/bootstrap.css`;
+    uiStyle.rel = "stylesheet";
+    uiStyle.href = `https://esm.sh/@xras/ui/dist/xras-ui.css`;
+    accessStyle.rel = "stylesheet";
+    accessStyle.href = `https://esm.sh/@xras/ui/dist/access.css`;
+
+    target.appendChild(bsStyle);
+    target.appendChild(uiStyle);
+    target.appendChild(accessStyle);
+  }
 
   const renderCatalogDescriptions = () => {
     if(onRamps && catalogs.length > 1){

@@ -29,24 +29,10 @@ export function shadowTarget(
   const bsMiddle = document.createElement("div");
   const bsInner = document.createElement("div");
   const target = document.createElement("div");
-  const bsStyle = document.createElement("link");
-  const uiStyle = document.createElement("link");
-  const accessStyle = document.createElement("link");
-  const baseUrl = import.meta.url.replace(/\/[^/]+$/, "");
-
-  bsStyle.rel = "stylesheet";
-  bsStyle.href = `${baseUrl}/bootstrap.css`;
-  uiStyle.rel = "stylesheet";
-  uiStyle.href = `${baseUrl}/xras-ui.css`;
-  accessStyle.rel = "stylesheet";
-  accessStyle.href = `${baseUrl}/access.css`;
 
   bsInner.appendChild(target);
   bsMiddle.appendChild(bsInner);
   bsOuter.appendChild(bsMiddle);
-  shadow.appendChild(bsStyle);
-  shadow.appendChild(uiStyle);
-  shadow.appendChild(accessStyle);
   shadow.appendChild(bsOuter);
 
   bsOuter.classList.add("bootstrap");
@@ -133,7 +119,7 @@ export function resourceCatalog({ target, catalogSources, onRamps }) {
   });
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
-      <OnRampsResourceCatalog catalogSources={catalogSources} onRamps={onRamps} />
+      <OnRampsResourceCatalog catalogSources={catalogSources} onRamps={onRamps} target={target} />
     </Provider>
   );
 }
