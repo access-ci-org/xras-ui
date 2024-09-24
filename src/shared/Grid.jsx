@@ -1,10 +1,41 @@
 import { useLayoutEffect, useRef } from "react";
-import gridStyle from "./Grid.module.scss";
-
+import gridStyle from './Grid.module.scss';
+import { SelectInput } from '../shared/SelectInput/SelectInput';
+import FormField from '../shared/Form/FormField';
 import GridText from "./GridText";
+import CheckboxGroup from '../shared/Checkbox/CheckboxGroup'; // Assuming you are using CheckboxGroup
 
 const columnTypeComponents = {
   text: GridText,
+  select: ({ column, row, style }) => (
+    <td style={style}>
+      <SelectInput
+        label=""
+        options={row[column.key].options}
+        value={row[column.key].value}
+        onChange={(e) => row[column.key].onChange(e.target.value)}
+      />
+    </td>
+  ),
+  input: ({ column, row, style }) => (
+    <td style={style}>
+      <FormField
+        label=""
+        type="text"
+        value={row[column.key].value}
+        onChange={(e) => row[column.key].onChange(e.target.value)}
+      />
+    </td>
+  ),
+  checkbox: ({ column, row, style }) => (
+    <td style={style}>
+      <input
+        type="checkbox"
+        checked={row[column.key].checked}
+        onChange={(e) => row[column.key].onChange(e.target.checked)}
+      />
+    </td>
+  ),
 };
 
 export default function Grid({
