@@ -1,5 +1,5 @@
 .no-scroll-grid {
-  overflow: auto; 
+  overflow: auto; //hidden for no-scroll 
   height: auto; 
 }
 
@@ -11,4 +11,13 @@
 
 .mb-2 {
   margin-bottom: 0.8rem;
+}
+
+.no-margin-row {
+  margin: 0; 
+  padding: 0;
+}
+
+.vertical-align-center td {
+  vertical-align: middle; /* Vertically center content inside <td> */
 }

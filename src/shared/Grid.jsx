@@ -14,6 +14,7 @@ const columnTypeComponents = {
         options={row[column.key].options}
         value={row[column.key].value}
         onChange={(e) => row[column.key].onChange(e.target.value)}
+        style={{ margin: 0, padding: 0 }}
       />
     </td>
   ),

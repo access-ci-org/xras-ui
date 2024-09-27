@@ -15,6 +15,7 @@ export const AllocationGrid = React.memo(({ columns, rows, onAddRequiredResource
         classes={style["no-scroll-grid"]}
         columns={columns}
         rows={rows}
+        rowClasses={Array(rows.length).fill(style["vertical-align-center"])}
       />
     </div>
   ));
