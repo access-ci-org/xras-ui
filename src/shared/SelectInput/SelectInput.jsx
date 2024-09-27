@@ -1,15 +1,17 @@
 export const SelectInput = ({ label, options, value, onChange }) => {
     return (
-      <div className="form-group">
+      <div>
         <label>{label}</label>
         <select className="form-control" value={value} onChange={onChange}>
           {options.map((option, idx) => (
-            <option key={idx} value={option.value}>
+            <option key={idx} value={option.value} disabled={option.disabled}>
               {option.label}
             </option>
           ))}
         </select>
       </div>
+
     );
   };
+  
   

@@ -3,7 +3,7 @@ import gridStyle from './Grid.module.scss';
 import { SelectInput } from '../shared/SelectInput/SelectInput';
 import FormField from '../shared/Form/FormField';
 import GridText from "./GridText";
-import CheckboxGroup from '../shared/Checkbox/CheckboxGroup'; // Assuming you are using CheckboxGroup
+import InfoTip from "./InfoTip";
 
 const columnTypeComponents = {
   text: GridText,
@@ -86,6 +86,15 @@ export default function Grid({
       {column.formatHeader
         ? column.formatHeader(column.name, column)
         : column.name}
+      {column.tooltip && (
+          <InfoTip
+            placement="top"
+            trigger="hover"
+            maxWidth="300px"
+          >
+            {column.tooltip}
+          </InfoTip>
+      )}
     </th>
   ));
 
