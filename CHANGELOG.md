@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.2](https://github.com/access-ci-org/xras-ui/compare/v0.3.1...v0.3.2) (2024-09-27)
+
+
+### Bug Fixes
+
+* Yes/No resource amounts will now just show "Yes" or "No" for their allocation amount ([7de2de3](https://github.com/access-ci-org/xras-ui/commit/7de2de3bac94fcdbcc1afc6556aeee5982da89cd))
+
 ## [0.3.1](https://github.com/access-ci-org/xras-ui/compare/v0.3.0...v0.3.1) (2024-09-20)
 
 
