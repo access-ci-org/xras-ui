@@ -8,8 +8,8 @@ const Project = ({ project }) => {
     let units = resource.units ? resource.units : resource.resourceUnits;
     const amount = resource.allocation ? resource.allocation : resource.amount;
 
-    if(units == "[Yes = 1, No = 0]"){
-      return resource.allocation == "1.0" ? "Yes" : "No"
+    if(units == "[Yes = 1, No = 0]" || units == "Yes / No"){
+      return amount == "1.0" ? "Yes" : "No"
     } else {
       let allocation = "0";
       if(parseInt(amount)){
