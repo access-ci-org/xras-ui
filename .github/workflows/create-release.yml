@@ -43,6 +43,9 @@ jobs:
         run: npm ci
       - name: Build assets
         run: npm run build
-      - run: npm publish --provenance --access public
+      - name: Determine NPM tag
+        id: npm-tag
+        run: echo npm-tag=$(jq -r .version package.json | grep -q 'alpha\|beta\|rc' && echo "next" || echo "latest") >> $GITHUB_OUTPUT
+      - run: npm publish --provenance --access public --tag ${{ steps.npm-tag.outputs.npm-tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
