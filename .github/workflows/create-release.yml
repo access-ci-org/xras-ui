@@ -30,6 +30,7 @@ jobs:
     if: ${{ needs.release.outputs.release_created }}
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
