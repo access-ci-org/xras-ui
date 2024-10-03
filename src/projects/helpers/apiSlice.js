@@ -809,7 +809,7 @@ export const apiSlice = createSlice({
         state.projectsList = action.payload.projectsList.map((project) => {
           const { grantNumber, requestMasterId, requests, status, title } =
             project;
-          const returnedForCorrections = project.requests.filter(r => r.actions.filter(a => a.returnedForCorrections));
+          const returnedForCorrections = project.requests.filter(r => r.actions.filter(a => a.returnedForCorrections).length > 0).length > 0
           const projectStatus =
             returnedForCorrections ? "Returned for Corrections" :
             status ||
