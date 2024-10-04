@@ -3,7 +3,7 @@ import gridStyle from './Grid.module.scss';
 import { SelectInput } from '../shared/SelectInput/SelectInput';
 import FormField from '../shared/Form/FormField';
 import GridText from "./GridText";
-import InfoTip from "./InfoTip";
+import Tooltip from "./ToolTip";
 
 const columnTypeComponents = {
   text: GridText,
@@ -14,7 +14,7 @@ const columnTypeComponents = {
         options={row[column.key].options}
         value={row[column.key].value}
         onChange={(e) => row[column.key].onChange(e.target.value)}
-        style={{ margin: 0, padding: 0 }}
+        style={{ width: '100%', margin: 0 }}
       />
     </td>
   ),
@@ -25,6 +25,7 @@ const columnTypeComponents = {
         type="text"
         value={row[column.key].value}
         onChange={(e) => row[column.key].onChange(e.target.value)}
+        style={{ width: '92%',  margin: 0 }}
       />
     </td>
   ),
@@ -88,13 +89,9 @@ export default function Grid({
         ? column.formatHeader(column.name, column)
         : column.name}
       {column.tooltip && (
-          <InfoTip
-            placement="top"
-            trigger="hover"
-            maxWidth="300px"
-          >
-            {column.tooltip}
-          </InfoTip>
+        <Tooltip title={column.tooltip} placement="bottom">
+          <i className="icon-info-sign"></i>
+        </Tooltip>
       )}
     </th>
   ));

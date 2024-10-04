@@ -17,21 +17,21 @@ export const resources = (state, action) => {
             },
           },
         };
-      case 'UPDATE_ALLOCATION':
-        return {
-          ...state,
-          resourceData: {
-            ...state.resourceData,
-            resource_details: {
-              ...state.resourceData.resource_details,
-              allocation_types: state.resourceData.resource_details.allocation_types.map(alloc =>
-                alloc === action.payload.type
-                  ? { ...alloc, ...action.payload.updates }
-                  : alloc
-              ),
+        case 'UPDATE_ALLOCATION':
+          return {
+            ...state,
+            resourceData: {
+              ...state.resourceData,
+              resource_details: {
+                ...state.resourceData.resource_details,
+                allocation_types: state.resourceData.resource_details.allocation_types.map(alloc =>
+                  alloc.allocation_type_id === action.payload.allocationTypeId
+                    ? { ...alloc, ...action.payload.updates }
+                    : alloc
+                ),
+              },
             },
-          },
-        };
+          };
       default:
         return state;
     }

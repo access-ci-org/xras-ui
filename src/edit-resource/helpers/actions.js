@@ -19,8 +19,8 @@ export const setResourceData = (data) => ({
     value,
   });
   
-  export const updateAllocation = (type, updates) => ({
+  export const updateAllocation = (allocationTypeId, updates) => ({
     type: 'UPDATE_ALLOCATION',
-    payload: { type, updates },
+    payload: { allocationTypeId, updates },
   });
   

@@ -1,40 +1,38 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-export const AddRequiredResourceModal = ({ show, onClose, children }) => {
+export const AddNewModal = ({ show, onClose, title, children }) => {
   if (!show) {
     return null;
   }
 
   return (
     <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            zIndex: 1050,
-          }}>
-
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      zIndex: 1050,
+    }}>
       <div className="modal fade in" tabIndex="-1" role="dialog" aria-hidden="true" style={{
-                width: '90%',
-                maxWidth: '600px',
-                maxHeight: '90%',
-                overflow: 'auto',
-                backgroundColor: 'white',
-                position: 'relative',
-              }}>
+        width: '90%',
+        maxWidth: '600px',
+        maxHeight: '90%',
+        overflow: 'auto',
+        backgroundColor: 'white',
+        position: 'relative',
+      }}>
         <div className="modal-dialog" role="document">
           <div className="modal-content">
             <div className="modal-header">
-            <button type="button" className="close" data-dismiss="modal" onClick={onClose} aria-label="Close">
-                <h3 aria-hidden="true" class="text-danger">&times;</h3>
+              <button type="button" className="close" data-dismiss="modal" onClick={onClose} aria-label="Close">
+                <h3 aria-hidden="true" className="text-danger">&times;</h3>
               </button>
-              <h3 className="modal-title">Add Required Resource</h3>
-              
+              <h3 className="modal-title">{title}</h3>
             </div>
             <div className="modal-body">
               {children}
@@ -53,8 +51,9 @@ export const AddRequiredResourceModal = ({ show, onClose, children }) => {
   );
 };
 
-AddRequiredResourceModal.propTypes = {
+AddNewModal.propTypes = {
   show: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
   children: PropTypes.node.isRequired,
 };

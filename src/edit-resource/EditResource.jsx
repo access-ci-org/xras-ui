@@ -4,12 +4,12 @@ import LoadingSpinner from '../shared/LoadingSpinner';
 import { SelectInput } from '../shared/SelectInput/SelectInput';
 import { ResourceForm } from './ResourceForm';
 import { AllocationGrid } from './AllocationTypesGrid';
-import { AddRequiredResourceModal } from './AddRequiredResourceModal';
+import { AddNewModal } from './AddNewModal';
 import Alert from '../shared/Alert';
 import { resources } from './helpers/reducers';
-import { setLoading, setResourceData, setSuccessMessage, updateResourceField, updateAllocation } from './helpers/actions';
+import { setLoading, setResourceData, setSuccessMessage, updateAllocation } from './helpers/actions';
 import { fetchResourceData, updateResourceData } from './helpers/utils';
-export default function EditResource({ resourceId }) {
+export default function EditResource({ resourceId, setExternalSubmit }) {
   const [state, dispatch] = useReducer(resources, {
     resourceData: null,
     loading: true,
@@ -18,7 +18,9 @@ export default function EditResource({ resourceId }) {
   });
 
   const [showAddResourceModal, setShowAddResourceModal] = useState(false);
+  const [showAddAllocationTypeModal, setShowAddAllocationTypeModal] = useState(false);
   const [selectedNewResource, setSelectedNewResource] = useState('');
+  const [selectedNewAllocationType, setSelectedNewAllocationType] = useState('');
 
   const handleError = useCallback(async (response, defaultMessage) => {
     let errorMessage = defaultMessage;
@@ -51,9 +53,10 @@ export default function EditResource({ resourceId }) {
   const resourceDetails = resourceData?.resource_details;
 
   const allowedActionsOptions = useMemo(() => 
-    resourceData?.allowed_actions_available?.map(action => ({
-      value: action.resource_state_type_id,
-      label: action.display_resource_state_type,
+    resourceData?.resource_state_types_available?.map(state => ({
+      value: state.resource_state_type_id,
+      label: state.display_resource_state_type,
+      additionalInfo: state.action_types.map(action => action.display_action_type).join(', ') // Pass action_types as additionalInfo Prop
     })) || [],
   [resourceData]);
 
@@ -73,6 +76,10 @@ export default function EditResource({ resourceId }) {
 
   const availableResources = useMemo(() => 
     resourceData?.required_resources_available || [],
+  [resourceData]);
+
+  const availableAllocationTypes = useMemo(() => 
+    resourceData?.unassigned_allocation_types || [],
   [resourceData]);
 
   const requiredResourcesColumns = useMemo(() => {
@@ -102,8 +109,8 @@ export default function EditResource({ resourceId }) {
 
   const ALLOCATION_COLUMNS = useMemo(() => [
     { key: 'display_name', name: 'Allocation Type', width: 200 },
-    { key: 'allowed_actions', name: 'Allowed Actions', width: 200, type: 'select' },
-    { key: 'comment', name: 'Comment', width: 300, type: 'input' },
+    { key: 'allowed_actions', name: 'Allowed Actions', width: 200, type: 'select', tooltip: 'Tooltip text goes' },
+    { key: 'comment', name: 'Descriptive Text', width: 200, type: 'input', tooltip: 'Appears below the resource name and allocations description in the form when making a new request' },
     ...requiredResourcesColumns
   ], [requiredResourcesColumns]);
 
@@ -114,16 +121,17 @@ export default function EditResource({ resourceId }) {
       allowed_actions: {
         options: allowedActionsOptions,
         value: type.allowed_action?.resource_state_type_id || '',
-        onChange: newValue => dispatch(updateAllocation(type, {
-          allowed_action: {
-            ...type.allowed_action,
-            resource_state_type_id: newValue,
-          },
-        })),
+        onChange: newValue => {
+          dispatch(updateAllocation(type.allocation_type_id, {
+            allowed_action: {
+              resource_state_type_id: newValue,
+            },
+          }));
+        },
       },
       comment: {
         value: type.comment || '', 
-        onChange: newValue => dispatch(updateAllocation(type, { comment: newValue })),
+        onChange: newValue => dispatch(updateAllocation(type.allocation_type_id, { comment: newValue })),
       },
       ...Object.fromEntries(requiredResourcesColumns.map(column => [
         column.key,
@@ -136,7 +144,7 @@ export default function EditResource({ resourceId }) {
                   required_resource_id: resourceData.required_resources_available.find(r => r.resource_name === column.key).resource_id 
                 }]
               : (type.required_resources || []).filter(resource => resource.resource_name !== column.key);
-            dispatch(updateAllocation(type, { required_resources: updatedRequiredResources }));
+            dispatch(updateAllocation(type.allocation_type_id, { required_resources: updatedRequiredResources }));
           },
         },
       ])),
@@ -145,6 +153,10 @@ export default function EditResource({ resourceId }) {
 
   const handleAddRequiredResource = useCallback(() => {
     setShowAddResourceModal(true);
+  }, []);
+
+  const handleAddAllocationType = useCallback(() => {
+    setShowAddAllocationTypeModal(true);
   }, []);
 
   const handleSelectNewResource = useCallback((e) => {
@@ -176,6 +188,41 @@ export default function EditResource({ resourceId }) {
     // setShowAddResourceModal(false);
   }, [availableResources, resourceDetails, resourceData, dispatch]);
 
+  const handleSelectNewAllocationType = useCallback((e) => {
+    const newAllocationTypeValue = e.target.value;
+    setSelectedNewAllocationType(newAllocationTypeValue);
+
+    const newAllocationType = availableAllocationTypes.find(at => at.allocation_type_id.toString() === newAllocationTypeValue);
+    if (newAllocationType) {
+
+      // Set the first one in the list as the default resource state type 
+      const defaultResourceStateType = allowedActionsOptions[0]?.value
+      const updatedAllocationTypes = [
+        ...(resourceDetails.allocation_types || []),
+        {
+          allocation_type_id: newAllocationType.allocation_type_id,
+          display_name: newAllocationType.display_name,
+          allowed_action: {
+            resource_state_type_id: defaultResourceStateType,
+          },
+          comment: '',
+          required_resources: [],
+        }
+      ];
+
+      dispatch(setResourceData({
+        ...resourceData,
+        resource_details: {
+          ...resourceDetails,
+          allocation_types: updatedAllocationTypes,
+        },
+      }));
+    }
+
+    // setShowAddAllocationTypeModal(false);
+  }, [availableAllocationTypes, resourceDetails, resourceData, dispatch]);
+
+
   const handleSubmit = useCallback(async () => {
     if (!resourceDetails) return;
 
@@ -184,12 +231,13 @@ export default function EditResource({ resourceId }) {
       description: resourceDetails.description,
       resource_type_id: resourceDetails.resource_type_id,
       unit_type_id: resourceDetails.unit_type_id,
+      dollar_value: resourceDetails.dollar_value,
       allocation_types: resourceDetails.allocation_types.map(type => ({
         allocation_type_id: type.allocation_type_id,
         allowed_action: {
-          resource_state_type_id: type.allowed_action.resource_state_type_id,
+          resource_state_type_id: type.allowed_action?.resource_state_type_id,
         },
-        comment: type.comment,
+        comment: type.comment || '',
       })),
     };
 
@@ -208,16 +256,24 @@ export default function EditResource({ resourceId }) {
       if (response.ok) {
         const result = await response.json();
         dispatch(setSuccessMessage(result.message || 'Resource updated successfully!', 'success'));
-        console.log(result.message);
-        fetchData();
+        await fetchData();
+        return true;
       } else {
         await handleError(response, 'Failed to update resource');
+        return false;
       }
     } catch (error) {
-      console.error('Error updating resource:', error);
       dispatch(setSuccessMessage('Error updating resource. Please try again later.', 'danger'));
+      return false;
     }
   }, [resourceDetails, resourceId, fetchData, handleError]);
+
+  // Expose handleSubmit to external Rails template script
+  useEffect(() => {
+    if (setExternalSubmit) {
+      setExternalSubmit(handleSubmit);
+    }
+  }, [handleSubmit, setExternalSubmit]);
 
   if (loading) return <LoadingSpinner />;
   if (error) return <Alert color="danger">{error}</Alert>;
@@ -240,22 +296,39 @@ export default function EditResource({ resourceId }) {
         columns={ALLOCATION_COLUMNS}
         rows={allocationRows}
         onAddRequiredResource={handleAddRequiredResource}
+        onAddAllocationType={handleAddAllocationType}
       />
 
-      <button className="btn btn-success" data-toggle="modal-backdrop" onClick={handleSubmit}>Save Resource</button>
-
-      <AddRequiredResourceModal show={showAddResourceModal} onClose={() => setShowAddResourceModal(false)}>
+      <AddNewModal 
+        show={showAddResourceModal} 
+        onClose={() => setShowAddResourceModal(false)}
+        title="Add Required Resource"
+      >
         <SelectInput
-            label="Select Resource"
-            options={[{ value: '', label: 'Select a resource to add', disabled: true }, ...availableResources.map(r => ({ value: r.resource_id, label: r.resource_name }))]}
-            value={selectedNewResource}
-            onChange={handleSelectNewResource}
-          />
-      </AddRequiredResourceModal>
+          label="Select Resource"
+          options={[{ value: '', label: 'Select a resource to add', disabled: true }, ...availableResources.map(r => ({ value: r.resource_id, label: r.resource_name }))]}
+          value={selectedNewResource}
+          onChange={handleSelectNewResource}
+        />
+      </AddNewModal>
+
+      <AddNewModal 
+        show={showAddAllocationTypeModal} 
+        onClose={() => setShowAddAllocationTypeModal(false)}
+        title="Add Allocation Type"
+      >
+        <SelectInput
+          label="Select Allocation Type"
+          options={[{ value: '', label: 'Select an allocation type to add', disabled: true }, ...availableAllocationTypes.map(at => ({ value: at.allocation_type_id, label: at.display_name }))]}
+          value={selectedNewAllocationType}
+          onChange={handleSelectNewAllocationType}
+        />
+      </AddNewModal>
     </div>
   );
 }
 
 EditResource.propTypes = {
   resourceId: PropTypes.number.isRequired,
+  setExternalSubmit: PropTypes.func,
 };
