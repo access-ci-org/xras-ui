@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 
 import AllocationsMap from "./allocations-map/AllocationsMap";
 
+import Resources from "./resources/Resources";
 import EditResource from "./edit-resource/EditResource";
 
 import Projects from "./projects/Projects";
@@ -54,6 +55,10 @@ export function shadowTarget(
 
 export function allocationsMap({ target }) {
   ReactDOM.createRoot(target).render(<AllocationsMap />);
+}
+
+export function resources({ target, available_resources }) {
+  ReactDOM.createRoot(target).render(<Resources available_resources={available_resources} />);
 }
 
 export function editResource({ resourceId, target, setExternalSubmit }) {
