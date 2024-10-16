@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.0](https://github.com/access-ci-org/xras-ui/compare/v0.3.2...v0.4.0) (2024-10-16)
+
+
+### Features
+
+* Added support for "Returned for Corrections" ([644c50c](https://github.com/access-ci-org/xras-ui/commit/644c50c57cba22d9e2f9b25c42a146787295dd96))
+
 ## [0.3.2](https://github.com/access-ci-org/xras-ui/compare/v0.3.1...v0.3.2) (2024-09-27)
 
 
