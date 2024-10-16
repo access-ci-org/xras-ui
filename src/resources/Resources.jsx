@@ -1,96 +1,101 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import styles from './Resources.module.scss';
+import { updateBackend } from './helpers/actions';
+import { sortResources, startScrolling, stopScrolling } from './helpers/utils';
 
 export default function Resources({ available_resources }) {
-    // Sort resources by relative_order, then by resource_name for those with null relative_order
-    const sortedResources = useMemo(() => {
-        return [...available_resources].sort((a, b) => {
-            if (a.relative_order === null && b.relative_order === null) {
-                return a.resource_name.localeCompare(b.resource_name);
-            }
-            if (a.relative_order === null) return 1;
-            if (b.relative_order === null) return -1;
-            return a.relative_order - b.relative_order;
-        });
-    }, [available_resources]);
-
+    const sortedResources = useMemo(() => sortResources(available_resources), [available_resources]);
     const [resources, setResources] = useState(sortedResources);
-    const [draggedItem, setDraggedItem] = useState(null);
+    const draggedIndexRef = useRef(null);
+    const scrollIntervalRef = useRef(null);
 
-    const onDragStart = useCallback((e, index) => {
-        setDraggedItem(resources[index]);
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/html", e.target.parentNode);
-        e.dataTransfer.setDragImage(e.target.parentNode, 20, 20);
-    }, [resources]);
+    useEffect(() => {
+        setResources(sortedResources);
+    }, [sortedResources]);
 
-    const onDragOver = useCallback((index) => {
-        const draggedOverItem = resources[index];
+    const handleDragStart = (e, index) => {
+        draggedIndexRef.current = index;
+    };
 
-        if (draggedItem === draggedOverItem) {
-            return;
-        }
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        if (draggedIndexRef.current === index) return;
 
-        const items = resources.filter(item => item !== draggedItem);
-        items.splice(index, 0, draggedItem);
+        const newResources = [...resources];
+        const draggedItem = newResources[draggedIndexRef.current];
+        newResources.splice(draggedIndexRef.current, 1);
+        newResources.splice(index, 0, draggedItem);
+        
+        draggedIndexRef.current = index;
+        setResources(newResources);
 
-        setResources(items);
-    }, [resources, draggedItem]);
+        // Scroll logic to start scroll scroll when dragging items
+        const { clientY } = e;
+        const scrollThreshold = 130;
 
-    const onDragEnd = useCallback(() => {
-        setDraggedItem(null);
-        updateBackend(resources);
-    }, [resources]);
-
-    const updateBackend = async (updatedResources) => {
-        try {
-            const response = await fetch(`/resources/${updatedResources[0].resource_id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    resources: updatedResources.map((resource, index) => ({
-                        resource_id: resource.resource_id,
-                        relative_order: index + 1
-                    }))
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update resource order');
-            }
-
-            const result = await response.json();
-            console.log(result.message);
-        } catch (error) {
-            console.error('Error updating resource order:', error);
+        if (clientY < scrollThreshold) {
+            startScrolling(-1, scrollIntervalRef);
+        } else if (window.innerHeight - clientY < scrollThreshold) {
+            startScrolling(1, scrollIntervalRef);
+        } else {
+            stopScrolling(scrollIntervalRef);
         }
     };
 
+    const handleDrop = () => {
+        draggedIndexRef.current = null;
+        stopScrolling(scrollIntervalRef);
+        updateBackend(resources);
+    };
+
+    useEffect(() => {
+        return () => stopScrolling(scrollIntervalRef);
+    }, []);
+
+    const ResourceItem = ({ resource, index }) => {
+        const [isDragging, setIsDragging] = useState(false);
+
+        return (
+            <div
+                className={`${styles['resources-item']} ${isDragging ? styles.dragging : ''}`}
+                draggable
+                onDragStart={(e) => {
+                    setIsDragging(true);
+                    handleDragStart(e, index);
+                }}
+                onDragEnd={() => {
+                    setIsDragging(false);
+                    stopScrolling(scrollIntervalRef);
+                }}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => {
+                    setIsDragging(false);
+                    handleDrop();
+                }}
+            >  
+                <span className={styles['drag-handle']}></span>
+                <span className={styles['resource-name']}>
+                    <a href={`/resources/${resource.resource_id}`} className={styles['resource-link']}>
+                        {resource.display_resource_name}
+                    </a>
+                </span>
+            </div>
+        );
+    };
+
     return (
-        <div>
-            <h2>Select a resource to add/edit questions asked during submission</h2>
+        <div className={styles['resources-container']}>
+            <h2>Select a resource from the list to modify</h2>
             <p>
                 Only resource submission questions can be modified in XRAS Admin. For all other resource information use the{" "}
                 <a href="https://cider.access-ci.org">ACCESS CyberInfrastructure Description Repository</a>
             </p>
-            <ul>
+            <p className={styles['drag-instruction']}>Drag items to reorder the list.</p>
+            <div className={styles['resources-list']}>
                 {resources.map((resource, index) => (
-                    <li 
-                        key={resource.resource_id}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, index)}
-                        onDragOver={() => onDragOver(index)}
-                        onDragEnd={onDragEnd}
-                        style={{ cursor: 'move' }}
-                    >
-                        
-                        <a href={`/resources/${resource.resource_id}`}>{resource.display_resource_name}</a>
-                    </li>
+                    <ResourceItem key={resource.resource_id} resource={resource} index={index} />
                 ))}
-            </ul>
+            </div>
         </div>
     );
 }
