@@ -57,12 +57,12 @@ export function allocationsMap({ target }) {
   ReactDOM.createRoot(target).render(<AllocationsMap />);
 }
 
-export function resources({ target, available_resources }) {
-  ReactDOM.createRoot(target).render(<Resources available_resources={available_resources} />);
+export function resources({ target, available_resources, relative_url_root }) {
+  ReactDOM.createRoot(target).render(<Resources available_resources={available_resources} relative_url_root={relative_url_root} />);
 }
 
-export function editResource({ resourceId, target, setExternalSubmit }) {
-  ReactDOM.createRoot(target).render(<EditResource resourceId={resourceId} setExternalSubmit={setExternalSubmit} />);
+export function editResource({ resourceId, target, setExternalSubmit, relative_url_root }) {
+  ReactDOM.createRoot(target).render(<EditResource resourceId={resourceId} setExternalSubmit={setExternalSubmit} relative_url_root={relative_url_root} />);
 }
 
 export function projects({ target, username, routes }) {

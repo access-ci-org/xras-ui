@@ -3,7 +3,7 @@ import styles from './Resources.module.scss';
 import { updateBackend } from './helpers/actions';
 import { sortResources, startScrolling, stopScrolling } from './helpers/utils';
 
-export default function Resources({ available_resources }) {
+export default function Resources({ available_resources, relative_url_root }) {
     const sortedResources = useMemo(() => sortResources(available_resources), [available_resources]);
     const [resources, setResources] = useState(sortedResources);
     const draggedIndexRef = useRef(null);
@@ -45,7 +45,7 @@ export default function Resources({ available_resources }) {
     const handleDrop = () => {
         draggedIndexRef.current = null;
         stopScrolling(scrollIntervalRef);
-        updateBackend(resources);
+        updateBackend(relative_url_root, resources);
     };
 
     useEffect(() => {
@@ -75,7 +75,7 @@ export default function Resources({ available_resources }) {
             >  
                 <span className={styles['drag-handle']}></span>
                 <span className={styles['resource-name']}>
-                    <a href={`/resources/${resource.resource_id}`} className={styles['resource-link']}>
+                    <a href={`${relative_url_root}/resources/${resource.resource_id}`} className={styles['resource-link']}>
                         {resource.display_resource_name}
                     </a>
                 </span>

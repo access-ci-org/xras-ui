@@ -3,9 +3,9 @@ export const updateResources = (newResources) => ({
     payload: newResources,
   });
   
-  export const updateBackend = async (updatedResources) => {
+  export const updateBackend = async (relative_url_root, updatedResources) => {
     try {
-      const response = await fetch(`/resources`, {
+      const response = await fetch(`${relative_url_root}/resources`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

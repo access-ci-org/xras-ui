@@ -9,7 +9,7 @@ import Alert from '../shared/Alert';
 import { resources } from './helpers/reducers';
 import { setLoading, setResourceData, setSuccessMessage, updateAllocation } from './helpers/actions';
 import { fetchResourceData, updateResourceData } from './helpers/utils';
-export default function EditResource({ resourceId, setExternalSubmit }) {
+export default function EditResource({ resourceId, relative_url_root, setExternalSubmit }) {
   const [state, dispatch] = useReducer(resources, {
     resourceData: null,
     loading: true,
@@ -37,7 +37,7 @@ export default function EditResource({ resourceId, setExternalSubmit }) {
     // Fetche resource data based and set loading state
     dispatch(setLoading(true));
     try {
-      const data = await fetchResourceData(resourceId);
+      const data = await fetchResourceData(resourceId, relative_url_root);
       dispatch(setResourceData(data));
     } catch (error) {
       console.error('Failed to fetch resource data:', error);
@@ -252,7 +252,7 @@ export default function EditResource({ resourceId, setExternalSubmit }) {
     });
 
     try {
-      const response = await updateResourceData(resourceId, updatedResource, requiredResources);
+      const response = await updateResourceData(resourceId, relative_url_root, updatedResource, requiredResources);
       if (response.ok) {
         const result = await response.json();
         dispatch(setSuccessMessage(result.message || 'Resource updated successfully!', 'success'));

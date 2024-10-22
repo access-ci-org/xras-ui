@@ -1,10 +1,10 @@
-export const fetchResourceData = async (resourceId) => {
-    const response = await fetch(`/resources/${resourceId}.json`);
+export const fetchResourceData = async (resourceId, relative_url_root) => {
+    const response = await fetch(`${relative_url_root}/resources/${resourceId}.json`);
     return await response.json();
   };
   
-  export const updateResourceData = async (resourceId, updatedResource, requiredResources) => {
-    const response = await fetch(`/resources/${resourceId}`, {
+  export const updateResourceData = async (resourceId, relative_url_root, updatedResource, requiredResources) => {
+    const response = await fetch(`${relative_url_root}/resources/${resourceId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
