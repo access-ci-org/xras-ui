@@ -13,7 +13,7 @@ export default function EditResource({ resourceId, relative_url_root, setExterna
   const [state, dispatch] = useReducer(resources, {
     resourceData: null,
     loading: true,
-    error: null,
+    errors: [],
     successMessage: { message: '', color: '' },
   });
 
@@ -23,14 +23,18 @@ export default function EditResource({ resourceId, relative_url_root, setExterna
   const [selectedNewAllocationType, setSelectedNewAllocationType] = useState('');
 
   const handleError = useCallback(async (response, defaultMessage) => {
-    let errorMessage = defaultMessage;
+    let errors = [defaultMessage];
     try {
       const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || defaultMessage;
+      if (errorData.errors) {
+        errors = errorData.errors;
+      } else if (errorData.message) {
+        errors = [errorData.message];
+      }
     } catch (parseError) {
       console.error('Error parsing error response:', parseError);
     }
-    dispatch(setSuccessMessage(errorMessage, 'danger'));
+    dispatch({ type: 'SET_ERRORS', payload: errors });
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -41,7 +45,7 @@ export default function EditResource({ resourceId, relative_url_root, setExterna
       dispatch(setResourceData(data));
     } catch (error) {
       console.error('Failed to fetch resource data:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to fetch resource data. Please try again later.' });
+      dispatch({ type: 'SET_ERRORS', payload: 'Failed to fetch resource data. Please try again later.' });
     }
   }, [resourceId]);
 
@@ -49,7 +53,7 @@ export default function EditResource({ resourceId, relative_url_root, setExterna
     fetchData();
   }, [fetchData]);
 
-  const { resourceData, loading, error, successMessage } = state;
+  const { resourceData, loading, errors, successMessage } = state;
   const resourceDetails = resourceData?.resource_details;
 
   const allowedActionsOptions = useMemo(() => 
@@ -276,7 +280,15 @@ export default function EditResource({ resourceId, relative_url_root, setExterna
   }, [handleSubmit, setExternalSubmit]);
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <Alert color="danger">{error}</Alert>;
+  if (errors.length > 0) {
+    return (
+      <div>
+        {errors.map((error, index) => (
+          <Alert key={index} color="danger">{error}</Alert>
+        ))}
+      </div>
+    );
+  }
   if (!resourceData) return <div>No resource data available.</div>;
 
   return (

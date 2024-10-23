@@ -6,6 +6,8 @@ export const resources = (state, action) => {
         return { ...state, loading: action.payload };
       case 'SET_SUCCESS_MESSAGE':
         return { ...state, successMessage: action.payload };
+      case 'SET_ERRORS':
+        return { ...state, errors: Array.isArray(action.payload) ? action.payload : [action.payload], loading: false };
       case 'UPDATE_RESOURCE_FIELD':
         return {
           ...state,
