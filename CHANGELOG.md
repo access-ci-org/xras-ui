@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.1](https://github.com/access-ci-org/xras-ui/compare/v0.4.0...v0.4.1) (2024-10-30)
+
+
+### Bug Fixes
+
+* **onramps-resource-catalog:** use HTTPS fonts URLs ([b09f866](https://github.com/access-ci-org/xras-ui/commit/b09f8665f17443986ec1c805f879fd588c1b5a01))
+* **projects:** display action entry date instead of start date ([3601ddd](https://github.com/access-ci-org/xras-ui/commit/3601dddbdf143a3140b4fc92f462f1fa26981539))
+
 ## [0.4.0](https://github.com/access-ci-org/xras-ui/compare/v0.3.2...v0.4.0) (2024-10-16)
 
 
