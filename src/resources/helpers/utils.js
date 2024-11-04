@@ -1,7 +1,7 @@
 export const sortResources = (resources) => {
     return [...resources].sort((a, b) => {
       if (a.relative_order === null && b.relative_order === null) {
-        return a.resource_name.localeCompare(b.resource_name);
+        return a.display_resource_name.localeCompare(b.display_resource_name);
       }
       if (a.relative_order === null) return 1;
       if (b.relative_order === null) return -1;
