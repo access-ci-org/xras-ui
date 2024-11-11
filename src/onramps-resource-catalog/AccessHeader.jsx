@@ -11,37 +11,45 @@ const AccessHeader = ({ baseUrl }) => {
       </div>
       <div className="row">
         <div className="col">
-          <h3 className="border-bottom">The ACCESS On-Ramps Program</h3>
+          <h3 className="border-bottom">NSF ACCESS Resources</h3>
         </div>
       </div>
       <div className="row">
         <div className="col">
+          <h4>Discover the nationwide NSF cyberinfrastructure</h4>
           <p>
-            Need more advanced computing and storage options for your work?
-            The On-Ramps program offers your institution cost-free entry to the nation's
-            cyberinfrastructure resources. Simply select a resource from the catalog below to
-            get started. On-Ramps expands your cyberinfrastructure with many powerful resource options.
+            Need advanced computing and storage options for your research or classroom?
+            The ACCESS program has been established and funded by the U.S.
+            National Science Foundation to
+            help you - the nation's researchers and educators - to use some of the country's
+            most advanced computing systems and services - at no cost to you.
           </p>
           <p>
-            <a href="https://allocations.access-ci.org" target="_blank">Learn more on our About On-Ramps page</a>
-          </p>
-          <h4 className="border-bottom">About ACCESS</h4>
-          <p>
-            ACCESS is a program established and funded by the National Science Foundation to
-            help researchers and educators, with or without supporting grants,
-            to utilize the nation's advanced computing systems and services — at no cost.
+            Thousands of researchers, instructors, and students from institutions large and small use
+            ACCESS-integrated resources every year. With more than 30 resources from more than 15
+            resource providers, there's bound to be a resource for you, your lab, or your class.
           </p>
           <p>
-            <a
-              href="https://access-ci.org"
-              target="_blank"
-              className="btn btn-info me-2 fw-bold"
-            >Learn more about ACCESS <i className='bi bi-box-arrow-up-right'></i></a>
+            Explore the resource catalog below - filter the list to discover the resources that
+            have the features or services to accelerate your activities. The System Info button will
+            take you to the resource's documentation for all the details.
+          </p>
+          <p>
+            Ready to begin? Click the "Get Your First Project" button and join the ACCESS community!
+          </p>
+          <p>
             <a
               href="https://allocations.access-ci.org/get-your-first-project"
               target="_blank"
               className={`btn btn-secondary fw-bold ${styles.btnSecondary}`}
             >Get Your First Project <i className='bi bi-box-arrow-up-right'></i></a>
+          </p>
+          <p>
+            If you have feedback for ACCESS, please complete our
+            <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSdn-SXokNB_5s0r2SA_S9ZIZWZFlVPRD2OHepTH5HY2YND_zw/viewform"> Feedback Form</a>.
+            <br />
+            If you have questions, please use the
+            <a target="_blank" href="https://support.access-ci.org/user/login?destination=/open-a-ticket"> ACCESS Help Request Form</a>.
           </p>
         </div>
       </div>
