@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.2](https://github.com/access-ci-org/xras-ui/compare/v0.4.1...v0.4.2) (2024-11-11)
+
+
+### Bug Fixes
+
+* Updated language for On-Ramps ([5be9458](https://github.com/access-ci-org/xras-ui/commit/5be9458bc92404769cce7e2d7b79041f3d9a8b47))
+
 ## [0.4.1](https://github.com/access-ci-org/xras-ui/compare/v0.4.0...v0.4.1) (2024-10-30)
 
 
