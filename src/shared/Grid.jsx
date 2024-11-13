@@ -8,7 +8,7 @@ import Tooltip from "./ToolTip";
 const handleChange = (row, column, value) => {
   // check if column has onChange handler
   if (column.onChange) {
-    column.onChange(row.allocation_type_id || row.id, value, row);
+    column.onChange(value, row);
     return;
   }
 
