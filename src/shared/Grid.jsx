@@ -5,6 +5,20 @@ import TextInput from "./Form/TextInput";
 import GridText from "./GridText";
 import Tooltip from "./ToolTip";
 
+const handleChange = (row, column, value) => {
+  // check if column has onChange handler
+  if (column.onChange) {
+    column.onChange(row.allocation_type_id || row.id, value, row);
+    return;
+  }
+
+  // Fallback to cell-level onChange handlere
+  const cellData = row[column.key];
+  if (cellData?.onChange) {
+    cellData.onChange(value);
+  }
+};
+
 const columnTypeComponents = {
   text: GridText,
   select: ({ column, row, style }) => (
@@ -13,7 +27,7 @@ const columnTypeComponents = {
         label=""
         options={row[column.key].options}
         value={row[column.key].value}
-        onChange={(e) => row[column.key].onChange(e.target.value)}
+        onChange={(e) => handleChange(row, column, e.target.value)}
         style={{ width: "100%", margin: 0 }}
       />
     </td>
@@ -24,7 +38,7 @@ const columnTypeComponents = {
         label=""
         type="text"
         value={row[column.key].value}
-        onChange={(e) => row[column.key].onChange(e.target.value)}
+        onChange={(e) => handleChange(row, column, e.target.value)}
         style={{ width: "92%", margin: 0 }}
       />
     </td>
@@ -34,7 +48,7 @@ const columnTypeComponents = {
       <input
         type="checkbox"
         checked={row[column.key].checked}
-        onChange={(e) => row[column.key].onChange(e.target.checked)}
+        onChange={(e) => handleChange(row, column, e.target.checked)}
       />
     </td>
   ),
