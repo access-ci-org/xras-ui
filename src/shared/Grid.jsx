@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
-import gridStyle from './Grid.module.scss';
-import { SelectInput } from '../shared/SelectInput/SelectInput';
-import FormField from '../shared/Form/FormField';
+import gridStyle from "./Grid.module.scss";
+import { SelectInput } from "../shared/SelectInput/SelectInput";
+import TextInput from "./Form/TextInput";
 import GridText from "./GridText";
 import Tooltip from "./ToolTip";
 
@@ -14,18 +14,18 @@ const columnTypeComponents = {
         options={row[column.key].options}
         value={row[column.key].value}
         onChange={(e) => row[column.key].onChange(e.target.value)}
-        style={{ width: '100%', margin: 0 }}
+        style={{ width: "100%", margin: 0 }}
       />
     </td>
   ),
   input: ({ column, row, style }) => (
     <td style={style}>
-      <FormField
+      <TextInput
         label=""
         type="text"
         value={row[column.key].value}
         onChange={(e) => row[column.key].onChange(e.target.value)}
-        style={{ width: '92%',  margin: 0 }}
+        style={{ width: "92%", margin: 0 }}
       />
     </td>
   ),
