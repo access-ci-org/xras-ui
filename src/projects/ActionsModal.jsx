@@ -1,5 +1,6 @@
 import React from "react";
 import { useProject, useRequest } from "./helpers/hooks";
+import { getResourceUsagePercent } from "../shared/helpers/utils";
 import config from "../shared/helpers/config";
 
 import Dropdown from "react-bootstrap/Dropdown";
@@ -35,6 +36,57 @@ export default function ActionsModal({ requestId, grantNumber }) {
   // Sort renewal actions by opportunity ID to make the order:
   // Explore, Discover, Accelerate.
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
+
+  // Retrieve % of used resource
+  let usedPercent = getResourceUsagePercent(request);
+
+  // Calculate number of days until the allocation end date
+  const endDate = new Date(request.endDate);
+  const currentDate = new Date();
+  const daysUntilEndDate = Math.max(0, Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24)));
+
+  // Determine if upgrade action should be shown
+  // TODO: Update threshold logic once the information is available
+  let nextTier;
+  let nextTierId;
+  let upgradeAction;
+  let upgradeAllowed;
+  const renewalAllowed = "Renewal" in request.allowedActions;
+  const supplementAllowed = "Supplement" in request.allowedActions;
+  const upgradeEligible = !(renewalAllowed) && !(supplementAllowed);
+
+  if (upgradeEligible) {
+    const nextTierMap = { Explore: "Discover", Discover: "Accelerate", Accelerate: null };
+    nextTier = nextTierMap[request.allocationType] || null;
+
+    if (nextTier) {
+      nextTierId = renewalActions.find(action => action.opportunityName.includes(nextTier)).opportunityId;
+      const upgradable = ["Explore", "Discover", "Accelerate"];
+
+      if (upgradable.includes(request.allocationType)) {
+        if (daysUntilEndDate > 30) {
+          const thresholds = { "Explore": .90, "Discover": .75, "Accelerate": .75 };
+          const threshold = thresholds[request.allocationType];
+          upgradeAllowed = usedPercent > threshold;
+        }
+      }
+    }
+  }
+
+  if (upgradeAllowed) {
+    upgradeAction =  {
+      id: "upgrade",
+      action: `${config.routes.renew_request_path(requestId)}?opportunity_id=${nextTierId}`,
+      method: "post",
+      isEnabled: true,
+      button: "Request an Upgrade",
+      enabled: (
+          <p>
+            Upgrade your {request.allocationType} project to {nextTier} by submitting an upgrade request.
+          </p>
+      )
+    };
+  }
 
   const actions = [
     {
@@ -110,7 +162,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
         }`,
         "post",
       ]),
-      isEnabled: "Renewal" in request.allowedActions,
+      isEnabled: renewalAllowed,
       button: "Request a Renewal",
       enabled: (
         <p>
@@ -165,13 +217,17 @@ export default function ActionsModal({ requestId, grantNumber }) {
     },
   ];
 
+  if (upgradeAllowed) {
+      actions.push(upgradeAction);
+  }
+
   actions.sort((a, b) => (a.isEnabled < b.isEnabled ? 1 : -1));
 
   const rows = actions.map(
     ({ id, action, isEnabled, button, enabled, disabled }) => (
       <div className="row" key={id}>
         <div className="col-sm-4 mb-2 d-grid">
-          {Array.isArray(action) && action.length ? (
+          {Array.isArray(action) && action.length && isEnabled ? (
             <Dropdown className="d-flex flex-column">
               <Dropdown.Toggle as={ActionToggle}>{button}</Dropdown.Toggle>
               <Dropdown.Menu>
