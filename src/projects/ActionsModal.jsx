@@ -36,6 +36,14 @@ export default function ActionsModal({ requestId, grantNumber }) {
   // Explore, Discover, Accelerate.
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
 
+  // Retrieve available request balance
+  const balance = (request.resources || [])
+    .find((res) =>
+      res.isCredit).allocated;
+
+  // Temporary threshold value; needs to be updated once exact criteria are defined.
+  const tempThreshold = 100000;
+
   const actions = [
     {
       id: "extension",
@@ -110,7 +118,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
         }`,
         "post",
       ]),
-      isEnabled: "Renewal" in request.allowedActions,
+      isEnabled: "Renewal" in request.allowedActions && balance < tempThreshold,
       button: "Request a Renewal",
       enabled: (
         <p>
@@ -171,7 +179,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
     ({ id, action, isEnabled, button, enabled, disabled }) => (
       <div className="row" key={id}>
         <div className="col-sm-4 mb-2 d-grid">
-          {Array.isArray(action) && action.length ? (
+          {Array.isArray(action) && action.length && isEnabled ? (
             <Dropdown className="d-flex flex-column">
               <Dropdown.Toggle as={ActionToggle}>{button}</Dropdown.Toggle>
               <Dropdown.Menu>
