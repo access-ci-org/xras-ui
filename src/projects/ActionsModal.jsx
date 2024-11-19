@@ -36,13 +36,30 @@ export default function ActionsModal({ requestId, grantNumber }) {
   // Explore, Discover, Accelerate.
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
 
+  // Temporary threshold value; needs to be updated once exact criteria are defined.
+  const tempThreshold = 100000;
+
   // Retrieve available request balance
   const balance = (request.resources || [])
     .find((res) =>
       res.isCredit).allocated;
 
-  // Temporary threshold value; needs to be updated once exact criteria are defined.
-  const tempThreshold = 100000;
+  // Calculate number of days until the allocation end date
+  const endDate = new Date(request.endDate);
+  const currentDate = new Date();
+  const daysUntilEndDate = Math.max(0, Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24)));
+
+  // Determine if renewal action should be hidden
+  const renewableAllocations = ["Explore", "Discover", "Accelerate"];
+  let showRenewal = "Renewal" in request.allowedActions;
+
+  if (showRenewal) {
+    if (renewableAllocations.includes(request.allocationType)) {
+      if (daysUntilEndDate > 30) {
+        showRenewal = tempThreshold > balance;
+      }
+    }
+  }
 
   const actions = [
     {
@@ -118,7 +135,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
         }`,
         "post",
       ]),
-      isEnabled: "Renewal" in request.allowedActions && balance < tempThreshold,
+      isEnabled: showRenewal,
       button: "Request a Renewal",
       enabled: (
         <p>
