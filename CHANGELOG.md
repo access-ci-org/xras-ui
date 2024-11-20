@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.0](https://github.com/access-ci-org/xras-ui/compare/v0.4.2...v0.5.0) (2024-11-20)
+
+
+### Features
+
+* **resourceCatalog:** Updated the standlone Resource Catalog/On-Ramps Sorting to use the sorting specified by ACCESS admins ([b8d158b](https://github.com/access-ci-org/xras-ui/commit/b8d158b0fb0dcc04db7411d5f57260f6461f59a4))
+
 ## [0.4.2](https://github.com/access-ci-org/xras-ui/compare/v0.4.1...v0.4.2) (2024-11-11)
 
 
