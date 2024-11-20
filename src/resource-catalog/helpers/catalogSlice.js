@@ -6,6 +6,12 @@ const initialState = {
   filteredResources: [],
   resourcesLoaded: false,
   hasErrors: false,
+  resourceSorting: {
+    "NSF Capacity Resources": 1,
+    "NSF Innovative Testbeds": 2,
+    "Other NSF-funded Resources": 3,
+    "Services and Support": 4
+  }
 };
 
 export const getResources = createAsyncThunk(
@@ -68,52 +74,56 @@ export const catalogSlice = createSlice({
         .filter((r) => !excludedResources.includes(r.resourceName))
         .forEach((r) => {
           const feature_list = [];
-
+          let sortCategory = "";
           r.featureCategories
             .filter((f) => f.categoryIsFilter)
             .forEach((category) => {
               const categoryId = category.categoryId;
 
-              if (
-                !categories[categoryId] &&
-                useFilter(
-                  allowedCategories,
-                  excludedCategories,
-                  category.categoryName
-                )
-              ) {
-                categories[categoryId] = {
-                  categoryId: categoryId,
-                  categoryName: category.categoryName,
-                  categoryDescription: category.categoryDescription,
-                  features: {},
-                };
-              }
-
-              category.features.forEach((feat) => {
-                const feature = {
-                  featureId: feat.featureId,
-                  name: feat.name,
-                  description: feat.description,
-                  categoryId: categoryId,
-                  selected: false,
-                };
-
-                const filterIncluded = useFilter(
-                  allowedFilters,
-                  excludedFilters,
-                  feature.name
-                );
-                if (filterIncluded) feature_list.push(feature);
-
+              if(category.categoryName == "ACCESS Resource Grouping"){
+                sortCategory = category.features[0].name;
+              } else {
                 if (
-                  categories[categoryId] &&
-                  filterIncluded &&
-                  !categories[categoryId].features[feat.featureId]
+                  !categories[categoryId] &&
+                  useFilter(
+                    allowedCategories,
+                    excludedCategories,
+                    category.categoryName
+                  )
                 ) {
-                  categories[categoryId].features[feat.featureId] = feature;
+                  categories[categoryId] = {
+                    categoryId: categoryId,
+                    categoryName: category.categoryName,
+                    categoryDescription: category.categoryDescription,
+                    features: {},
+                  };
                 }
-              });
+
+                category.features.forEach((feat) => {
+                  const feature = {
+                    featureId: feat.featureId,
+                    name: feat.name,
+                    description: feat.description,
+                    categoryId: categoryId,
+                    selected: false,
+                  };
+
+                  const filterIncluded = useFilter(
+                    allowedFilters,
+                    excludedFilters,
+                    feature.name
+                  );
+                  if (filterIncluded) feature_list.push(feature);
+
+                  if (
+                    categories[categoryId] &&
+                    filterIncluded &&
+                    !categories[categoryId].features[feat.featureId]
+                  ) {
+                    categories[categoryId].features[feat.featureId] = feature;
+                  }
+                });
+              }
             });
 
           const resource = {
@@ -128,6 +138,7 @@ export const catalogSlice = createSlice({
             recommendedUse: r.recommendedUse,
             features: feature_list.map((f) => f.name).sort((a, b) => a > b),
             featureIds: feature_list.map((f) => f.featureId),
+            sortCategory
           };
 
           resources.push(resource);
@@ -150,9 +161,14 @@ export const catalogSlice = createSlice({
       state.filters = state.filters.sort((a, b) =>
         a.categoryName.localeCompare(b.categoryName)
       );
-      state.resources = resources.sort((a, b) =>
+      state.resources = resources
+      .sort((a, b) =>
         a.resourceName.localeCompare(b.resourceName)
+      )
+      .sort((a, b) =>
+        state.resourceSorting[a.sortCategory] > state.resourceSorting[b.sortCategory]
       );
+
       state.filteredResources = [...state.resources];
       state.resourcesLoaded = true;
     },

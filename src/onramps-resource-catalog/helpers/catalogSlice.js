@@ -8,6 +8,12 @@ const initialState = {
   onRamps: false,
   resources: [],
   resourcesLoaded: false,
+  resourceSorting: {
+    "NSF Capacity Resources": 1,
+    "NSF Innovative Testbeds": 2,
+    "Other NSF-funded Resources": 3,
+    "Services and Support": 4
+  }
 };
 
 export const getResources = createAsyncThunk(
@@ -132,52 +138,58 @@ const useFilter = (allowed, excluded, item) => {
 const formatResourceFeatures = (catalog, resource, categories) => {
 
     const featureList = [];
-
+    let sortCategory = "";
     resource.featureCategories
       .filter((f) => f.categoryIsFilter)
       .forEach((category) => {
         const categoryId = category.categoryId;
 
-        if (
-          !categories[categoryId] &&
-          useFilter(
-            catalog.allowedCategories,
-            catalog.excludedCategories,
-            category.categoryName
-          )
-        ) {
-          categories[categoryId] = {
-            categoryId: categoryId,
-            categoryName: category.categoryName,
-            categoryDescription: category.categoryDescription,
-            features: {},
-          };
+        if(category.categoryName == "ACCESS Resource Grouping"){
+          sortCategory = category.features[0].name;
+        } else {
+          if (
+            !categories[categoryId] &&
+            useFilter(
+              catalog.allowedCategories,
+              catalog.excludedCategories,
+              category.categoryName
+            )
+          ) {
+            categories[categoryId] = {
+              categoryId: categoryId,
+              categoryName: category.categoryName,
+              categoryDescription: category.categoryDescription,
+              features: {},
+            };
+          }
+
+          category.features.forEach((feat) => {
+            const feature = {
+              featureId: feat.featureId,
+              name: feat.name,
+              description: feat.description,
+              categoryId: categoryId,
+              selected: false,
+            };
+
+            const filterIncluded = useFilter(
+              catalog.allowedFilters,
+              catalog.excludedFilters,
+              feature.name
+            );
+            if (filterIncluded) featureList.push(feature);
+
+            if (
+              categories[categoryId] &&
+              filterIncluded &&
+              !categories[categoryId].features[feat.featureId]
+            ) {
+              categories[categoryId].features[feat.featureId] = feature;
+            }
+          });
         }
 
-        category.features.forEach((feat) => {
-          const feature = {
-            featureId: feat.featureId,
-            name: feat.name,
-            description: feat.description,
-            categoryId: categoryId,
-            selected: false,
-          };
 
-          const filterIncluded = useFilter(
-            catalog.allowedFilters,
-            catalog.excludedFilters,
-            feature.name
-          );
-          if (filterIncluded) featureList.push(feature);
-
-          if (
-            categories[categoryId] &&
-            filterIncluded &&
-            !categories[categoryId].features[feat.featureId]
-          ) {
-            categories[categoryId].features[feat.featureId] = feature;
-          }
-        });
       });
 
     const featureNames = featureList
@@ -189,6 +201,7 @@ const formatResourceFeatures = (catalog, resource, categories) => {
       resourceName: resource.resourceName.trim(),
       features: featureNames,
       featureIds: featureList.map((f) => f.featureId),
+      sortCategory
     };
 
     return { formattedResource, categories }
@@ -223,9 +236,14 @@ export const catalogSlice = createSlice({
       state.filters = state.filters.sort((a, b) =>
         a.categoryName.localeCompare(b.categoryName)
       );
-      state.resources = resources.sort((a, b) =>
+      state.resources = resources
+      .sort((a, b) =>
         a.resourceName.localeCompare(b.resourceName)
-      );
+      )
+      .sort((a, b) =>
+        state.resourceSorting[a.sortCategory] > state.resourceSorting[b.sortCategory]
+      )
+
       state.filteredResources = [...state.resources];
       state.resourcesLoaded = true;
     },
