@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.1](https://github.com/access-ci-org/xras-ui/compare/v0.5.0...v0.5.1) (2024-11-21)
+
+
+### Bug Fixes
+
+* Updated label text for ticket create button to "Open a help ticket" per web and branding group ([612397c](https://github.com/access-ci-org/xras-ui/commit/612397c5e7acbd0507270b8262d13e2fe8c3e64a))
+
 ## [0.5.0](https://github.com/access-ci-org/xras-ui/compare/v0.4.2...v0.5.0) (2024-11-20)
 
 
