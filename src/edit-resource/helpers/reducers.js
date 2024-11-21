@@ -42,6 +42,80 @@ export const resources = (state, action) => {
           },
         },
       };
+
+    case "UPDATE_BASE_RATE":
+      console.log("Reducer: Updating base rate to:", action.payload);
+      return {
+        ...state,
+        resourceData: {
+          ...state.resourceData,
+          resource_details: {
+            ...state.resourceData.resource_details,
+            exchange_rates: {
+              ...state.resourceData.resource_details.exchange_rates,
+              base_rate: action.payload,
+            },
+          },
+        },
+      };
+
+    case "UPDATE_EXCHANGE_RATE":
+      return {
+        ...state,
+        resourceData: {
+          ...state.resourceData,
+          resource_details: {
+            ...state.resourceData.resource_details,
+            exchange_rates: {
+              ...state.resourceData.resource_details.exchange_rates,
+              discount_rates:
+                state.resourceData.resource_details.exchange_rates.discount_rates.map(
+                  (rate) =>
+                    rate.id === action.payload.rateId
+                      ? { ...rate, ...action.payload.changes }
+                      : rate
+                ),
+            },
+          },
+        },
+      };
+
+    case "ADD_EXCHANGE_RATE":
+      console.log("Reducer: Adding new discount rate:", action.payload);
+      return {
+        ...state,
+        resourceData: {
+          ...state.resourceData,
+          resource_details: {
+            ...state.resourceData.resource_details,
+            exchange_rates: {
+              ...state.resourceData.resource_details.exchange_rates,
+              discount_rates: [
+                ...(state.resourceData.resource_details.exchange_rates
+                  .discount_rates || []),
+                action.payload,
+              ],
+            },
+          },
+        },
+      };
+    case "DELETE_EXCHANGE_RATE":
+      return {
+        ...state,
+        resourceData: {
+          ...state.resourceData,
+          resource_details: {
+            ...state.resourceData.resource_details,
+            exchange_rates: {
+              ...state.resourceData.resource_details.exchange_rates,
+              discount_rates:
+                state.resourceData.resource_details.exchange_rates.discount_rates.filter(
+                  (rate) => rate.id !== action.payload
+                ),
+            },
+          },
+        },
+      };
     default:
       return state;
   }

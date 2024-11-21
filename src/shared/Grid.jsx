@@ -37,6 +37,7 @@ const columnTypeComponents = {
       <TextInput
         label=""
         type="text"
+        disabled={row[column.key].disabled}
         value={row[column.key].value}
         onChange={(e) => handleChange(row, column, e.target.value)}
         style={{ width: "92%", margin: 0 }}
@@ -52,6 +53,37 @@ const columnTypeComponents = {
       />
     </td>
   ),
+  date: ({ column, row, style }) => {
+    const cellData = row[column.key];
+    if (!cellData?.value) return <td style={style}>{cellData || ""}</td>;
+
+    return (
+      <td style={style}>
+        <input
+          type="date"
+          value={cellData.value}
+          disabled={row[column.key].disabled}
+          onChange={(e) => handleChange(row, column, e.target.value)}
+          style={{ width: "92%", margin: 0 }}
+          className="form-control"
+        />
+      </td>
+    );
+  },
+  action: ({ column, row, style }) => {
+    return (
+      <td style={style}>
+        {row.rate_type === "Discount" && (
+          <button
+            className="btn btn-link text-danger"
+            onClick={() => handleChange(row, column, row[column.key]?.id)}
+          >
+            <i className="fa fa-trash"></i>
+          </button>
+        )}
+      </td>
+    );
+  },
 };
 
 export default function Grid({

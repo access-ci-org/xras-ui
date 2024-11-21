@@ -11,6 +11,7 @@ export const updateResourceData = async (
   updatedResource,
   requiredResources
 ) => {
+  console.log("update resource", updatedResource);
   const response = await fetch(`${relativeUrlRoot}/resources/${resourceId}`, {
     method: "PATCH",
     headers: {

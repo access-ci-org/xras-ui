@@ -5,6 +5,7 @@ import { SelectInput } from "../shared/SelectInput/SelectInput";
 import { ResourceForm } from "./ResourceForm";
 import { AllocationGrid } from "./AllocationTypesGrid";
 import { AddNewModal } from "./AddNewModal";
+import { ExchangeRates } from "./ExchangeRates";
 import Alert from "../shared/Alert";
 import {
   useResourceData,
@@ -13,7 +14,7 @@ import {
   useResourceSubmit,
   useAllocationRowsAndColumns,
 } from "./helpers/hooks";
-
+import { useExchangeRates } from "./helpers/useExchangeRates";
 export default function EditResource({
   resourceId,
   relativeUrlRoot,
@@ -49,6 +50,9 @@ export default function EditResource({
     handleCommentChange,
     handleRequiredResourceChange,
   } = useAllocationGrid(resourceData, resourceDetails, dispatch);
+
+  const { exchangeRateColumns, exchangeRateRows, handleAddDiscountRate } =
+    useExchangeRates(resourceData, dispatch);
 
   const handleSubmit = useResourceSubmit(
     resourceDetails,
@@ -164,6 +168,12 @@ export default function EditResource({
           onChange={handleSelectNewAllocationType}
         />
       </AddNewModal>
+
+      <ExchangeRates
+        columns={exchangeRateColumns}
+        rows={exchangeRateRows}
+        onAddDiscountRate={handleAddDiscountRate}
+      />
     </div>
   );
 }

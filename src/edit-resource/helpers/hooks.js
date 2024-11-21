@@ -441,6 +441,17 @@ export const useResourceSubmit = (
         },
         comment: type.comment || "",
       })),
+      exchange_rates: {
+        base_rate: resourceDetails.exchange_rates?.base_rate,
+        discount_rates: resourceDetails.exchange_rates?.discount_rates?.map(
+          (rate) => ({
+            id: rate.id,
+            exchange_rate: rate.exchange_rate,
+            begin_date: rate.begin_date,
+            end_date: rate.end_date,
+          })
+        ),
+      },
     };
 
     const requiredResources = {};
