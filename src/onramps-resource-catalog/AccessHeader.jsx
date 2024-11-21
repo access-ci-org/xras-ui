@@ -48,8 +48,8 @@ const AccessHeader = ({ baseUrl }) => {
             If you have feedback for ACCESS, please complete our
             <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSdn-SXokNB_5s0r2SA_S9ZIZWZFlVPRD2OHepTH5HY2YND_zw/viewform"> Feedback Form</a>.
             <br />
-            If you have questions, please use the
-            <a target="_blank" href="https://support.access-ci.org/user/login?destination=/open-a-ticket"> ACCESS Help Request Form</a>.
+            If you have questions, please
+            <a target="_blank" href="https://support.access-ci.org/user/login?destination=/open-a-ticket"> open a help ticket</a>.
           </p>
         </div>
       </div>

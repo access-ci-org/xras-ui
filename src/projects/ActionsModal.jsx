@@ -147,7 +147,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
       action: [
         ["Learn How to Manage Allocations", config.routes.how_to_path(), "get"],
         [
-          "Submit a Help Ticket",
+          "Open a Help Ticket",
           "https://support.access-ci.org/open-a-ticket",
           "get",
         ],
