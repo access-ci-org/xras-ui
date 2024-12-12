@@ -1,39 +1,43 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Filters from "./Filters";
-import { Offcanvas } from "react-bootstrap";
+import styles from "./ResourceCatalog.module.scss";
 
 const FilterBar = () => {
   const [show, setShow] = useState(false);
-  const handleClose = () => setShow(false);
-  const handleOpen = () => setShow(true);
+  const menuRef = useRef(null);
+
+  const toggleMenu = () => {
+    const menu = menuRef.current
+    if(!show){
+      menu.style.height = menu.scrollHeight + "px";
+      menu.classList.remove(styles.filtersHidden);
+      menu.classList.add(styles.filtersVisible);
+    } else {
+      menu.style.height = '0px';
+      menu.classList.remove(styles.filtersVisible);
+      menu.classList.add(styles.filtersHidden);
+    }
+
+    setShow(!show);
+
+  }
 
   return (
-    <>
-      <div className={`offcanvas offcanvas-start ${show ? 'show' : ''}`} tabIndex="-1" id="offcanvas" aria-labelledby="offcanvasLabel">
-        <div className="offcanvas-header">
-          <h5 className="offcanvas-title" id="offcanvasLabel">Filters</h5>
-          <button
-            type="button"
-            className="btn-close"
-            onClick={handleClose}
-            aria-label="Close"></button>
-        </div>
-        <div className="offcanvas-body">
-          <Filters />
-        </div>
-      </div>
+    <div className={styles.filterBar}>
       <div className={`row mb-2`}>
         <div className="col pt-2 pb-2">
           <div className="p-1 pb-0 border-bottom bg-white shadow">
-            <button className="btn btn-outline-primary mb-1 mt-1" type="button" onClick={handleOpen}>
+            <button className="btn btn-outline-primary mb-1 mt-1" type="button" onClick={toggleMenu}>
               <i className="bi bi-filter"></i> Filters
             </button>
+            <div className={`${styles.filtersHidden} pe-2 ps-2`} id="filtersList" ref={menuRef}>
+              <Filters onReset={toggleMenu} />
+            </div>
           </div>
         </div>
       </div>
-
-    </>
-  )
+    </div>
+  );
 }
 
 export default FilterBar;

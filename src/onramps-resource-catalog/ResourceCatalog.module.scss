@@ -54,3 +54,14 @@ $warning: #ef7537;
   background-color: #fecd4d !important;
   border-color: #feca42 !important;
 }
+
+.filtersHidden {
+  height: 0px;
+  overflow: hidden;
+  transition: height 0.5s ease-out;
+}
+
+.filtersVisible {
+ height: auto;
+ transition: height 0.5s ease-out;
+}

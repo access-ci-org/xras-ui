@@ -3,7 +3,7 @@ import { resetFilters, selectFilters, selectCatalogs } from "./helpers/catalogSl
 import FilterCategory from "./FilterCategory";
 import CatalogList from "./CatalogList";
 
-const Filters = () => {
+const Filters = ({ onReset }) => {
   const dispatch = useDispatch();
   const catalogs = useSelector( selectCatalogs );
   const filters = useSelector( selectFilters );
@@ -14,7 +14,7 @@ const Filters = () => {
   const catalogFilters = Object.keys(catalogs).map((c) => catalogs[c]);
 
   return (
-    <div>
+    <>
       {/* {catalogFilters.length > 0 ? <CatalogList catalogs={catalogFilters} /> : ''} */}
       {filters.map((f) => (
         <FilterCategory category={f} key={f.categoryId} />
@@ -26,7 +26,14 @@ const Filters = () => {
       >
         Reset Filters
       </button>
-    </div>
+
+      <button
+        className="btn btn-outline-primary ms-3 mt-2 mb-2"
+        onClick={onReset}
+      >
+        Close Menu
+      </button>
+    </>
   );
 };
 
