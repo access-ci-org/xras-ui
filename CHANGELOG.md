@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.2](https://github.com/access-ci-org/xras-ui/compare/v0.5.1...v0.5.2) (2024-12-13)
+
+
+### Bug Fixes
+
+* Updated Filters menu to no longer use "offcanvas" ([2b4c09f](https://github.com/access-ci-org/xras-ui/commit/2b4c09f3dc9e167f89ee7780e61c69b0d98e4773))
+
 ## [0.5.1](https://github.com/access-ci-org/xras-ui/compare/v0.5.0...v0.5.1) (2024-11-21)
 
 
