@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.3](https://github.com/access-ci-org/xras-ui/compare/v0.5.2...v0.5.3) (2024-12-13)
+
+
+### Bug Fixes
+
+* Removed "sticky" from filters bar ([2500fe1](https://github.com/access-ci-org/xras-ui/commit/2500fe1e707c219e91a45e0135142c4666b1afe1))
+
 ## [0.5.2](https://github.com/access-ci-org/xras-ui/compare/v0.5.1...v0.5.2) (2024-12-13)
 
 
