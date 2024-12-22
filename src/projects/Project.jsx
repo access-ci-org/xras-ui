@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { useProject } from "./helpers/hooks";
 import { formatRequestName } from "./helpers/utils";
 import style from "./Project.module.scss";
@@ -15,6 +16,22 @@ export default function Project({ open = false, grantNumber, title, status }) {
     !expanded && title && status && true
   );
   const elementId = `project-${grantNumber}`;
+  
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash === grantNumber && !expanded) {
+        setExpanded(true);
+      }
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    handleHashChange();
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, [grantNumber, expanded]);
 
   let body = null;
   if (expanded && project) {
