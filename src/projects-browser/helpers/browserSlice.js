@@ -4,6 +4,12 @@ import { initialState } from "./initialState";
 export const initApp = createAsyncThunk(
   'projectsBrowser/initApp',
   async(args, { getState, dispatch }) => {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    if(urlParams.has('_requestNumber')){
+      dispatch( updateFilter({ name: 'requestNumber', value: urlParams.get('_requestNumber')}) )
+      dispatch( toggleListFiltered(true) );
+    }
     await dispatch( getFilters() );
     await dispatch( getProjects() );
     dispatch( filterCleanup() );
@@ -44,28 +50,35 @@ export const getFilters = createAsyncThunk(
 
 export const getProjects = createAsyncThunk(
   'projectsBrowser/getProjects',
-  async (args, { getState }) => {
+  async (args, { getState, dispatch }) => {
     const state = getState().projectsBrowser;
 
     const filters = state.filters;
+
     const typeLists = state.typeLists;
     const fosList = typeLists.fosTypes.filter((fos) => fos.checked)
     let url = `${state.apiUrl}?page=${state.pageData.current_page}`;
 
-    if(fosList.length != typeLists.fosTypes.length){
-      url += `&fos=${fosList.map((fos) => fos.fosTypeId).join(',')}`;
-    }
+    if(filters.requestNumber != ''){
+      url += `&request_number=${filters.requestNumber}`;
+      dispatch( toggleSingleEntry(true) );
+    } else {
+      dispatch( toggleSingleEntry(false) );
+      if(fosList.length != typeLists.fosTypes.length){
+        url += `&fos=${fosList.map((fos) => fos.fosTypeId).join(',')}`;
+      }
 
-    if(filters.org != '' && filters.org != '-- ALL --'){
-      url += `&org=${encodeURIComponent(filters.org)}`;
-    }
+      if(filters.org != '' && filters.org != '-- ALL --'){
+        url += `&org=${encodeURIComponent(filters.org)}`;
+      }
 
-    if(filters.allocationType != ''){
-      url += `&allocation_type=${filters.allocationType}`;
-    }
+      if(filters.allocationType != ''){
+        url += `&allocation_type=${filters.allocationType}`;
+      }
 
-    if(filters.resource != ''){
-      url += `&resources=${filters.resource}`;
+      if(filters.resource != ''){
+        url += `&resources=${filters.resource}`;
+      }
     }
 
     const response = await fetch(url);
@@ -85,7 +98,8 @@ export const browserSlice = createSlice({
         org: '',
         allocationType: '',
         allFosToggled: false,
-        resource: ''
+        resource: '',
+        requestNumber: ''
       }
 
       browserSlice.caseReducers.toggleAllFos(state);
@@ -117,6 +131,12 @@ export const browserSlice = createSlice({
       } else {
         state.filters.allFosToggled = true;
       }
+    },
+    toggleListFiltered: (state, { payload }) => {
+      state.listIsFiltered = payload;
+    },
+    toggleSingleEntry: (state, { payload }) => {
+      state.singleEntry = payload;
     },
     updateFilter: (state, { payload }) => {
       state.filters[payload.name] = payload.value;
@@ -166,6 +186,8 @@ export const {
   setTypeLists,
   toggleAllFos,
   toggleFos,
+  toggleListFiltered,
+  toggleSingleEntry,
   updateFilter,
   updatePageData,
 } = browserSlice.actions;
@@ -173,6 +195,8 @@ export const {
 export const selectFilters = (state) => state.projectsBrowser.filters;
 export const selectFiltersLoaded = (state) => state.projectsBrowser.filtersLoaded;
 export const selectFosTypes = (state) => state.projectsBrowser.fosTypes;
+export const selectIsFiltered = (state) => state.projectsBrowser.listIsFiltered;
+export const selectIsSingleEntry = (state) => state.projectsBrowser.singleEntry;
 export const selectProjectsLoaded = (state) => state.projectsBrowser.projectsLoaded;
 export const selectPageData = (state) => state.projectsBrowser.pageData;
 export const selectPages = (state) => state.projectsBrowser.selectPages;

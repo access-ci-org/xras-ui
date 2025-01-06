@@ -1,15 +1,18 @@
 export const initialState = {
   apiUrl: null,
+  listIsFiltered: false,
   pages: 1,
   projects: [],
   projectsLoaded: false,
   filtersLoaded: true,
   showPagination: false,
+  singleEntry: false,
   filters: {
     org: '',
     allocationType: '',
     allFosToggled: true,
-    resource: ''
+    resource: '',
+    requestNumber: '',
   },
   pageData: {
     current_page: 1,
