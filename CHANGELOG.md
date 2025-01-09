@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.6.0](https://github.com/access-ci-org/xras-ui/compare/v0.5.3...v0.6.0) (2025-01-09)
+
+
+### Features
+
+* Added ability to filter by Request Number via url param and the filters menu ([866f0af](https://github.com/access-ci-org/xras-ui/commit/866f0afd3a30110e9ff188458b60559201308b14))
+
 ## [0.5.3](https://github.com/access-ci-org/xras-ui/compare/v0.5.2...v0.5.3) (2024-12-13)
 
 
