@@ -5,6 +5,9 @@ import { addRoutes } from "./shared/helpers/utils";
 
 import AllocationsMap from "./allocations-map/AllocationsMap";
 
+import Resources from "./resources/Resources";
+import EditResource from "./edit-resource/EditResource";
+
 import Projects from "./projects/Projects";
 import apiSlice from "./projects/helpers/apiSlice";
 
@@ -65,6 +68,30 @@ export function allocationsMap({ target }) {
   ReactDOM.createRoot(target).render(<AllocationsMap />);
 }
 
+export function resources({ target, availableResources, relativeUrlRoot }) {
+  ReactDOM.createRoot(target).render(
+    <Resources
+      availableResources={availableResources}
+      relativeUrlRoot={relativeUrlRoot}
+    />
+  );
+}
+
+export function editResource({
+  resourceId,
+  target,
+  setExternalSubmit,
+  relativeUrlRoot,
+}) {
+  ReactDOM.createRoot(target).render(
+    <EditResource
+      resourceId={resourceId}
+      setExternalSubmit={setExternalSubmit}
+      relativeUrlRoot={relativeUrlRoot}
+    />
+  );
+}
+
 export function projects({ target, username, routes }) {
   addRoutes(routes);
   const projectsStore = configureStore({
@@ -87,7 +114,7 @@ export function projectsBrowser({ target, apiUrl }) {
     preloadedState: {
       projectsBrowser: {
         ...projectsBrowserInitialState,
-        apiUrl
+        apiUrl,
       },
     },
   });

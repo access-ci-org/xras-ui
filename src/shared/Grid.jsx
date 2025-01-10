@@ -1,10 +1,89 @@
 import { useLayoutEffect, useRef } from "react";
 import gridStyle from "./Grid.module.scss";
-
+import { SelectInput } from "../shared/SelectInput/SelectInput";
+import TextInput from "./Form/TextInput";
 import GridText from "./GridText";
+import Tooltip from "./ToolTip";
+
+const handleChange = (row, column, value) => {
+  // check if column has onChange handler
+  if (column.onChange) {
+    column.onChange(value, row);
+    return;
+  }
+
+  // Fallback to cell-level onChange handlere
+  const cellData = row[column.key];
+  if (cellData?.onChange) {
+    cellData.onChange(value);
+  }
+};
 
 const columnTypeComponents = {
   text: GridText,
+  select: ({ column, row, style }) => (
+    <td style={style}>
+      <SelectInput
+        label=""
+        options={row[column.key].options}
+        value={row[column.key].value}
+        onChange={(e) => handleChange(row, column, e.target.value)}
+        style={{ width: "100%", margin: 0 }}
+      />
+    </td>
+  ),
+  input: ({ column, row, style }) => (
+    <td style={style}>
+      <TextInput
+        label=""
+        type="text"
+        disabled={row[column.key].disabled}
+        value={row[column.key].value}
+        onChange={(e) => handleChange(row, column, e.target.value)}
+        style={{ width: "92%", margin: 0 }}
+      />
+    </td>
+  ),
+  checkbox: ({ column, row, style }) => (
+    <td style={style}>
+      <input
+        type="checkbox"
+        checked={row[column.key].checked}
+        onChange={(e) => handleChange(row, column, e.target.checked)}
+      />
+    </td>
+  ),
+  date: ({ column, row, style }) => {
+    const cellData = row[column.key];
+    if (!cellData?.value) return <td style={style}>{cellData || ""}</td>;
+
+    return (
+      <td style={style}>
+        <input
+          type="date"
+          value={cellData.value}
+          disabled={row[column.key].disabled}
+          onChange={(e) => handleChange(row, column, e.target.value)}
+          style={{ width: "92%", margin: 0 }}
+          className="form-control"
+        />
+      </td>
+    );
+  },
+  action: ({ column, row, style }) => {
+    return (
+      <td style={style}>
+        {row.rate_type === "Discount" && (
+          <button
+            className="btn btn-link text-danger"
+            onClick={() => handleChange(row, column, row[column.key]?.id)}
+          >
+            <i className="fa fa-trash"></i>
+          </button>
+        )}
+      </td>
+    );
+  },
 };
 
 export default function Grid({
@@ -55,6 +134,11 @@ export default function Grid({
       {column.formatHeader
         ? column.formatHeader(column.name, column)
         : column.name}
+      {column.tooltip && (
+        <Tooltip title={column.tooltip} placement="bottom">
+          <i className="icon-info-sign"></i>
+        </Tooltip>
+      )}
     </th>
   ));
 
