@@ -1,16 +1,16 @@
 import { useProject, useRequest } from "./helpers/hooks";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 import {
   icon,
   formatBoolean,
   formatDate,
   formatManagers,
   formatNumber,
-  formatResource,
   resourceColors,
-} from "./helpers/utils";
+} from "../shared/helpers/utils";
 
 import Grid from "../shared/Grid";
+import ResourceName from "../shared/ResourceName";
 import StatusBadge from "../shared/StatusBadge";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
@@ -55,7 +55,7 @@ export default function OverviewResources({ requestId, grantNumber }) {
     {
       key: "name",
       name: "Resource",
-      format: (value, row) => formatResource(row),
+      format: (value, row) => <ResourceName resource={row} />,
     },
     {
       key: "isActive",

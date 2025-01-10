@@ -1,5 +1,5 @@
 import { useProjectsList } from "./helpers/hooks";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 
 import Alert from "../shared/Alert";
 import Project from "./Project";

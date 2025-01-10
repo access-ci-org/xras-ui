@@ -1,6 +1,6 @@
 import React from "react";
 import { useProject, useRequest } from "./helpers/hooks";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 
 import Dropdown from "react-bootstrap/Dropdown";
 import Modal from "react-bootstrap/Modal";

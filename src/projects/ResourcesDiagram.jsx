@@ -1,6 +1,8 @@
 import { useRequest } from "./helpers/hooks";
-import { formatNumber, formatResource, resourceColors } from "./helpers/utils";
+import { formatNumber, getCost, resourceColors } from "../shared/helpers/utils";
 import style from "./ResourcesDiagram.module.scss";
+
+import ResourceName from "../shared/ResourceName";
 
 const circleCoords = (pct, radius) =>
   `${Math.cos(2 * Math.PI * pct) * radius} ${
@@ -23,7 +25,7 @@ export default function ResourcesDiagram({
   for (let res of request.resources) {
     if (res.isBoolean) continue;
     res.isCredit ? (credit = res) : other.push(res);
-    totalCost += res.requested * res.unitCost;
+    totalCost += getCost(res);
   }
 
   const svgPaths = [];
@@ -35,11 +37,13 @@ export default function ResourcesDiagram({
     if (!res) return null;
 
     const resNumber = i + 1;
-    const cost = res.requested * res.unitCost;
+    const cost = getCost(res);
     const pct = cost / totalCost;
     const balance = res.requested - res.used;
     const available = Math.max(0, balance);
-    const total = res.isCredit ? totalCost / res.unitCost : res.requested;
+    const total = res.isCredit
+      ? totalCost / res.exchangeRates.base.unitCost
+      : res.requested;
     const remaining = total == 0 ? 0 : (100 * available) / total;
 
     const color = res.isCredit
@@ -122,7 +126,8 @@ export default function ResourcesDiagram({
           ></span>
         </span>
         <strong className={style.name}>
-          {formatResource(res, { userGuide: false })}:&nbsp;
+          <ResourceName resource={res} userGuide={false} />
+          :&nbsp;
         </strong>
         {
           <span className={style.details}>

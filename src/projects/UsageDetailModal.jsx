@@ -1,6 +1,10 @@
 import { statuses } from "./helpers/apiSlice";
 import { useProject, useRequest } from "./helpers/hooks";
-import { acctRolesMap, formatNumber, parseResourceName } from "./helpers/utils";
+import {
+  acctRolesMap,
+  formatNumber,
+  parseResourceName,
+} from "../shared/helpers/utils";
 
 import Alert from "../shared/Alert";
 import Modal from "react-bootstrap/Modal";

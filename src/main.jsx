@@ -1,12 +1,12 @@
 import ReactDOM from "react-dom/client";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
+import { addRoutes } from "./shared/helpers/utils";
 
 import AllocationsMap from "./allocations-map/AllocationsMap";
 
 import Projects from "./projects/Projects";
 import apiSlice from "./projects/helpers/apiSlice";
-import projectsConfig from "./projects/helpers/config";
 
 import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
 import browserSlice from "./projects-browser/helpers/browserSlice";
@@ -14,7 +14,6 @@ import { initialState as projectsBrowserInitialState } from "./projects-browser/
 
 import Publications from "./publications/Publications";
 import PublicationsSelect from "./publications/PublicationsSelect";
-import publicationsConfig from "./publications/helpers/config";
 import { publications_store } from "./publications/helpers/reducers";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
@@ -67,8 +66,7 @@ export function allocationsMap({ target }) {
 }
 
 export function projects({ target, username, routes }) {
-  // Override the default routes with the ones from Rails.
-  if (routes) projectsConfig.routes = routes;
+  addRoutes(routes);
   const projectsStore = configureStore({
     reducer: {
       api: apiSlice,
@@ -109,7 +107,7 @@ function publicationsStore() {
 }
 
 export function publications({ target, routes }) {
-  if (routes) publicationsConfig.routes = routes;
+  addRoutes(routes);
   ReactDOM.createRoot(target).render(
     <Provider store={publicationsStore()}>
       <Publications />
@@ -118,7 +116,7 @@ export function publications({ target, routes }) {
 }
 
 export function publicationsSelect({ target, routes }) {
-  if (routes) publicationsConfig.routes = routes;
+  addRoutes(routes);
   ReactDOM.createRoot(target).render(
     <Provider store={publicationsStore()}>
       <PublicationsSelect
