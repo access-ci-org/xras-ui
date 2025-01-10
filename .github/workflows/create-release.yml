@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - ramps-100-variable-marketplace
 
 jobs:
   release:
