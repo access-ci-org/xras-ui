@@ -55,42 +55,6 @@ export default function Resources({ availableResources, relativeUrlRoot }) {
     return () => stopScrolling(scrollIntervalRef);
   }, []);
 
-  const ResourceItem = ({ resource, index }) => {
-    const [isDragging, setIsDragging] = useState(false);
-
-    return (
-      <div
-        className={`${styles["resources-item"]} ${
-          isDragging ? styles.dragging : ""
-        }`}
-        draggable
-        onDragStart={(e) => {
-          setIsDragging(true);
-          handleDragStart(e, index);
-        }}
-        onDragEnd={() => {
-          setIsDragging(false);
-          stopScrolling(scrollIntervalRef);
-        }}
-        onDragOver={(e) => handleDragOver(e, index)}
-        onDrop={(e) => {
-          setIsDragging(false);
-          handleDrop();
-        }}
-      >
-        <span className={styles["drag-handle"]}></span>
-        <span className={styles["resource-name"]}>
-          <a
-            href={`${relativeUrlRoot}/resources/${resource.resource_id}`}
-            className={styles["resource-link"]}
-          >
-            {resource.display_resource_name}
-          </a>
-        </span>
-      </div>
-    );
-  };
-
   return (
     <div className={styles["resources-container"]}>
       <h2>Select a resource from the list to modify</h2>
@@ -98,12 +62,32 @@ export default function Resources({ availableResources, relativeUrlRoot }) {
         Drag items to reorder the list.
       </p>
       <div className={styles["resources-list"]}>
+        <div className={styles["resources-header"]}>
+          <span className={styles["header-name"]}>Resource Name</span>
+          <span className={styles["header-repo"]}>Repository Key</span>
+        </div>
         {resources.map((resource, index) => (
-          <ResourceItem
+          <div
             key={resource.resource_id}
-            resource={resource}
-            index={index}
-          />
+            className={`${styles["resources-item"]}`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={handleDrop}
+          >
+            <span className={styles["drag-handle"]}></span>
+            <span className={styles["resource-name"]}>
+              <a
+                href={`${relativeUrlRoot}/resources/${resource.resource_id}`}
+                className={styles["resource-link"]}
+              >
+                {resource.display_resource_name}
+              </a>
+            </span>
+            <span className={styles["resource-repo"]}>
+              {resource.resource_repository_key || "N/A"}
+            </span>
+          </div>
         ))}
       </div>
     </div>
