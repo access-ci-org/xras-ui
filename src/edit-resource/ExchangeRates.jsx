@@ -7,6 +7,7 @@ export const ExchangeRates = React.memo(function ExchangeRatesGrid({
   columns,
   rows,
   onAddDiscountRate,
+  dateErrors = [],
 }) {
   return (
     <div className={style["exchange-rates-grid"]}>
@@ -24,6 +25,16 @@ export const ExchangeRates = React.memo(function ExchangeRatesGrid({
         rows={rows}
         rowClasses={Array(rows.length).fill(style["vertical-align-center"])}
       />
+      {/* Error Summary */}
+      {dateErrors.length > 0 && (
+        <div className={style["error-summary"]}>
+          <ul>
+            {dateErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 });
@@ -32,4 +43,5 @@ ExchangeRates.propTypes = {
   columns: PropTypes.array.isRequired,
   rows: PropTypes.array.isRequired,
   onAddDiscountRate: PropTypes.func.isRequired,
+  dateErrors: PropTypes.array,
 };

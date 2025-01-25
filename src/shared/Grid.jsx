@@ -4,6 +4,7 @@ import { SelectInput } from "../shared/SelectInput/SelectInput";
 import TextInput from "./Form/TextInput";
 import GridText from "./GridText";
 import Tooltip from "./ToolTip";
+import DatePicker from "./DatePicker/DatePicker";
 
 const handleChange = (row, column, value) => {
   // check if column has onChange handler
@@ -55,17 +56,20 @@ const columnTypeComponents = {
   ),
   date: ({ column, row, style }) => {
     const cellData = row[column.key];
-    if (!cellData?.value) return <td style={style}>{cellData || ""}</td>;
+    if (!cellData?.value && typeof cellData !== "object") {
+      return <td style={style}>{cellData || ""}</td>;
+    }
 
     return (
       <td style={style}>
-        <input
-          type="date"
+        <DatePicker
           value={cellData.value}
-          disabled={row[column.key].disabled}
-          onChange={(e) => handleChange(row, column, e.target.value)}
+          onChange={(value) => handleChange(row, column, value)}
+          disabled={cellData.disabled}
           style={{ width: "92%", margin: 0 }}
-          className="form-control"
+          minDate={column.minDate}
+          maxDate={column.maxDate}
+          error={cellData.error}
         />
       </td>
     );

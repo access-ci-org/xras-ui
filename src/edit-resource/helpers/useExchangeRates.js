@@ -28,13 +28,15 @@ export const useExchangeRates = (resourceData, dispatch) => {
         key: "start_date",
         name: "Start Date",
         width: 150,
-        type: "input",
+        type: "date",
+        minDate: new Date().toISOString().split("T")[0],
       },
       {
         key: "end_date",
         name: "End Date",
         width: 150,
-        type: "input",
+        type: "date",
+        minDate: new Date().toISOString().split("T")[0],
       },
       {
         key: "actions",
@@ -70,6 +72,21 @@ export const useExchangeRates = (resourceData, dispatch) => {
     [dispatch]
   );
 
+  const dateErrors = useMemo(() => {
+    const errors = [];
+    const discountRates =
+      resourceData?.resource_details?.exchange_rates?.discount_rates || [];
+    discountRates.forEach((rate) => {
+      if (rate.start_date_error) {
+        errors.push(rate.start_date_error);
+      }
+      if (rate.end_date_error) {
+        errors.push(rate.end_date_error);
+      }
+    });
+    return errors.filter((error) => error && error !== "");
+  }, [resourceData]);
+
   const handleDateChange = useCallback(
     (rateId, dateField, newValue) => {
       const fieldMap = {
@@ -77,23 +94,104 @@ export const useExchangeRates = (resourceData, dispatch) => {
         end_date: "end_date",
       };
 
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone: "UTC",
+          month: "numeric",
+          day: "numeric",
+          year: "numeric",
+        }).format(date);
+      };
+
+      const rate =
+        resourceData?.resource_details?.exchange_rates?.discount_rates.find(
+          (r) => r.id === rateId
+        );
+
+      if (!rate) return;
+
+      const column = exchangeRateColumns.find((col) => col.key === dateField);
+      const changes = { [fieldMap[dateField]]: newValue };
+      const errors = {};
+
+      if (!newValue) {
+        errors[`${dateField}_error`] = "Date cannot be empty or invalid";
+        dispatch({
+          type: "UPDATE_EXCHANGE_RATE",
+          payload: {
+            rateId,
+            changes: {
+              ...changes,
+              ...errors,
+            },
+          },
+        });
+        return;
+      }
+
+      // Get min/max dates from column configuration
+      const columnMinDate = column?.minDate || "1900-01-01";
+      const columnMaxDate = column?.maxDate || "2100-12-31";
+
+      const isEndDate = dateField === "end_date";
+      const effectiveMinDate =
+        isEndDate && rate.begin_date ? rate.begin_date : columnMinDate;
+
+      if (newValue < effectiveMinDate) {
+        errors[`${dateField}_error`] = `${dateField.replace(
+          "_",
+          " "
+        )} cannot be before ${formatDate(effectiveMinDate)}`;
+      } else if (newValue > columnMaxDate) {
+        errors[`${dateField}_error`] = `${dateField.replace(
+          "_",
+          " "
+        )} cannot be after ${formatDate(columnMaxDate)}`;
+      } else {
+        errors[`${dateField}_error`] = "";
+      }
+
+      // Validate date relationships
+      if (dateField === "start_date") {
+        const currentEndDate = rate.end_date;
+        if (currentEndDate && newValue > currentEndDate) {
+          errors.end_date_error = `End date (${formatDate(
+            currentEndDate
+          )}) cannot be before start date (${formatDate(newValue)})`;
+        } else {
+          errors.end_date_error = "";
+        }
+      }
+
       dispatch({
         type: "UPDATE_EXCHANGE_RATE",
         payload: {
           rateId,
-          changes: { [fieldMap[dateField]]: newValue },
+          changes: {
+            ...changes,
+            ...errors,
+          },
         },
       });
     },
-    [dispatch]
+    [dispatch, resourceData, exchangeRateColumns]
   );
 
   const handleAddDiscountRate = useCallback(() => {
+    const today_date = new Date();
+    const begin_date = today_date.toISOString().split("T")[0];
+    // Set end date to 15 days from begin date UTC
+    const end_date = new Date(
+      today_date.setUTCDate(today_date.getUTCDate() + 15)
+    )
+      .toISOString()
+      .split("T")[0];
     const newRate = {
       id: Date.now(),
       exchange_rate: "1.0",
-      begin_date: new Date().toISOString().split("T")[0],
-      end_date: "",
+      begin_date: begin_date,
+      end_date: end_date,
     };
 
     dispatch({
@@ -136,11 +234,13 @@ export const useExchangeRates = (resourceData, dispatch) => {
           value: rate.begin_date || "",
           onChange: (newValue) =>
             handleDateChange(rate.id, "start_date", newValue),
+          error: rate.start_date_error,
         },
         end_date: {
           value: rate.end_date || "",
           onChange: (newValue) =>
             handleDateChange(rate.id, "end_date", newValue),
+          error: rate.end_date_error,
         },
         actions: { id: rate.id },
       })),
@@ -152,5 +252,6 @@ export const useExchangeRates = (resourceData, dispatch) => {
     exchangeRateRows,
     handleAddDiscountRate,
     handleDeleteRate,
+    dateErrors,
   };
 };
