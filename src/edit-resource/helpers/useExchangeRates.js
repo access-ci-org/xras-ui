@@ -23,6 +23,8 @@ export const useExchangeRates = (resourceData, dispatch) => {
         name: "Rate",
         width: 100,
         type: "input",
+        tooltip:
+          "Exchange rate is the cost in ACCESS Credits of one resource unit. ACCESS Credits / exchange rate = resource units",
       },
       {
         key: "start_date",

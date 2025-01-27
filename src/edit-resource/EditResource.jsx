@@ -26,6 +26,7 @@ export default function EditResource({
   );
   const { resourceData, loading, errors, successMessage } = state;
   const resourceDetails = resourceData?.resource_details;
+  const usesExchangeRates = resourceData?.uses_exchange_rates;
 
   const {
     allowedActionsOptions,
@@ -175,12 +176,14 @@ export default function EditResource({
         />
       </AddNewModal>
 
-      <ExchangeRates
-        columns={exchangeRateColumns}
-        rows={exchangeRateRows}
-        onAddDiscountRate={handleAddDiscountRate}
-        dateErrors={dateErrors}
-      />
+      {usesExchangeRates && (
+        <ExchangeRates
+          columns={exchangeRateColumns}
+          rows={exchangeRateRows}
+          onAddDiscountRate={handleAddDiscountRate}
+          dateErrors={dateErrors}
+        />
+      )}
     </div>
   );
 }

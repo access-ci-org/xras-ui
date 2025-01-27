@@ -25,6 +25,10 @@ export const ExchangeRates = React.memo(function ExchangeRatesGrid({
         rows={rows}
         rowClasses={Array(rows.length).fill(style["vertical-align-center"])}
       />
+      <div className={style["explanation-note"]}>
+        Exchange rate is the cost in ACCESS Credits of one resource unit. ACCESS
+        Credits / exchange rate = resource units
+      </div>
       {/* Error Summary */}
       {dateErrors.length > 0 && (
         <div className={style["error-summary"]}>
