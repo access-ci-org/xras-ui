@@ -25,6 +25,11 @@ import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
+import PublicationsBrowser from "./publications-browser/PublicationsBrowser";
+import publicationsSlice from "./publications-browser/helpers/publicationsSlice";
+import { initialState as publicationsBrowserInitialState } from "./publications-browser/helpers/initialState.js"
+import publication from "./publications/Publication.jsx";
+
 export function shadowTarget(
   host,
   {
@@ -132,6 +137,27 @@ export function projectsBrowser({ target, apiUrl }) {
   ReactDOM.createRoot(target).render(
     <Provider store={projectsBrowserStore}>
       <ProjectsBrowser />
+    </Provider>
+  );
+}
+
+export function publicationsBrowser({ target, apiUrl }) {
+
+  const publicationsBrowserStore = configureStore({
+    reducer: {
+      publicationsBrowser: publicationsSlice,
+    },
+    preloadedState: {
+      publicationsBrowser: {
+        ...publicationsBrowserInitialState,
+        apiUrl
+      }
+    }
+  });
+
+  ReactDOM.createRoot(target).render(
+    <Provider store={publicationsBrowserStore}>
+      <PublicationsBrowser apiUrl={apiUrl} />
     </Provider>
   );
 }
