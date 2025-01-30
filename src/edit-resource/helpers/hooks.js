@@ -119,7 +119,7 @@ export const useAllocationRowsAndColumns = (
       .sort((a, b) => a.localeCompare(b))
       .map((resourceName) => ({
         key: resourceName,
-        name: resourceName,
+        name: `Require ${resourceName}`,
         width: 150,
         type: "checkbox",
       }));
@@ -133,7 +133,6 @@ export const useAllocationRowsAndColumns = (
         name: "Allowed Actions",
         width: 200,
         type: "select",
-        tooltip: "Tooltip text",
       },
       {
         key: "comment",
