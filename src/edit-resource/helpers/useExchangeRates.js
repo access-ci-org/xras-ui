@@ -56,11 +56,22 @@ export const useExchangeRates = (resourceData, dispatch) => {
   };
 
   const handleRateChange = (rateId, newValue) => {
+    const changes = { exchange_rate: newValue };
+    const errors = {};
+
+    if (!newValue) {
+      errors.rate_error = "Exchange Rate cannot be empty";
+    } else {
+      errors.rate_error = "";
+    }
     dispatch({
       type: "UPDATE_EXCHANGE_RATE",
       payload: {
         rateId,
-        changes: { exchange_rate: newValue },
+        changes: {
+          ...changes,
+          ...errors,
+        },
       },
     });
   };
@@ -75,6 +86,9 @@ export const useExchangeRates = (resourceData, dispatch) => {
       }
       if (rate.end_date_error) {
         errors.push(rate.end_date_error);
+      }
+      if (rate.rate_error) {
+        errors.push(rate.rate_error);
       }
     });
     return errors.filter((error) => error && error !== "");
@@ -208,33 +222,33 @@ export const useExchangeRates = (resourceData, dispatch) => {
       },
       // Discount rate rows
       ...discountRates.map((rate) => {
-        const isStartDateInFuture = rate.begin_date > today;
-        const canEditStartDateAndRate =
-          rate.is_new || (isStartDateInFuture && rate.end_date > today);
-        const canEditEndDate = rate.is_new || rate.end_date >= today;
+        const isRateEditable = rate.is_new || rate.begin_date > today;
+        const isStartDateEditable = isRateEditable || rate.begin_date === "";
+        const isEndDateEditable =
+          rate.is_new || rate.end_date >= today || rate.end_date === "";
 
         return {
           rate_type: "Discount",
           rate: {
             value: rate.exchange_rate?.toString() || "",
-            onChange: rate.is_new
+            onChange: isRateEditable
               ? (newValue) => handleRateChange(rate.id, newValue)
               : null,
-            disabled: !canEditStartDateAndRate,
+            disabled: !isRateEditable,
           },
           start_date: {
             value: rate.begin_date || "",
             onChange: (newValue) =>
               handleDateChange(rate.id, "start_date", newValue),
             error: rate.start_date_error,
-            disabled: !canEditStartDateAndRate,
+            disabled: !isStartDateEditable,
           },
           end_date: {
             value: rate.end_date || "",
             onChange: (newValue) =>
               handleDateChange(rate.id, "end_date", newValue),
             error: rate.end_date_error,
-            disabled: !canEditEndDate,
+            disabled: !isEndDateEditable,
           },
           actions: { id: rate.id },
         };
