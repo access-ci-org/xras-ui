@@ -97,12 +97,13 @@ export default function Grid({
   frozenColumns = 0,
   minWidth,
   rowClasses = [],
+  scroll = true,
   scrollBehavior = "smooth",
   scrollRowIndex = 0,
 }) {
   const container = useRef();
   useLayoutEffect(() => {
-    if (!container.current) return;
+    if (!scroll || !container.current) return;
     const row = container.current.querySelector(
       `tbody tr:nth-child(${scrollRowIndex + 1})`
     );
@@ -112,7 +113,7 @@ export default function Grid({
         block: "nearest",
         inline: "nearest",
       });
-  }, [scrollRowIndex, scrollBehavior]);
+  }, [scroll, scrollRowIndex, scrollBehavior]);
 
   const columnLeft = [0];
   for (let i = 0; i < frozenColumns; i++)
@@ -164,7 +165,12 @@ export default function Grid({
   if (minWidth) style.minWidth = minWidth;
 
   return (
-    <div className={`${gridStyle.grid} ${classes || ""}`} ref={container}>
+    <div
+      className={`${gridStyle.grid} ${scroll ? gridStyle.scroll : ""} ${
+        classes || ""
+      }`}
+      ref={container}
+    >
       <table className="table table-bordered" style={style}>
         <thead>
           <tr>{th}</tr>

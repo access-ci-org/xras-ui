@@ -20,10 +20,10 @@ export const ExchangeRates = React.memo(function ExchangeRatesGrid({
         </div>
       </div>
       <Grid
-        classes={style["no-scroll-grid"]}
         columns={columns}
         rows={rows}
         rowClasses={Array(rows.length).fill(style["vertical-align-center"])}
+        scroll={false}
       />
       {/* Error Summary */}
       {dateErrors.length > 0 && (
