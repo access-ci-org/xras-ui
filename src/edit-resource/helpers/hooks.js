@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { resources } from "./reducers";
 import {
   setLoading,
@@ -54,45 +54,30 @@ export const useResourceData = (resourceId, relativeUrlRoot) => {
 
 export const useResourceOptions = (resourceData) => {
   return {
-    allowedActionsOptions: useMemo(
-      () =>
-        resourceData?.resource_state_types_available?.map((state) => ({
-          value: state.resource_state_type_id,
-          label: state.display_resource_state_type,
-          additionalInfo: state.action_types
-            .map((action) => action.display_action_type)
-            .join(", "), // Pass action_types as additionalInfo Prop
-        })) || [],
-      [resourceData]
-    ),
+    allowedActionsOptions:
+      resourceData?.resource_state_types_available?.map((state) => ({
+        value: state.resource_state_type_id,
+        label: state.display_resource_state_type,
+        additionalInfo: state.action_types
+          .map((action) => action.display_action_type)
+          .join(", "),
+      })) || [],
 
-    resourceTypesOptions: useMemo(
-      () =>
-        resourceData?.resource_types_available?.map((type) => ({
-          value: type.resource_type_id,
-          label: type.display_resource_type,
-        })) || [],
-      [resourceData]
-    ),
+    resourceTypesOptions:
+      resourceData?.resource_types_available?.map((type) => ({
+        value: type.resource_type_id,
+        label: type.display_resource_type,
+      })) || [],
 
-    unitTypesOptions: useMemo(
-      () =>
-        resourceData?.unit_types_available?.map((type) => ({
-          value: type.unit_type_id,
-          label: type.display_unit_type,
-        })) || [],
-      [resourceData]
-    ),
+    unitTypesOptions:
+      resourceData?.unit_types_available?.map((type) => ({
+        value: type.unit_type_id,
+        label: type.display_unit_type,
+      })) || [],
 
-    availableResources: useMemo(
-      () => resourceData?.required_resources_available || [],
-      [resourceData]
-    ),
+    availableResources: resourceData?.required_resources_available || [],
 
-    availableAllocationTypes: useMemo(
-      () => resourceData?.unassigned_allocation_types || [],
-      [resourceData]
-    ),
+    availableAllocationTypes: resourceData?.unassigned_allocation_types || [],
   };
 };
 
@@ -105,7 +90,7 @@ export const useAllocationRowsAndColumns = (
   handleCommentChange,
   handleRequiredResourceChange
 ) => {
-  const requiredResourcesColumns = useMemo(() => {
+  const requiredResourcesColumns = () => {
     if (!resourceDetails) return [];
 
     const requiredResources = new Set();
@@ -123,31 +108,30 @@ export const useAllocationRowsAndColumns = (
         width: 150,
         type: "checkbox",
       }));
-  }, [resourceDetails]);
+  };
 
-  const allocationColumns = useMemo(
-    () => [
-      { key: "display_name", name: "Allocation Type", width: 200 },
-      {
-        key: "allowed_actions",
-        name: "Allowed Actions",
-        width: 200,
-        type: "select",
-      },
-      {
-        key: "comment",
-        name: "Descriptive Text",
-        width: 200,
-        type: "input",
-        tooltip:
-          "Appears below the resource name and allocations description in the form when making a new request",
-      },
-      ...requiredResourcesColumns,
-    ],
-    [requiredResourcesColumns]
-  );
+  const generatedColumns = requiredResourcesColumns();
 
-  const allocationRows = useMemo(() => {
+  const allocationColumns = [
+    { key: "display_name", name: "Allocation Type", width: 200 },
+    {
+      key: "allowed_actions",
+      name: "Allowed Actions",
+      width: 200,
+      type: "select",
+    },
+    {
+      key: "comment",
+      name: "Descriptive Text",
+      width: 200,
+      type: "input",
+      tooltip:
+        "Appears below the resource name and allocations description in the form when making a new request",
+    },
+    ...generatedColumns,
+  ];
+
+  const allocationRows = () => {
     if (!resourceDetails?.allocation_types) return [];
 
     return resourceDetails.allocation_types.map((type) => ({
@@ -165,7 +149,7 @@ export const useAllocationRowsAndColumns = (
           handleCommentChange(type.allocation_type_id, newValue),
       },
       ...Object.fromEntries(
-        requiredResourcesColumns.map((column) => [
+        generatedColumns.map((column) => [
           column.key,
           {
             checked:
@@ -183,16 +167,13 @@ export const useAllocationRowsAndColumns = (
         ])
       ),
     }));
-  }, [
-    resourceDetails,
-    allowedActionsOptions,
-    requiredResourcesColumns,
-    handleAllowedActionChange,
-    handleCommentChange,
-    handleRequiredResourceChange,
-  ]);
+  };
 
-  return { allocationColumns, allocationRows, requiredResourcesColumns };
+  return {
+    allocationColumns,
+    allocationRows: allocationRows(),
+    requiredResourcesColumns: generatedColumns,
+  };
 };
 
 export const useAllocationGrid = (resourceData, resourceDetails, dispatch) => {

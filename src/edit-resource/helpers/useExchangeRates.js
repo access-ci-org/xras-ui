@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useCallback } from "react";
 
 export const useExchangeRates = (resourceData, dispatch) => {
   const handleDeleteRate = useCallback(
@@ -76,7 +76,7 @@ export const useExchangeRates = (resourceData, dispatch) => {
     });
   };
 
-  const dateErrors = useMemo(() => {
+  const dateErrors = () => {
     const errors = [];
     const discountRates =
       resourceData?.resource_details?.exchange_rates?.discount_rates || [];
@@ -92,7 +92,7 @@ export const useExchangeRates = (resourceData, dispatch) => {
       }
     });
     return errors.filter((error) => error && error !== "");
-  }, [resourceData]);
+  };
 
   const handleDateChange = (rateId, dateField, newValue) => {
     const fieldMap = {
@@ -205,7 +205,7 @@ export const useExchangeRates = (resourceData, dispatch) => {
     });
   };
 
-  const exchangeRateRows = useMemo(() => {
+  const exchangeRateRows = () => {
     const exchangeRates = resourceData?.resource_details?.exchange_rates;
     const baseRate = exchangeRates?.base_rate ?? ""; // Default to empty string if no base rate
     const discountRates = exchangeRates?.discount_rates || [];
@@ -254,13 +254,13 @@ export const useExchangeRates = (resourceData, dispatch) => {
         };
       }),
     ];
-  }, [resourceData]);
+  };
 
   return {
     exchangeRateColumns,
-    exchangeRateRows,
+    exchangeRateRows: exchangeRateRows(),
     handleAddDiscountRate,
     handleDeleteRate,
-    dateErrors,
+    dateErrors: dateErrors(),
   };
 };
