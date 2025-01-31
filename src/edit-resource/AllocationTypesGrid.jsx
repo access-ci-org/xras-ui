@@ -23,10 +23,10 @@ export const AllocationGrid = React.memo(function AllocationGrid({
         </div>
       </div>
       <Grid
-        classes={style["no-scroll-grid"]}
         columns={columns}
         rows={rows}
         rowClasses={Array(rows.length).fill(style["vertical-align-center"])}
+        scroll={false}
       />
     </div>
   );

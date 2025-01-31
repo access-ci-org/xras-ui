@@ -1,9 +1,7 @@
 .grid {
   border: 1px solid #cccccc;
-  max-height: 400px;
   max-width: 100%;
   margin-bottom: 1rem;
-  overflow: scroll;
   position: relative;
   table {
     border-collapse: separate;
@@ -53,4 +51,8 @@
       border-bottom: 0 none transparent;
     }
   }
+}
+.scroll {
+  max-height: 400px;
+  overflow: scroll;
 }

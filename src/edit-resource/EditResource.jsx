@@ -26,6 +26,7 @@ export default function EditResource({
   );
   const { resourceData, loading, errors, successMessage } = state;
   const resourceDetails = resourceData?.resource_details;
+  const usesExchangeRates = resourceData?.uses_exchange_rates;
 
   const {
     allowedActionsOptions,
@@ -51,8 +52,12 @@ export default function EditResource({
     handleRequiredResourceChange,
   } = useAllocationGrid(resourceData, resourceDetails, dispatch);
 
-  const { exchangeRateColumns, exchangeRateRows, handleAddDiscountRate } =
-    useExchangeRates(resourceData, dispatch);
+  const {
+    exchangeRateColumns,
+    exchangeRateRows,
+    handleAddDiscountRate,
+    dateErrors,
+  } = useExchangeRates(resourceData, dispatch);
 
   const handleSubmit = useResourceSubmit(
     resourceDetails,
@@ -65,10 +70,12 @@ export default function EditResource({
 
   // Expose handleSubmit to external Rails template script
   useEffect(() => {
-    if (setExternalSubmit) {
+    if (setExternalSubmit && dateErrors.length == 0) {
       setExternalSubmit(handleSubmit);
+    } else {
+      setExternalSubmit(null);
     }
-  }, [handleSubmit, setExternalSubmit]);
+  }, [handleSubmit, setExternalSubmit, dateErrors]);
 
   const { allocationColumns, allocationRows } = useAllocationRowsAndColumns(
     resourceDetails,
@@ -169,11 +176,14 @@ export default function EditResource({
         />
       </AddNewModal>
 
-      <ExchangeRates
-        columns={exchangeRateColumns}
-        rows={exchangeRateRows}
-        onAddDiscountRate={handleAddDiscountRate}
-      />
+      {usesExchangeRates && (
+        <ExchangeRates
+          columns={exchangeRateColumns}
+          rows={exchangeRateRows}
+          onAddDiscountRate={handleAddDiscountRate}
+          dateErrors={dateErrors}
+        />
+      )}
     </div>
   );
 }

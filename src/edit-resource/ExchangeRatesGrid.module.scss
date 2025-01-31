@@ -1,16 +1,12 @@
 .exchange-rates-grid {
-  margin: 2rem 0;
+  margin: 0.8rem 0;
+  border: 0;
 
   .header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-  }
-
-  .header-title {
-    font-size: 1.25rem;
-    margin: 0;
   }
 
   .header-buttons {
@@ -27,17 +23,6 @@
   .vertical-align-center {
     td {
       vertical-align: middle;
-    }
-  }
-
-  // Prevent horizontal scrolling when not needed
-  .no-scroll-grid {
-    :global(.table) {
-      margin-bottom: 0;
-    }
-
-    tbody tr:last-child td {
-      border-bottom: 1px solid #dee2e6;
     }
   }
 
@@ -60,5 +45,23 @@
     input[type="date"] {
       width: 100%;
     }
+  }
+}
+
+.error-summary {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+
+  ul {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
   }
 }
