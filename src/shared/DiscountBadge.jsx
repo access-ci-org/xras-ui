@@ -16,19 +16,19 @@ export default function DiscountBadge({
   const pctOff = Math.round(
     (100 * (base.unitCost - current.unitCost)) / base.unitCost
   );
-  let text = `${pctOff}%`;
+  let text = `${pctOff}% off`;
   let title = text;
   if (current.endDate) {
     const endDate = current.endDate
-      ? ` off until ${formatDate(current.endDate).replace(yearSuffix, "")}`
+      ? ` until ${formatDate(current.endDate).replace(yearSuffix, "")}`
       : "";
     if (!short) text += endDate;
     title += endDate;
   } else {
     if (!short) text += " for you";
     title += current.institutionType
-      ? ` off for researchers from ${current.institutionType}`
-      : " off for you";
+      ? ` for researchers from ${current.institutionType}`
+      : " for you";
   }
 
   title += `: ${formatExchangeRate(
