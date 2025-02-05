@@ -4,7 +4,7 @@ import Accordion from "react-bootstrap/Accordion";
 const Publication = ({publication}) => {
   const [showAllAuthors, setShowAllAuthors] = useState(false);
 
-  const getAuthorsToShow = ()  => {
+  const getAuthorsToShow = () => {
     if (showAllAuthors) {
       return publication.authors;
     }
@@ -26,6 +26,10 @@ const Publication = ({publication}) => {
     return isLastAuthor && hasMoreAuthors && isNotShowingAll
   }
 
+  const cleanDOI = (doi) => {
+    return doi.startsWith("https") ? doi.split("/").slice(3) : doi
+  }
+
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white">
@@ -41,18 +45,19 @@ const Publication = ({publication}) => {
             ))}
           <>
             {publication.authors.length > 3 && (
-            <button onClick={handleClick} className="btn" style={{ textDecoration: "none", color: "white", backgroundColor: "inherit", border: "none"}}>
-              {showAllAuthors ? "(See Less)" : "(See More)"}
-            </button>
-          )}
+              <button onClick={handleClick}
+                      className="btn"
+                      style={{textDecoration: "none", color: "white", backgroundColor: "inherit", border: "none"}}>
+                {showAllAuthors ? "(See Less)" : "(See More)"}
+              </button>
+            )}
           </>
         </span>
       </div>
       <div className="card-body">
         <div className="row fw-bold border-bottom">
           <div className="col">
-            <span className="mb-1 pb-0 tooltip-underline"
-                  title='A specific level of allocation; also referred to as "Opportunity"'>Publication Type</span>
+            <span className="mb-1 pb-0 tooltip-underline">Publication Type</span>
           </div>
           <div className="col">
             <span className="mb-1 pb-0">Publication Year</span>
@@ -60,23 +65,56 @@ const Publication = ({publication}) => {
         </div>
         <div className="row">
           <div className="col">
-            {publication.publication_type ? publication.publication_type : "N/A"}
+            {publication.publication_type}
           </div>
           <div className="col">
             {publication.publication_year ? publication.publication_year : "N/A"}
           </div>
         </div>
-        <Accordion flush className="mt-3 mb-1">
-          <Accordion.Item eventKey="0">
-            <Accordion.Header>
-              Abstract
-            </Accordion.Header>
-            <Accordion.Body>
-              {publication.abstract === null ? "Abstract details not available." : publication.abstract}
-            </Accordion.Body>
-          </Accordion.Item>
+        {(publication.doi || publication.journal.title) && (
+          <Accordion flush className="mt-3 mb-1">
+            <Accordion.Item eventKey="0">
+              <Accordion.Header>
+                Additional Information
+              </Accordion.Header>
+              <Accordion.Body>
+                <div className="row fw-bold border-bottom">
+                  {publication.doi && (
+                    <div className="col">
+                      <span className="mb-1 pb-0">DOI</span>
+                    </div>
+                  )}
+                  {publication.journal.title && (
+                    <div className="col">
+                      <span className="mb-1 pb-0">Journal</span>
+                    </div>
+                  )}
+                </div>
+                <div className="row">
+                  {publication.doi && (
+                    <div className="col">
+                      <a
+                        href={`https://doi.org/${publication.doi}`}
+                        target="_blank"
+                        className='text-decoration-none'
+                      >
+                        {cleanDOI(publication.doi)}
+                      </a>
+                    </div>
+                  )}
+                  <div className="col">
+                    {publication.journal.title && (
+                      <div className="col">
+                        {publication.journal.title}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Accordion.Body>
+            </Accordion.Item>
 
-        </Accordion>
+          </Accordion>
+        )}
       </div>
     </div>
   )
