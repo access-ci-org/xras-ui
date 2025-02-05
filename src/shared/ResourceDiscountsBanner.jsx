@@ -40,8 +40,7 @@ export default function ResourceDiscountsBanner({ resources }) {
   ));
 
   return (
-    <a
-      href={config.routes.resources_path()}
+    <span
       className={
         "d-flex justify-content-between align-items-center p-2 " +
         "border-start border-end bg-secondary-subtle text-decoration-none fw-normal"
@@ -49,13 +48,12 @@ export default function ResourceDiscountsBanner({ resources }) {
     >
       <span>
         {images}
-        Visit the resource catalog to see discounts on{" "}
+        Browse the list below to see discounts on{" "}
         {formatNumber(discountResources.length)}{" "}
         {singularize("resources", discountResources.length)} from{" "}
         {formatNumber(names.length)}{" "}
         {singularize("resource providers", names.length)}!
       </span>
-      <span className="fs-4">&rsaquo;</span>
-    </a>
+    </span>
   );
 }
