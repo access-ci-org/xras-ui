@@ -158,9 +158,17 @@ export const catalogSlice = createSlice({
         });
       }
 
-      state.filters = state.filters.sort((a, b) =>
-        a.categoryName.localeCompare(b.categoryName)
-      );
+      if(allowedCategories.length > 0){
+        state.filters = state.filters.sort((a, b) =>
+          allowedCategories.indexOf(a.categoryName) > allowedCategories.indexOf(b.categoryName)
+        );
+      } else {
+        state.filters = state.filters.sort((a, b) =>
+          a.categoryName.localeCompare(b.categoryName)
+        );
+      }
+
+
       state.resources = resources
       .sort((a, b) =>
         a.resourceName.localeCompare(b.resourceName)
