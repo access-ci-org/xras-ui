@@ -478,3 +478,17 @@ export const useResourceSubmit = (
     }
   }, [resourceDetails, resourceId, relativeUrlRoot, fetchData, handleError]);
 };
+
+// Hook to manage advanced settings state
+export const useAdvancedSettings = (initialState = false) => {
+  const [isEditing, setIsEditing] = useState(initialState);
+
+  const handleEditingChange = (newState) => {
+    setIsEditing(newState);
+  };
+
+  return {
+    isEditing,
+    handleEditingChange,
+  };
+};

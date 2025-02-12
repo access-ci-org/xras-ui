@@ -1,0 +1,51 @@
+.advanced-settings {
+  border-radius: 4px;
+  margin: 1.8rem 0 0.8rem;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.header-title-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-title {
+  margin: 0;
+}
+
+.content-wrapper {
+  cursor: not-allowed;
+}
+
+.warning-container {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  color: #856404;
+}
+
+.warning-container p {
+  margin: 0;
+}
+
+.content-container {
+  filter: brightness(0.96);
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+.active {
+  filter: none;
+  pointer-events: auto;
+}

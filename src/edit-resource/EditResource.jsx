@@ -7,14 +7,18 @@ import { AllocationGrid } from "./AllocationTypesGrid";
 import { AddNewModal } from "./AddNewModal";
 import { ExchangeRates } from "./ExchangeRates";
 import Alert from "../shared/Alert";
+import TextInput from "../shared/Form/TextInput";
+import { AdvancedSettingsSection } from "./AdvancedSettingsSection";
 import {
   useResourceData,
   useResourceOptions,
   useAllocationGrid,
   useResourceSubmit,
   useAllocationRowsAndColumns,
+  useAdvancedSettings,
 } from "./helpers/hooks";
 import { useExchangeRates } from "./helpers/useExchangeRates";
+import { updateResourceField } from "./helpers/actions";
 export default function EditResource({
   resourceId,
   relativeUrlRoot,
@@ -24,6 +28,12 @@ export default function EditResource({
     resourceId,
     relativeUrlRoot
   );
+
+  const {
+    isEditing: isEditingAdvanced,
+    handleEditingChange: handleAdvancedEditingChange,
+  } = useAdvancedSettings();
+
   const { resourceData, loading, errors, successMessage } = state;
   const resourceDetails = resourceData?.resource_details;
   const usesExchangeRates = resourceData?.uses_exchange_rates;
@@ -108,6 +118,7 @@ export default function EditResource({
       )}
       <div>
         <h2>Edit Resource</h2>
+        {/* Basic Settings */}
         <ResourceForm
           resourceDetails={resourceDetails}
           resourceTypesOptions={resourceTypesOptions}
@@ -115,19 +126,50 @@ export default function EditResource({
           dispatch={dispatch}
         />
       </div>
-
-      <AllocationGrid
-        columns={allocationColumns}
-        rows={allocationRows}
-        onAddRequiredResource={() => setShowAddResourceModal(true)}
-        onAddAllocationType={() => setShowAddAllocationTypeModal(true)}
-      />
-
+      {usesExchangeRates && (
+        <ExchangeRates
+          columns={exchangeRateColumns}
+          rows={exchangeRateRows}
+          onAddDiscountRate={handleAddDiscountRate}
+          dateErrors={dateErrors}
+        />
+      )}
+      {/* Advanced Settings */}
+      <AdvancedSettingsSection
+        title="Advanced Settings"
+        isEditing={isEditingAdvanced}
+        onEditingChange={handleAdvancedEditingChange}
+      >
+        <div className="p-4 bg-gray-50 rounded">
+          <h2>Dollar Value per SUspomnn</h2>
+          <TextInput
+            label=""
+            value={resourceDetails.dollar_value}
+            onChange={(e) =>
+              dispatch(updateResourceField("dollar_value", e.target.value))
+            }
+            type="number"
+            inputAddon={"$"}
+            inputClassName="span4"
+          />
+        </div>
+        <AllocationGrid
+          columns={allocationColumns}
+          rows={allocationRows}
+          onAddRequiredResource={() =>
+            isEditingAdvanced && setShowAddResourceModal(true)
+          }
+          onAddAllocationType={() =>
+            isEditingAdvanced && setShowAddAllocationTypeModal(true)
+          }
+        />
+      </AdvancedSettingsSection>
       <AddNewModal
         show={showAddResourceModal}
         onClose={() => setShowAddResourceModal(false)}
         title="Add Required Resource"
         onSave={handleSaveResources}
+        buttonText={"Save"}
       >
         <div>
           {availableResources.map((resource) => (
@@ -151,12 +193,12 @@ export default function EditResource({
           ))}
         </div>
       </AddNewModal>
-
       <AddNewModal
         show={showAddAllocationTypeModal}
         onClose={() => setShowAddAllocationTypeModal(false)}
         title="Add Allocation Type"
         onSave={handleSaveAllocationType}
+        buttonText={"Save"}
       >
         <SelectInput
           label="Select Allocation Type"
@@ -175,15 +217,6 @@ export default function EditResource({
           onChange={handleSelectNewAllocationType}
         />
       </AddNewModal>
-
-      {usesExchangeRates && (
-        <ExchangeRates
-          columns={exchangeRateColumns}
-          rows={exchangeRateRows}
-          onAddDiscountRate={handleAddDiscountRate}
-          dateErrors={dateErrors}
-        />
-      )}
     </div>
   );
 }

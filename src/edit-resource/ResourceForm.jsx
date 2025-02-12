@@ -27,16 +27,6 @@ export const ResourceForm = React.memo(function ResourceForm({
         inputClassName="span8"
       />
       <TextInput
-        label="Dollar Value"
-        value={resourceDetails.dollar_value}
-        onChange={(e) =>
-          dispatch(updateResourceField("dollar_value", e.target.value))
-        }
-        type="number"
-        inputAddon={"$"}
-        inputClassName="span4"
-      />
-      <TextInput
         label="Allocations Description"
         type="textarea"
         value={resourceDetails.description}
