@@ -141,7 +141,7 @@ export default function EditResource({
         onEditingChange={handleAdvancedEditingChange}
       >
         <div className="p-4 bg-gray-50 rounded">
-          <h2>Dollar Value per SUspomnn</h2>
+          <h2>Dollar Value per SUs</h2>
           <TextInput
             label=""
             value={resourceDetails.dollar_value}
