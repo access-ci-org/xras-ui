@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.7.0](https://github.com/access-ci-org/xras-ui/compare/v0.6.0...v0.7.0) (2025-02-12)
+
+
+### Features
+
+* Resource Catalog v1 now respects the sort order of allowed categories ([9092583](https://github.com/access-ci-org/xras-ui/commit/9092583702d08b044da97e0b63977761018d20be))
+
 ## [0.6.0](https://github.com/access-ci-org/xras-ui/compare/v0.5.3...v0.6.0) (2025-01-09)
 
 
