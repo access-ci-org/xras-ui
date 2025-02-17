@@ -33,7 +33,7 @@ export const ResourceForm = React.memo(function ResourceForm({
         headerText={<label>Dollar Value per SUs</label>}
         isEditing={isDollarValueEditing}
         onEditingChange={onDollarValueEditingChange}
-        warningMessage="Modifying the dollar value can affect the cost of allocations."
+        warningMessage="Dollar value is for reporting and should only be modified if the SU rate changes."
       >
         <TextInput
           value={resourceDetails.dollar_value}
