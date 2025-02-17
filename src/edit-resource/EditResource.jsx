@@ -1,13 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import { SelectInput } from "../shared/SelectInput/SelectInput";
 import { ResourceForm } from "./ResourceForm";
-import { AllocationGrid } from "./AllocationTypesGrid";
+import { AllocationGridHeader, AllocationGrid } from "./AllocationTypesGrid";
 import { AddNewModal } from "./AddNewModal";
 import { ExchangeRates } from "./ExchangeRates";
 import Alert from "../shared/Alert";
-import TextInput from "../shared/Form/TextInput";
 import { AdvancedSettingsSection } from "./AdvancedSettingsSection";
 import {
   useResourceData,
@@ -18,7 +17,6 @@ import {
   useAdvancedSettings,
 } from "./helpers/hooks";
 import { useExchangeRates } from "./helpers/useExchangeRates";
-import { updateResourceField } from "./helpers/actions";
 export default function EditResource({
   resourceId,
   relativeUrlRoot,
@@ -97,6 +95,8 @@ export default function EditResource({
     handleRequiredResourceChange
   );
 
+  const [isDollarValueEditing, setIsDollarValueEditing] = useState(false);
+
   if (loading) return <LoadingSpinner />;
   if (errors.length > 0) {
     return (
@@ -117,13 +117,30 @@ export default function EditResource({
         <Alert color={successMessage.color}>{successMessage.message}</Alert>
       )}
       <div>
-        <h2>Edit Resource</h2>
-        {/* Basic Settings */}
+        <h2>Resource Propeties</h2>
+        <div
+          style={{
+            marginBottom: "0.75rem",
+          }}
+        >
+          <p
+            style={{
+              margin: "0",
+              fontStyle: "italic",
+              fontWeight: "bold",
+            }}
+          >
+            Any modifications to these resource properties will be applied
+            globally and impact resources on other all allocations process
+          </p>
+        </div>
         <ResourceForm
           resourceDetails={resourceDetails}
           resourceTypesOptions={resourceTypesOptions}
           unitTypesOptions={unitTypesOptions}
           dispatch={dispatch}
+          isDollarValueEditing={isDollarValueEditing}
+          onDollarValueEditingChange={setIsDollarValueEditing}
         />
       </div>
       {usesExchangeRates && (
@@ -134,35 +151,25 @@ export default function EditResource({
           dateErrors={dateErrors}
         />
       )}
-      {/* Advanced Settings */}
       <AdvancedSettingsSection
-        title="Advanced Settings"
+        headerText={<h2>Allocation Types</h2>}
+        header={
+          <AllocationGridHeader
+            onAddAllocationType={() =>
+              isEditingAdvanced && setShowAddAllocationTypeModal(true)
+            }
+            onAddRequiredResource={() =>
+              isEditingAdvanced && setShowAddResourceModal(true)
+            }
+          />
+        }
         isEditing={isEditingAdvanced}
         onEditingChange={handleAdvancedEditingChange}
+        warningMessage="Incorrect allocations
+            process settings can make a resource unavailable for allocation.
+            Please proceed with caution."
       >
-        <div className="p-4 bg-gray-50 rounded">
-          <h2>Dollar Value per SUs</h2>
-          <TextInput
-            label=""
-            value={resourceDetails.dollar_value}
-            onChange={(e) =>
-              dispatch(updateResourceField("dollar_value", e.target.value))
-            }
-            type="number"
-            inputAddon={"$"}
-            inputClassName="span4"
-          />
-        </div>
-        <AllocationGrid
-          columns={allocationColumns}
-          rows={allocationRows}
-          onAddRequiredResource={() =>
-            isEditingAdvanced && setShowAddResourceModal(true)
-          }
-          onAddAllocationType={() =>
-            isEditingAdvanced && setShowAddAllocationTypeModal(true)
-          }
-        />
+        <AllocationGrid columns={allocationColumns} rows={allocationRows} />
       </AdvancedSettingsSection>
       <AddNewModal
         show={showAddResourceModal}

@@ -1,86 +1,68 @@
-import { useState } from "react";
 import PropTypes from "prop-types";
-import { AddNewModal } from "./AddNewModal";
 import style from "./AdvancedSettingsSection.module.scss";
 
 export const AdvancedSettingsSection = ({
-  title,
+  headerText,
+  header,
   children,
   isEditing = false,
   onEditingChange,
+  warningMessage = "",
 }) => {
-  const [showWarning, setShowWarning] = useState(false);
-
-  const handleEditClick = () => {
-    if (!isEditing) {
-      setShowWarning(true);
-    }
-  };
-
-  const handleConfirm = () => {
-    setShowWarning(false);
-    onEditingChange(true);
-  };
-
-  const handleCancel = () => {
-    setShowWarning(false);
-  };
-
+  const altWarningBanner = headerText && headerText.type === "label";
   return (
     <div className={style["advanced-settings"]}>
-      <div className={style["header-container"]}>
-        <div className={style["header-title-container"]}>
-          <h3 className={style["header-title"]}>{title}</h3>
-          <span className="label label-important">Advanced</span>
+      {(headerText || header) && (
+        <div className={style["header-wrapper"]}>
+          {headerText}
+          {header && (
+            <div
+              className={`${style["header-buttons-container"]} ${
+                !isEditing ? style["blurred"] : ""
+              }`}
+            >
+              {header}
+            </div>
+          )}
         </div>
+      )}
+      <div style={{ width: "100%" }}>
         {!isEditing && (
-          <button className="btn btn-important" onClick={handleEditClick}>
-            Edit Advanced Settings
-          </button>
+          <div
+            className={
+              altWarningBanner
+                ? `${style["alt-warning-banner"]}`
+                : style["warning-banner"]
+            }
+          >
+            <span className={style["warning-text"]}>
+              <strong>CAUTION! </strong> {warningMessage}
+            </span>
+            <button
+              className="btn btn-danger"
+              onClick={() => onEditingChange(true)}
+            >
+              I understand the risks
+            </button>
+          </div>
         )}
-      </div>
-
-      <div className={style["warning-container"]}>
-        <p>
-          <strong>CAUTION!</strong> This section contains advanced settings that
-          affect all resources. Proceed with caution.
-          {isEditing
-            ? ""
-            : " Click 'Edit Advanced Settings' button to enable editing."}
-        </p>
-      </div>
-      <div className={!isEditing ? style["content-wrapper"] : ""}>
         <div
-          className={
-            !isEditing
-              ? `${style["content-container"]} ${style["pointer-events-none"]}`
-              : style["active"]
-          }
+          className={`${style["content-container"]} ${
+            !isEditing ? style["blurred"] : ""
+          }`}
         >
           {children}
         </div>
       </div>
-
-      <AddNewModal
-        show={showWarning}
-        onClose={handleCancel}
-        title="Warning: Advanced Settings"
-        onSave={handleConfirm}
-        buttonText={"Continue"}
-      >
-        <p>
-          You are about to edit an advanced setting. Changes made here will
-          affect all resources. Are you sure?
-        </p>
-      </AddNewModal>
     </div>
   );
 };
 
 AdvancedSettingsSection.propTypes = {
-  title: PropTypes.string.isRequired,
+  headerText: PropTypes.node,
+  header: PropTypes.node,
   children: PropTypes.node.isRequired,
-  warningMessage: PropTypes.string,
   isEditing: PropTypes.bool,
   onEditingChange: PropTypes.func.isRequired,
+  warningMessage: PropTypes.string,
 };
