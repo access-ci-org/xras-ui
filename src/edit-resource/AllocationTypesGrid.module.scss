@@ -1,18 +1,10 @@
-.header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
 .header-buttons {
   display: flex;
   gap: 1rem; /* Space between the buttons */
 }
 
 .allocation-types-grid {
-  margin-bottom: 0.8rem;
-  margin-top: 0.8rem;
+  margin-top: 1rem;
 }
 
 .vertical-align-center td {

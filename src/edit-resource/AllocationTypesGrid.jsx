@@ -3,25 +3,32 @@ import PropTypes from "prop-types";
 import Grid from "../shared/Grid";
 import style from "./AllocationTypesGrid.module.scss";
 
+export const AllocationGridHeader = ({
+  onAddAllocationType,
+  onAddRequiredResource,
+}) => (
+  <div className={style["header-buttons"]}>
+    <button className="btn btn-primary" onClick={onAddAllocationType}>
+      <i className="fa fa-plus"></i> Add Allocation Type
+    </button>
+    <button className="btn btn-primary" onClick={onAddRequiredResource}>
+      <i className="fa fa-plus"></i> Add Required Resource
+    </button>
+  </div>
+);
+
+AllocationGridHeader.propTypes = {
+  headerText: PropTypes.node,
+  onAddAllocationType: PropTypes.func.isRequired,
+  onAddRequiredResource: PropTypes.func.isRequired,
+};
+
 export const AllocationGrid = React.memo(function AllocationGrid({
   columns,
   rows,
-  onAddRequiredResource,
-  onAddAllocationType,
 }) {
   return (
     <div className={style["allocation-types-grid"]}>
-      <div className={style["header-container"]}>
-        <h2 className={style["header-title"]}>Allocation Types</h2>
-        <div className={style["header-buttons"]}>
-          <button className="btn btn-primary" onClick={onAddAllocationType}>
-            <i className="fa fa-plus"></i> Add Allocation Type
-          </button>
-          <button className="btn btn-primary" onClick={onAddRequiredResource}>
-            <i className="fa fa-plus"></i> Add Required Resource
-          </button>
-        </div>
-      </div>
       <Grid
         columns={columns}
         rows={rows}
@@ -35,6 +42,4 @@ export const AllocationGrid = React.memo(function AllocationGrid({
 AllocationGrid.propTypes = {
   columns: PropTypes.array.isRequired,
   rows: PropTypes.array.isRequired,
-  onAddRequiredResource: PropTypes.func.isRequired,
-  onAddAllocationType: PropTypes.func.isRequired,
 };

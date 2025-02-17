@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import TextInput from "../shared/Form/TextInput";
 import { SelectInput } from "../shared/SelectInput/SelectInput";
+import { AdvancedSettingsSection } from "./AdvancedSettingsSection";
 import { updateResourceField } from "./helpers/actions";
 
 export const ResourceForm = React.memo(function ResourceForm({
@@ -9,6 +10,8 @@ export const ResourceForm = React.memo(function ResourceForm({
   resourceTypesOptions,
   unitTypesOptions,
   dispatch,
+  isDollarValueEditing,
+  onDollarValueEditingChange,
 }) {
   return (
     <>
@@ -26,16 +29,22 @@ export const ResourceForm = React.memo(function ResourceForm({
         disabled
         inputClassName="span8"
       />
-      <TextInput
-        label="Dollar Value"
-        value={resourceDetails.dollar_value}
-        onChange={(e) =>
-          dispatch(updateResourceField("dollar_value", e.target.value))
-        }
-        type="number"
-        inputAddon={"$"}
-        inputClassName="span4"
-      />
+      <AdvancedSettingsSection
+        headerText={<label>Dollar Value per SUs</label>}
+        isEditing={isDollarValueEditing}
+        onEditingChange={onDollarValueEditingChange}
+        warningMessage="Dollar value is for reporting and should only be modified if the SU rate changes."
+      >
+        <TextInput
+          value={resourceDetails.dollar_value}
+          onChange={(e) =>
+            dispatch(updateResourceField("dollar_value", e.target.value))
+          }
+          type="number"
+          inputAddon={"$"}
+          inputClassName="span4"
+        />
+      </AdvancedSettingsSection>
       <TextInput
         label="Allocations Description"
         type="textarea"

@@ -1,6 +1,13 @@
 import PropTypes from "prop-types";
 
-export const AddNewModal = ({ show, onClose, title, children, onSave }) => {
+export const AddNewModal = ({
+  show,
+  onClose,
+  title,
+  children,
+  onSave,
+  buttonText,
+}) => {
   if (!show) {
     return null;
   }
@@ -60,7 +67,7 @@ export const AddNewModal = ({ show, onClose, title, children, onSave }) => {
               }}
             >
               <button className="btn btn-success" onClick={onSave}>
-                Save
+                {buttonText}
               </button>
             </div>
           </div>
@@ -76,4 +83,5 @@ AddNewModal.propTypes = {
   title: PropTypes.string.isRequired,
   children: PropTypes.node.isRequired,
   onSave: PropTypes.func.isRequired,
+  buttonText: PropTypes.string,
 };

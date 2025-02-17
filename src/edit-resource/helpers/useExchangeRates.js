@@ -7,8 +7,29 @@ export const useExchangeRates = (resourceData, dispatch) => {
         type: "DELETE_EXCHANGE_RATE",
         payload: rateId,
       });
+
+      const remainingRates =
+        resourceData?.resource_details?.exchange_rates?.discount_rates.filter(
+          (rate) => rate.id !== rateId
+        ) || [];
+
+      remainingRates.forEach((rate) => {
+        if (rate.begin_date && rate.end_date) {
+          // Clear any overlap errors after deleting a rate
+          dispatch({
+            type: "UPDATE_EXCHANGE_RATE",
+            payload: {
+              rateId: rate.id,
+              changes: {
+                start_date_error: "",
+                end_date_error: "",
+              },
+            },
+          });
+        }
+      });
     },
-    [dispatch]
+    [dispatch, resourceData]
   );
 
   const exchangeRateColumns = [
@@ -24,6 +45,11 @@ export const useExchangeRates = (resourceData, dispatch) => {
       type: "input",
       tooltip:
         "Exchange rate is the cost in ACCESS Credits of one resource unit. ACCESS Credits / exchange rate = resource units",
+    },
+    {
+      key: "conversion",
+      name: "Resource Units per ACCESS Credit",
+      width: 150,
     },
     {
       key: "start_date",
@@ -91,7 +117,64 @@ export const useExchangeRates = (resourceData, dispatch) => {
         errors.push(rate.rate_error);
       }
     });
-    return errors.filter((error) => error && error !== "");
+    return errors.filter(
+      (error, index) =>
+        error &&
+        error !== "" &&
+        (!error.includes("overlaps") || errors.indexOf(error) === index)
+    );
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC",
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+    }).format(date);
+  };
+
+  const datesOverlap = (start1, end1, start2, end2) => {
+    const s1 = new Date(start1).getTime();
+    const e1 = new Date(end1).getTime();
+    const s2 = new Date(start2).getTime();
+    const e2 = new Date(end2).getTime();
+
+    return s1 <= e2 && s2 <= e1;
+  };
+
+  const validateOverlap = (currentRate, discountRates) => {
+    let overlapError = "";
+
+    if (currentRate.begin_date && currentRate.end_date) {
+      const otherRates = discountRates.filter(
+        (rate) => rate.id !== currentRate.id
+      );
+
+      for (const rate of otherRates) {
+        if (rate.begin_date && rate.end_date) {
+          const isOverlapping = datesOverlap(
+            currentRate.begin_date,
+            currentRate.end_date,
+            rate.begin_date,
+            rate.end_date
+          );
+
+          if (isOverlapping) {
+            overlapError = `The selected date range (${formatDate(
+              currentRate.begin_date
+            )} to ${formatDate(
+              currentRate.end_date
+            )}) overlaps with an existing discount rate (${formatDate(
+              rate.begin_date
+            )} to ${formatDate(rate.end_date)})`;
+            break;
+          }
+        }
+      }
+    }
+    return overlapError;
   };
 
   const handleDateChange = (rateId, dateField, newValue) => {
@@ -110,87 +193,135 @@ export const useExchangeRates = (resourceData, dispatch) => {
       }).format(date);
     };
 
-    const rate =
-      resourceData?.resource_details?.exchange_rates?.discount_rates.find(
-        (r) => r.id === rateId
-      );
-
+    const discountRates =
+      resourceData?.resource_details?.exchange_rates?.discount_rates || [];
+    const rate = discountRates.find((r) => r.id === rateId);
     if (!rate) return;
 
-    const column = exchangeRateColumns.find((col) => col.key === dateField);
     const changes = { [fieldMap[dateField]]: newValue };
     const errors = {};
+    const isEndDate = dateField === "end_date";
 
-    if (!newValue) {
-      errors[`${dateField}_error`] = "Date cannot be empty or invalid";
+    const validateCurrentField = () => {
+      if (!newValue) {
+        errors[`${dateField}_error`] = "Date cannot be empty or invalid";
+        return false;
+      }
+
+      const column = exchangeRateColumns.find((col) => col.key === dateField);
+      // Get min/max dates from column configuration
+      const columnMinDate = column?.minDate || "1900-01-01";
+      const columnMaxDate = column?.maxDate || "2100-12-31";
+      const effectiveMinDate =
+        isEndDate && rate.begin_date ? rate.begin_date : columnMinDate;
+
+      if (newValue < effectiveMinDate) {
+        errors[`${dateField}_error`] = `${dateField.replace(
+          "_",
+          " "
+        )} ${formatDate(newValue)} cannot be before ${formatDate(
+          effectiveMinDate
+        )}`;
+        return false;
+      }
+
+      if (newValue > columnMaxDate) {
+        errors[`${dateField}_error`] = `${dateField.replace(
+          "_",
+          " "
+        )} cannot be after ${formatDate(columnMaxDate)}`;
+        return false;
+      }
+
+      errors[`${dateField}_error`] = "";
+      return true;
+    };
+
+    const validateDateRelationship = () => {
+      const currentEndDate =
+        dateField === "end_date" ? newValue : rate.end_date;
+
+      if (dateField === "start_date" && currentEndDate) {
+        if (newValue > currentEndDate) {
+          errors.end_date_error = `end date ${formatDate(
+            currentEndDate
+          )} cannot be before ${formatDate(newValue)}`;
+          return false;
+        }
+        errors.end_date_error = errors.end_date_error || "";
+      }
+
+      return true;
+    };
+
+    const validateOverlaps = () => {
+      console.log("validating overlaps");
+      const currentStartDate =
+        dateField === "start_date" ? newValue : rate.begin_date;
+      const currentEndDate =
+        dateField === "end_date" ? newValue : rate.end_date;
+
+      if (currentStartDate && currentEndDate) {
+        const overlapError = validateOverlap(
+          { ...rate, begin_date: currentStartDate, end_date: currentEndDate },
+          discountRates
+        );
+
+        errors.start_date_error = overlapError;
+        errors.end_date_error = overlapError;
+        return !overlapError;
+      }
+      return true;
+    };
+
+    if (!validateCurrentField()) {
       dispatch({
         type: "UPDATE_EXCHANGE_RATE",
-        payload: {
-          rateId,
-          changes: {
-            ...changes,
-            ...errors,
-          },
-        },
+        payload: { rateId, changes: { ...changes, ...errors } },
       });
       return;
     }
 
-    // Get min/max dates from column configuration
-    const columnMinDate = column?.minDate || "1900-01-01";
-    const columnMaxDate = column?.maxDate || "2100-12-31";
+    validateDateRelationship();
+    validateOverlaps();
 
-    const isEndDate = dateField === "end_date";
-    const effectiveMinDate =
-      isEndDate && rate.begin_date ? rate.begin_date : columnMinDate;
-
-    if (newValue < effectiveMinDate) {
-      errors[`${dateField}_error`] = `${dateField.replace(
-        "_",
-        " "
-      )} cannot be before ${formatDate(effectiveMinDate)}`;
-    } else if (newValue > columnMaxDate) {
-      errors[`${dateField}_error`] = `${dateField.replace(
-        "_",
-        " "
-      )} cannot be after ${formatDate(columnMaxDate)}`;
-    } else {
-      errors[`${dateField}_error`] = "";
-    }
-
-    // Validate date relationships
-    if (dateField === "start_date") {
-      const currentEndDate = rate.end_date;
-      if (currentEndDate && newValue > currentEndDate) {
-        errors.end_date_error = `End date (${formatDate(
-          currentEndDate
-        )}) cannot be before start date (${formatDate(newValue)})`;
-      } else {
-        errors.end_date_error = "";
-      }
+    if (isEndDate && !rate.begin_date) {
+      errors.start_date_error = "Date cannot be empty or invalid";
+    } else if (!isEndDate && !rate.end_date) {
+      errors.end_date_error = "Date cannot be empty or invalid";
     }
 
     dispatch({
       type: "UPDATE_EXCHANGE_RATE",
-      payload: {
-        rateId,
-        changes: {
-          ...changes,
-          ...errors,
-        },
-      },
+      payload: { rateId, changes: { ...changes, ...errors } },
     });
   };
 
   const handleAddDiscountRate = () => {
+    const discountRates =
+      resourceData?.resource_details?.exchange_rates?.discount_rates || [];
     const today_date = new Date();
-    const begin_date = today_date.toISOString().split("T")[0];
-    // Set end date to 15 days from begin date UTC
-    const end_date = new Date(
-      today_date.setUTCDate(today_date.getUTCDate() + 15)
-    )
-      .toISOString()
-      .split("T")[0];
+
+    // Find the latest end date from existing rates
+    let latestEndDate = today_date;
+    discountRates.forEach((rate) => {
+      if (rate.end_date) {
+        const endDate = new Date(rate.end_date);
+        if (endDate > latestEndDate) {
+          latestEndDate = endDate;
+        }
+      }
+    });
+
+    // Set start date to day after the latest end date
+    const startDate = new Date(latestEndDate);
+    startDate.setDate(startDate.getDate() + 1);
+    const begin_date = startDate.toISOString().split("T")[0];
+
+    // Set end date to 15 days after start date
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 15);
+    const end_date = endDate.toISOString().split("T")[0];
     const newRate = {
       id: Date.now(),
       exchange_rate: "1.0",
@@ -210,6 +341,14 @@ export const useExchangeRates = (resourceData, dispatch) => {
     const baseRate = exchangeRates?.base_rate ?? ""; // Default to empty string if no base rate
     const discountRates = exchangeRates?.discount_rates || [];
     const today = new Date().toISOString().split("T")[0];
+    const unitType =
+      resourceData?.resource_details?.unit_type || "Resource Units";
+
+    const calculateConversion = (rate) => {
+      if (!rate || Number(rate) === 0) return "-";
+      const unitsPerCredit = 1 / Number(rate);
+      return `${unitsPerCredit.toFixed(2)} ${unitType}`;
+    };
 
     return [
       // Base rate row
@@ -219,6 +358,7 @@ export const useExchangeRates = (resourceData, dispatch) => {
           value: baseRate.toString(),
           onChange: (newValue) => handleBaseRateChange(newValue),
         },
+        conversion: calculateConversion(baseRate),
       },
       // Discount rate rows
       ...discountRates.map((rate) => {
@@ -236,6 +376,7 @@ export const useExchangeRates = (resourceData, dispatch) => {
               : null,
             disabled: !isRateEditable,
           },
+          conversion: calculateConversion(rate.exchange_rate),
           start_date: {
             value: rate.begin_date || "",
             onChange: (newValue) =>
