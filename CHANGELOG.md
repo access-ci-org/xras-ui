@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.7.0-beta4](https://github.com/access-ci-org/xras-ui/compare/v0.7.0-beta3...v0.7.0-beta4) (2025-02-17)
+
+
+### Miscellaneous Chores
+
+* release 0.7.0-beta4 ([99acbc2](https://github.com/access-ci-org/xras-ui/commit/99acbc257b00c167564c38cf801d45b94f35a617))
+
 ## [0.7.0-beta3](https://github.com/access-ci-org/xras-ui/compare/v0.8.0-beta2...v0.7.0-beta3) (2025-02-05)
 
 
