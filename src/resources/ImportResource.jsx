@@ -12,6 +12,17 @@ export default function ImportResource({ setCanSave }) {
   const [resourceData, setResourceData] = useState(null);
   const resourceFormOptions = useResourceOptions(resourceData);
 
+  // Add placeholder options.
+  resourceFormOptions["resourceTypesOptions"].unshift({
+    value: 0,
+    label: "Select a resource type...",
+  });
+  resourceFormOptions["unitTypesOptions"].unshift({
+    value: 0,
+    label: "Select a unit type...",
+  });
+
+  // Fetch a list of addable resources.
   useEffect(() => {
     (async () => {
       const res = await fetch("/resources/addable.json");
@@ -23,8 +34,7 @@ export default function ImportResource({ setCanSave }) {
     })();
   }, []);
 
-  console.log(addableResources);
-
+  // Fetch details for the selected resource.
   useEffect(() => {
     if (selectedCiderResourceId === -1) return setResourceData(null);
     (async () => {
@@ -39,6 +49,18 @@ export default function ImportResource({ setCanSave }) {
     })();
   }, [selectedCiderResourceId]);
 
+  // Validate that required fields are filled in.
+  useEffect(() => {
+    if (!resourceData) return;
+    const details = resourceData.resource_details;
+    setCanSave(
+      details.resource_name.length > 0 &&
+        details.dollar_value > 0 &&
+        details.resource_type_id > 0 &&
+        details.unit_type_id > 0
+    );
+  }, [resourceData]);
+
   if (addableResources === null) return <p>Loading&hellip;</p>;
   if (addableResources.length == 0)
     return <Alert>There are currently no resources available to add.</Alert>;
@@ -50,22 +72,47 @@ export default function ImportResource({ setCanSave }) {
     }))
   );
 
-  console.log({ resourceData, resourceFormOptions });
+  console.log({ resourceData });
+
+  const dispatchResourceChange = (action) => {
+    if (action.type == "UPDATE_RESOURCE_FIELD")
+      setResourceData({
+        ...resourceData,
+        resource_details: {
+          ...resourceData.resource_details,
+          [action.field]: action.value,
+        },
+      });
+  };
 
   return (
     <>
+      <h2>Select a Resource to Add</h2>
       <SelectInput
         options={resourceOptions}
         onChange={(e) => setSelectedCiderResourceId(parseInt(e.target.value))}
       ></SelectInput>
       {resourceData && (
-        <ResourceForm
-          resourceDetails={resourceData["resource_details"]}
-          resourceTypesOptions={resourceFormOptions["resourceTypesOptions"]}
-          unitTypesOptions={resourceFormOptions["unitTypesOptions"]}
-          showResourceId={false}
-          useAdvancedSettings={false}
-        />
+        <>
+          <h2>Resource Properties</h2>
+          <p
+            style={{
+              fontStyle: "italic",
+              fontWeight: "bold",
+            }}
+          >
+            Any modifications to these resource properties will be applied
+            globally and impact resources on other all allocations process
+          </p>
+          <ResourceForm
+            resourceDetails={resourceData["resource_details"]}
+            resourceTypesOptions={resourceFormOptions["resourceTypesOptions"]}
+            unitTypesOptions={resourceFormOptions["unitTypesOptions"]}
+            showResourceId={false}
+            useAdvancedSettings={false}
+            dispatch={dispatchResourceChange}
+          />
+        </>
       )}
     </>
   );
