@@ -7,6 +7,8 @@ export const AddNewModal = ({
   children,
   onSave,
   buttonText,
+  cancelText = "Cancel",
+  canSave = true,
 }) => {
   if (!show) {
     return null;
@@ -66,7 +68,14 @@ export const AddNewModal = ({
                 backgroundColor: "#f8f9fa",
               }}
             >
-              <button className="btn btn-success" onClick={onSave}>
+              <button className="btn btn-danger" onClick={onClose}>
+                {cancelText}
+              </button>
+              <button
+                className="btn btn-success"
+                onClick={onSave}
+                disabled={!canSave}
+              >
                 {buttonText}
               </button>
             </div>
@@ -84,4 +93,6 @@ AddNewModal.propTypes = {
   children: PropTypes.node.isRequired,
   onSave: PropTypes.func.isRequired,
   buttonText: PropTypes.string,
+  cancelText: PropTypes.string,
+  canSave: PropTypes.bool,
 };
