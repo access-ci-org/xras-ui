@@ -1,7 +1,5 @@
 import config from "./config";
 
-import InlineButton from "../../shared/InlineButton";
-
 export const roundNumber = (value, decimalPlaces, mode = "round") => {
   const roundingFactor = Math.pow(10, decimalPlaces || 0);
   return Math[mode](value * roundingFactor) / roundingFactor;
@@ -50,24 +48,6 @@ export const parseResourceName = (name) => {
   return { full: name, short: (matches && matches[3]) || null };
 };
 
-export const formatResource = (res, { userGuide = true } = {}) => {
-  const { full, short } = parseResourceName(res.name);
-  const displayName = short ? <abbr title={full}>{short}</abbr> : full;
-  return (
-    <>
-      {icon(config.resourceTypeIcons[res.icon])} {displayName}
-      {!res.isCredit && res.userGuideUrl && userGuide ? (
-        <InlineButton
-          icon="book"
-          href={res.userGuideUrl}
-          target="_blank"
-          title={`${res.name} User Guide`}
-        />
-      ) : null}
-    </>
-  );
-};
-
 const getSortResourceName = (res) => {
   const parsed = parseResourceName(res.name);
   return parsed.short || parsed.full;
@@ -113,14 +93,21 @@ export const singularize = (name, count) => {
   return count == 1 && name.endsWith("s") ? name.slice(0, -1) : name;
 };
 
+export const formatExchangeRate = (unit, unitCost, creditResourceName) =>
+  `1 ${singularize(unit, 1)} = ${formatNumber(unitCost)} ${singularize(
+    creditResourceName,
+    unitCost
+  )}`;
+
 export const getResourceUsagePercent = (request) => {
   let total = 0;
   let used = 0;
 
   for (let res of request.resources) {
     if (res.isBoolean) continue;
-    total += res.allocated * res.unitCost;
-    used += Math.min(res.used, res.allocated) * res.unitCost;
+    let { unitCost } = res.exchangeRates.base;
+    total += res.allocated * unitCost;
+    used += Math.min(res.used, res.allocated) * unitCost;
   }
 
   return total > 0 ? used / total : 0;
@@ -150,3 +137,17 @@ export const resourceColors = [
   "warning",
   "danger",
 ];
+
+export function getCost(res, type = "total") {
+  const differenceUnitCost =
+    res.exchangeRates[res.requested <= res.allocated ? "base" : "current"]
+      .unitCost;
+  let cost = (res.requested - res.allocated) * differenceUnitCost;
+  if (type != "total") return cost;
+  return cost + res.allocated * res.exchangeRates.base.unitCost;
+}
+
+export function addRoutes(routes) {
+  // Override the default routes with the ones from Rails.
+  if (routes) config.routes = { ...config.routes, ...routes };
+}

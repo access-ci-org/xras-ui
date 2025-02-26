@@ -2,12 +2,12 @@ import { useProject, useRequest } from "./helpers/hooks";
 import {
   formatBoolean,
   formatRequestName,
-  formatResource,
   sortResources,
-} from "./helpers/utils";
+} from "../shared/helpers/utils";
 
 import ActionTitle from "./ActionTitle";
 import Grid from "../shared/Grid";
+import ResourceName from "../shared/ResourceName";
 import StatusBadge from "../shared/StatusBadge";
 
 const formatNumber = (value) => (
@@ -85,8 +85,9 @@ export default function History({ requestId, grantNumber }) {
       format: res.isBoolean
         ? (value) => (value ? formatBoolean(value) : null)
         : formatNumber,
-      formatHeader: (name, column) =>
-        formatResource(column, { userGuide: false }),
+      formatHeader: (name, column) => (
+        <ResourceName resource={column} userGuide={false} />
+      ),
     })),
   ];
 

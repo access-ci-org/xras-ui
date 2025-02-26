@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AddPublication from "./AddPublication";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 
 const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
   const [authors, _setAuthors] = useState(usernames);

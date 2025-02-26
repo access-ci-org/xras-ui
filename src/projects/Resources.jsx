@@ -1,25 +1,27 @@
 import { useRef } from "react";
 import { useProject, useRequest } from "./helpers/hooks";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 import {
   formatArray,
+  formatExchangeRate,
   formatManagers,
   formatNumber,
-  formatResource,
   getResourceUsagePercent,
   icon,
   parseResourceName,
   roundNumber,
-  singularize,
-} from "./helpers/utils";
+} from "../shared/helpers/utils";
 import gridStyle from "../shared/Grid.module.scss";
 
 import Select from "react-select";
 
 import Alert from "../shared/Alert";
+import DiscountBadge from "../shared/DiscountBadge";
 import Grid from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
 import InlineButton from "../shared/InlineButton";
+import ResourceName from "../shared/ResourceName";
+import ResourceDiscountsBanner from "../shared/ResourceDiscountsBanner";
 import ResourcesDiagram from "./ResourcesDiagram";
 import StatusBadge from "../shared/StatusBadge";
 import BlurInput from "../shared/BlurInput";
@@ -80,9 +82,15 @@ export default function Resources({ requestId, grantNumber }) {
       if (missing.length)
         unmetDeps.push(
           <span key={res.resourceId}>
-            {formatResource(res, { userGuide: false })} requires{" "}
+            <ResourceName resource={res} userGuide={false} /> requires{" "}
             {formatArray(
-              missing.map((res) => formatResource(res, { userGuide: false })),
+              missing.map((res) => (
+                <ResourceName
+                  key={res.resourceId}
+                  resource={res}
+                  userGuide={false}
+                />
+              )),
               "or"
             )}
             .
@@ -136,11 +144,13 @@ export default function Resources({ requestId, grantNumber }) {
   }
 
   const resourceIds = resources.map((res) => res.resourceId);
+  const availableResourcesMap = {};
   const availableResourceOptions =
     canExchange && !saved && !previous
       ? request.allowedActions.Exchange.resources
           .filter((res) => !resourceIds.includes(res.resourceId))
           .map((res) => {
+            availableResourcesMap[res.resourceId] = res;
             const parsed = parseResourceName(res.name);
             const label = parsed.short
               ? `${parsed.short} (${parsed.full.replace(/ \([^(]+\)/, "")})`
@@ -178,27 +188,36 @@ export default function Resources({ requestId, grantNumber }) {
 
   const getBalance = (row) => row.requested - row.used;
 
-  const getRequested = (balanceString, row) => {
-    let requested = roundNumber(
-      Number(balanceString.replace(/[^0-9-.]/g, "")) + row.used,
+  const cleanBalance = (balanceString, row) => {
+    const allocatedBalance = row.allocated - row.used;
+    const desiredBalance = roundNumber(
+      Number(balanceString.replace(/[^0-9-.]/g, "")),
       row.decimalPlaces
     );
-    if (isNaN(requested)) requested = row.allocated;
+    const minBalance = Math.min(0, allocatedBalance);
+    if (desiredBalance < minBalance) return minBalance;
 
-    const minRequest = Math.min(row.allocated, row.used);
-    if (requested < minRequest) return minRequest;
+    // We use the base exchange rate when the allocation is being reduced below the
+    // current allocation, and the current exchange rate when the allocations is
+    // being increased above the current allocation. To handle cases where the user
+    // reduces the allocation and then later increases it before submitting, we need
+    // to split the increase at the current allocation and apply the base exchange rate
+    // to the lower portion and the current exchange rate to the upper portion.
+    let availableCredits =
+      credit.requested * credit.exchangeRates.base.unitCost;
+    const costToAllocated =
+      (row.allocated - row.requested) * row.exchangeRates.base.unitCost;
+    const baseCost = Math.min(availableCredits, costToAllocated);
 
-    let cost = row.unitCost * (requested - row.requested);
-    if (cost > credit.requested)
-      return (
-        roundNumber(
-          credit.requested / row.unitCost,
-          row.decimalPlaces,
-          "floor"
-        ) + row.requested
-      );
+    availableCredits -= baseCost;
+    let maxBalance =
+      row.requested - row.used + baseCost / row.exchangeRates.base.unitCost;
+    if (availableCredits > 0)
+      maxBalance += availableCredits / row.exchangeRates.current.unitCost;
 
-    return requested;
+    if (desiredBalance > maxBalance)
+      return roundNumber(maxBalance, row.decimalPlaces, "floor");
+    return desiredBalance;
   };
 
   // Grid columns
@@ -206,7 +225,7 @@ export default function Resources({ requestId, grantNumber }) {
     {
       key: "name",
       name: "Resource",
-      format: (name, row) => formatResource(row),
+      format: (name, row) => <ResourceName resource={row} />,
       width: Math.min(350, window.innerWidth * 0.3),
     },
     {
@@ -227,13 +246,24 @@ export default function Resources({ requestId, grantNumber }) {
         row.isBoolean ? (
           <>&mdash;</>
         ) : (
-          <abbr
-            title={`1 ${singularize(value, 1)} = ${formatNumber(
-              row.unitCost
-            )} ${singularize(credit.name, row.unitCost)}`}
-          >
-            {value}
-          </abbr>
+          [
+            <abbr
+              key="base"
+              title={formatExchangeRate(
+                value,
+                row.exchangeRates.base.unitCost,
+                credit.name
+              )}
+            >
+              {value}
+            </abbr>,
+            <DiscountBadge
+              creditResource={credit}
+              key="discount"
+              resource={row}
+              short={true}
+            />,
+          ]
         ),
     },
     {
@@ -291,10 +321,7 @@ export default function Resources({ requestId, grantNumber }) {
         ) : editable ? (
           <BlurInput
             classes="text-end w-100"
-            clean={(balanceString) => {
-              const requested = getRequested(balanceString, row);
-              return requested - row.used;
-            }}
+            clean={(balanceString) => cleanBalance(balanceString, row)}
             format={formatNumber}
             label={`Balance for ${row.name}`}
             setValue={(cleaned) => {
@@ -367,6 +394,11 @@ export default function Resources({ requestId, grantNumber }) {
       )}
       {availableResourceOptions.length ? (
         <>
+          <ResourceDiscountsBanner
+            resources={
+              (canExchange && request.allowedActions.Exchange.resources) || []
+            }
+          />
           <div
             className="p-2"
             style={{
@@ -383,6 +415,14 @@ export default function Resources({ requestId, grantNumber }) {
               placeholder={resourceAddMessage}
               value={null}
               aria-label={resourceAddMessage}
+              formatOptionLabel={({ value, label }) => [
+                label,
+                <DiscountBadge
+                  creditResource={credit}
+                  key="discount"
+                  resource={availableResourcesMap[value]}
+                />,
+              ]}
             />
           </div>
           {!rows.length ? (

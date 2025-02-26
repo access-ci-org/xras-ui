@@ -1,6 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { coalesce, roundNumber, sortResources, xrasRolesMap } from "./utils";
-import config from "./config";
+import {
+  coalesce,
+  getCost,
+  roundNumber,
+  sortResources,
+  xrasRolesMap,
+} from "../../shared/helpers/utils";
+import config from "../../shared/helpers/config";
 
 export const statuses = {
   error: "error",
@@ -225,6 +231,16 @@ const addRequest = (
     request.resources.push({
       allocated: 0,
       decimalPlaces: 0,
+      exchangeRates: {
+        base: {
+          type: "base",
+          unitCost: 1.0,
+        },
+        current: {
+          type: "base",
+          unitCost: 1.0,
+        },
+      },
       icon: "credit",
       isActive: true,
       isBoolean: false,
@@ -235,7 +251,6 @@ const addRequest = (
       requires: [],
       resourceId: 0,
       unit: "Credit Equivalents",
-      unitCost: 1.0,
       used: 0,
     });
   state.requests[requestId] = request;
@@ -282,62 +297,88 @@ const makeResource = ({
   amountRequested,
   amountUsed,
   attributeSets,
+  baseExchangeRate,
+  currentExchangeRate,
+  currentExchangeRateEndDate,
+  currentExchangeRateType,
   dependentResourceXrasIds,
   displayResourceName,
   endDate,
   exchangeRate,
+  organizationId,
+  organizationFaviconUrl,
+  organizationName,
   resourceRepositoryKey,
   resourceType,
   startDate,
   unitType,
   userGuideUrl,
   xrasResourceId,
-}) => ({
-  allocated: roundNumber(
-    coalesce(amountAllocated, amountApproved) || 0,
-    0,
-    "floor"
-  ),
-  decimalPlaces: 0,
-  endDate,
-  icon: unitType == "ACCESS Credits" ? "credit" : resourceType.toLowerCase(),
-  isActive: allocationState == "active",
-  isBoolean: unitType == "[Yes = 1, No = 0]",
-  isCredit: unitType == "ACCESS Credits",
-  isFake: false,
-  isUnderReview: false,
-  isNew: false,
-  name: displayResourceName.trim(),
-  questions: (attributeSets || [])
-    .filter(({ isActive }) => isActive)
-    .sort(sortRelativeOrder)
-    .map((attrSet) => ({
-      attributeSetId: attrSet.attributeSetId,
-      attributes: attrSet.attributes.sort(sortRelativeOrder).map((attr) => ({
-        required: attr.isRequired,
-        resourceAttributeId: attr.resourceAttributeId,
-        label: attr.attributeName,
+}) => {
+  const isBoolean = unitType == "[Yes = 1, No = 0]";
+  const isCredit = unitType == "ACCESS Credits";
+  return {
+    allocated: roundNumber(
+      coalesce(amountAllocated, amountApproved) || 0,
+      0,
+      "floor"
+    ),
+    decimalPlaces: 0,
+    endDate,
+    exchangeRates: {
+      base: {
+        type: "base",
+        unitCost: !isBoolean ? baseExchangeRate || exchangeRate : 0,
+      },
+      current: {
+        endDate: currentExchangeRateEndDate,
+        type: (currentExchangeRateType || "base").toLowerCase(),
+        unitCost: !isBoolean ? currentExchangeRate || exchangeRate : 0,
+      },
+    },
+    icon: isCredit ? "credit" : resourceType.toLowerCase(),
+    isActive: allocationState == "active",
+    isBoolean,
+    isCredit,
+    isFake: false,
+    isUnderReview: false,
+    isNew: false,
+    name: displayResourceName.trim(),
+    questions: (attributeSets || [])
+      .filter(({ isActive }) => isActive)
+      .sort(sortRelativeOrder)
+      .map((attrSet) => ({
+        attributeSetId: attrSet.attributeSetId,
+        attributes: attrSet.attributes.sort(sortRelativeOrder).map((attr) => ({
+          required: attr.isRequired,
+          resourceAttributeId: attr.resourceAttributeId,
+          label: attr.attributeName,
+        })),
+        fieldType: attrSet.attributeSetRelationType,
+        label: attrSet.attributeSetName,
+        resourceId: xrasResourceId,
+        values: [],
       })),
-      fieldType: attrSet.attributeSetRelationType,
-      label: attrSet.attributeSetName,
-      resourceId: xrasResourceId,
-      values: [],
-    })),
-  requested: roundNumber(
-    coalesce(amountRequested, amountAllocated) || 0,
-    0,
-    "floor"
-  ),
-  requires: dependentResourceXrasIds || [],
-  resourceId: xrasResourceId,
-  resourceRepositoryKey,
-  startDate,
-  type: resourceType,
-  unit: unitType,
-  unitCost: unitType != "[Yes = 1, No = 0]" && exchangeRate ? exchangeRate : 0,
-  used: roundNumber(amountUsed || 0, 0, "ceil"),
-  userGuideUrl,
-});
+    resourceProvider: {
+      organizationId: organizationId,
+      name: organizationName,
+      favicon: organizationFaviconUrl,
+    },
+    requested: roundNumber(
+      coalesce(amountRequested, amountAllocated) || 0,
+      0,
+      "floor"
+    ),
+    requires: dependentResourceXrasIds || [],
+    resourceId: xrasResourceId,
+    resourceRepositoryKey,
+    startDate,
+    type: resourceType,
+    unit: unitType,
+    used: roundNumber(amountUsed || 0, 0, "ceil"),
+    userGuideUrl,
+  };
+};
 
 const arrayEquals = (a, b) => {
   a = [...a].sort();
@@ -732,10 +773,10 @@ export const apiSlice = createSlice({
         }
         if (resource.isCredit) {
           credit = resource;
-          availableCredits += resource.allocated * resource.unitCost;
+          availableCredits +=
+            resource.allocated * resource.exchangeRates.base.unitCost;
         } else {
-          availableCredits -=
-            (resource.requested - resource.allocated) * resource.unitCost;
+          availableCredits -= getCost(resource, "difference");
         }
       }
 

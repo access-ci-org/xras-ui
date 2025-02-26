@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - ramps-100-variable-marketplace
 
 jobs:
   release:
@@ -22,6 +23,7 @@ jobs:
         uses: googleapis/release-please-action@v4
         with:
           release-type: node
+          target-branch: ${{ github.ref_name }}
 
   build-publish:
     name: Build and publish module

@@ -1,5 +1,5 @@
 import { useProject, useRequest } from "./helpers/hooks";
-import { formatBoolean, formatNumber } from "./helpers/utils";
+import { formatBoolean, formatNumber } from "../shared/helpers/utils";
 
 import Modal from "react-bootstrap/Modal";
 import ResourceQuestion from "./ResourceQuestion";

@@ -1,0 +1,67 @@
+.exchange-rates-grid {
+  margin: 0.8rem 0 1.6rem;
+  border: 0;
+
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .header-buttons {
+    display: flex;
+    gap: 1rem;
+
+    button {
+      i {
+        margin-right: 0.5rem;
+      }
+    }
+  }
+
+  .vertical-align-center {
+    td {
+      vertical-align: middle;
+    }
+  }
+
+  // Style inputs within the grid
+  :global {
+    .form-control {
+      margin: 0;
+      padding: 0.25rem 0.5rem;
+    }
+
+    // Align text inputs and selects
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      min-width: 60px;
+    }
+
+    // Align date inputs
+    input[type="date"] {
+      width: 100%;
+    }
+  }
+}
+
+.error-summary {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+
+  ul {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useProject } from "./helpers/hooks";
-import { formatRequestName } from "./helpers/utils";
+import { formatRequestName } from "../shared/helpers/utils";
 import style from "./Project.module.scss";
 
 import Alert from "../shared/Alert";

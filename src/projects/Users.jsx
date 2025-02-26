@@ -1,7 +1,7 @@
 import { filterResource, searchUsers } from "./helpers/apiSlice";
 import { useProject, useRequest } from "./helpers/hooks";
-import { formatManagers, formatResource, roles } from "./helpers/utils";
-import config from "./helpers/config";
+import { formatManagers, roles } from "../shared/helpers/utils";
+import config from "../shared/helpers/config";
 import gridStyle from "../shared/Grid.module.scss";
 
 import AsyncSelect from "react-select/async";
@@ -9,6 +9,7 @@ import AsyncSelect from "react-select/async";
 import Alert from "../shared/Alert";
 import Grid from "../shared/Grid";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
+import ResourceName from "../shared/ResourceName";
 import UserName from "../shared/UserName";
 
 export default function Users({ grantNumber, requestId }) {
@@ -117,9 +118,11 @@ export default function Users({ grantNumber, requestId }) {
 
     return (
       <>
-        {column.key == "all"
-          ? name
-          : formatResource(column, { userGuide: false })}
+        {column.key == "all" ? (
+          name
+        ) : (
+          <ResourceName resource={column} userGuide={false} />
+        )}
         <br />
         <MultiStateCheckbox
           description={description}
