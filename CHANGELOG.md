@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.9.0](https://github.com/access-ci-org/xras-ui/compare/v0.8.0...v0.9.0) (2025-02-26)
+
+
+### Features
+
+* **variable-marketplace:** Release variable marketplace ([1fc63da](https://github.com/access-ci-org/xras-ui/commit/1fc63dada7ccb5d4e831f9bb4fe6ed27f9bf2a4f))
+
 ## [0.8.0](https://github.com/access-ci-org/xras-ui/compare/v0.7.0...v0.8.0) (2025-02-19)
 
 ### Features
