@@ -47,7 +47,7 @@ const Publication = ({publication}) => {
             {publication.authors.length > 3 && (
               <button onClick={handleClick}
                       className="btn"
-                      style={{textDecoration: "none", color: "white", backgroundColor: "inherit", border: "none"}}>
+                      style={{textTransform: "lowercase", textDecoration: "none", color: "white", backgroundColor: "inherit", border: "none"}}>
                 {showAllAuthors ? "(See Less)" : "(See More)"}
               </button>
             )}
