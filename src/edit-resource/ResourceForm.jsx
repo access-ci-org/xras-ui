@@ -12,11 +12,12 @@ export const ResourceForm = React.memo(function ResourceForm({
   dispatch,
   isDollarValueEditing,
   onDollarValueEditingChange,
+  showDollarValue = true,
   showResourceId = true,
   useAdvancedSettings = true,
 }) {
   const dollarValueLabel = "Dollar Value per SUs";
-  const dollarValueInput = (
+  const dollarValueInput = showDollarValue ? (
     <TextInput
       label={useAdvancedSettings ? null : dollarValueLabel}
       value={resourceDetails.dollar_value}
@@ -27,7 +28,7 @@ export const ResourceForm = React.memo(function ResourceForm({
       inputAddon={"$"}
       inputClassName="span4"
     />
-  );
+  ) : null;
   return (
     <>
       <TextInput
@@ -46,7 +47,7 @@ export const ResourceForm = React.memo(function ResourceForm({
           inputClassName="span8"
         />
       )}
-      {useAdvancedSettings ? (
+      {useAdvancedSettings && showDollarValue ? (
         <AdvancedSettingsSection
           headerText={<label>{dollarValueLabel}</label>}
           isEditing={isDollarValueEditing}
@@ -99,6 +100,7 @@ ResourceForm.propTypes = {
   dispatch: PropTypes.func.isRequired,
   isDollarValueEditing: PropTypes.bool,
   onDollarValueEditingChange: PropTypes.func,
+  showDollarValue: PropTypes.bool,
   showResourceId: PropTypes.bool,
   useAdvancedSettings: PropTypes.bool,
 };

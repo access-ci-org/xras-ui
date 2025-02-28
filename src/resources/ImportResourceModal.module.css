@@ -1,0 +1,6 @@
+.form-wrapper {
+  position: relative;
+}
+.form-wrapper :global .span8 {
+  max-width: calc(100% - 15px);
+}

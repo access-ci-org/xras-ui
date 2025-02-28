@@ -3,8 +3,7 @@ import { updateBackend } from "./helpers/actions";
 import { sortResources, startScrolling, stopScrolling } from "./helpers/utils";
 import styles from "./Resources.module.scss";
 
-import { AddNewModal } from "../edit-resource/AddNewModal";
-import ImportResource from "./ImportResource";
+import ImportResourceModal from "./ImportResourceModal";
 
 export default function Resources({ availableResources, relativeUrlRoot }) {
   const sortedResources = useMemo(
@@ -13,7 +12,6 @@ export default function Resources({ availableResources, relativeUrlRoot }) {
   );
   const [resources, setResources] = useState(sortedResources);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [canSaveImport, setCanSaveImport] = useState(false);
 
   const draggedIndexRef = useRef(null);
   const scrollIntervalRef = useRef(null);
@@ -104,16 +102,9 @@ export default function Resources({ availableResources, relativeUrlRoot }) {
           ))}
         </div>
       </div>
-      <AddNewModal
-        show={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        title="Add a Resource from CIDeR"
-        onSave={() => console.log("Save")}
-        buttonText={"Save"}
-        canSave={canSaveImport}
-      >
-        {showImportModal && <ImportResource setCanSave={setCanSaveImport} />}
-      </AddNewModal>
+      {showImportModal && (
+        <ImportResourceModal onClose={() => setShowImportModal(false)} />
+      )}
     </>
   );
 }
