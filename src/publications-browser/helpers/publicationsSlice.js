@@ -14,11 +14,20 @@ export const getPublications = createAsyncThunk(
   async(args, {getState}) => {
     const state = getState().publicationsBrowser;
     let url = `${state.apiUrl}?page=${state.pageData.current_page}`;
-    console.log("Fetching data from API:", url);
+
+    if (state.filterSelections.doi !== '') {
+      url += `&doi=${encodeURIComponent(state.filterSelections.doi)}`;
+    }
+
+    const selectedJournals = state.filterSelections.journals;
+    if (selectedJournals && selectedJournals.length > 0) {
+      url += `&journals=${encodeURIComponent(selectedJournals.join(','))}`;
+    }
+
     const response = await fetch(url);
     const data = await response.json();
 
-    return data
+    return data;
   }
 )
 
@@ -44,6 +53,38 @@ export const publicationsSlice = createSlice({
       }
       if (payload.last_page) {
         state.pageData.last_page = payload.last_page;
+      }
+    },
+    updateFilterSelection: (state, { payload }) => {
+      state.filterSelections[payload.name] = payload.value;
+    },
+    resetFilters: (state) => {
+      state.filterSelections = {
+        doi: '',
+        allJournalsToggled: false,
+        journals: []
+      };
+    },
+    toggleAllJournals: (state) => {
+      const newState = !state.filterSelections.allJournalsToggled;
+      state.filterSelections.allJournalsToggled = newState;
+      if (newState) {
+        state.filterSelections.journals = [...state.filterOptions.journals];
+      } else {
+        state.filterSelections.journals = [];
+      }
+    },
+    toggleJournal: (state, { payload }) => {
+      const index = state.filterSelections.journals.indexOf(payload);
+      if (index >= 0) {
+        state.filterSelections.journals.splice(index, 1);
+      } else {
+        state.filterSelections.journals.push(payload);
+      }
+      if (state.filterSelections.journals.length === state.filterOptions.journals.length) {
+        state.filterSelections.allJournalsToggled = true;
+      } else {
+        state.filterSelections.allJournalsToggled = false;
       }
     },
   },
@@ -75,10 +116,18 @@ export const publicationsSlice = createSlice({
   },
 })
 
+export const {
+  updatePageData,
+  updateFilterSelection ,
+  resetFilters,
+  toggleJournal,
+  toggleAllJournals,
+} = publicationsSlice.actions;
+
+export const selectFilterSelections = (state) => state.publicationsBrowser.filterSelections;
 export const selectPublicationsLoaded = (state) => state.publicationsBrowser.publicationsLoaded;
 export const selectPublications = (state) => state.publicationsBrowser.publications
-export const selectFilters = (state) => state.publicationsBrowser.filterOptions;
-export const { updatePageData } = publicationsSlice.actions;
+export const selectFilterOptions = (state) => state.publicationsBrowser.filterOptions;
 export const selectPageData = (state) => state.publicationsBrowser.pageData;
 export const selectShowPagination = (state) =>
   state.publicationsBrowser.publicationsLoaded &&

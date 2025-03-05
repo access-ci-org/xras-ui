@@ -1,8 +1,9 @@
-const Publication = ({publication}) => {
+export const cleanDOI = (doi) => {
+  doi =  doi.startsWith("https") ? doi.split("https://doi.org/").join("") : doi
+  return doi
+}
 
-  const cleanDOI = (doi) => {
-    return doi.startsWith("https") ? doi.split("/").slice(3) : doi
-  }
+const Publication = ({publication}) => {
 
   const fields = ["Publication Type", "Publication Year", "DOI", "Journal" ];
 
@@ -16,7 +17,7 @@ const Publication = ({publication}) => {
         if(!publication.doi) return false;
         return(
             <a
-              href={`https://doi.org/${publication.doi}`}
+              href={`https://doi.org/${cleanDOI(publication.doi)}`}
               target="_blank"
               className='fw-normal'
             >
@@ -51,8 +52,8 @@ const Publication = ({publication}) => {
   }
 
   const authors = publication.authors
-    .map((author) => `${author.last_name}, ${author.first_name}`)
-    .join(',')
+    .map((author) => `${author.first_name} ${author.last_name}`)
+    .join(', ')
 
   return (
     <div className="col-12 mb-2">

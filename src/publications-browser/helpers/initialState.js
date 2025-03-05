@@ -4,9 +4,16 @@ export const initialState = {
   publications: [],
   publicationsLoaded: true,
   showPagination: false,
+  filterSelections: {
+    allJournalsToggled: false,
+    doi: '',
+    journals: []
+  },
   pageData: {
     current_page: 1,
     last_page: 1
   },
-  filterOptions: {}
+  filterOptions: {
+    journals: []
+  }
 };
