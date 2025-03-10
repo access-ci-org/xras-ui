@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.9.1](https://github.com/access-ci-org/xras-ui/compare/v0.9.0...v0.9.1) (2025-03-10)
+
+
+### Bug Fixes
+
+* Accordions now expand and collapse properly ([ff49fe9](https://github.com/access-ci-org/xras-ui/commit/ff49fe94f73adf279ca935e79ca192743436bafc))
+
 ## [0.9.0](https://github.com/access-ci-org/xras-ui/compare/v0.8.0...v0.9.0) (2025-02-26)
 
 
