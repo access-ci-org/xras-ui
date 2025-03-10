@@ -101,7 +101,7 @@ export const browserSlice = createSlice({
         resource: '',
         requestNumber: ''
       }
-
+      state.singleEntry = false;
       browserSlice.caseReducers.toggleAllFos(state);
 
     },

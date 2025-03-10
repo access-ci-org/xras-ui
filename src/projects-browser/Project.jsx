@@ -10,7 +10,13 @@ const Project = ({ project }) => {
   const resources = project.resources;
   const [showAlert, setShowAlert] = useState(false);
   const singleEntry = useSelector( selectIsSingleEntry );
-  const defaultActiveKeys = singleEntry ? ['0','1'] : [];
+
+  let accordionProps = {
+    flush: true,
+    className: "mt-3 mb-1",
+    alwaysOpen: true
+  }
+
 
   const formatNumber = (resource) => {
     let units = resource.units ? resource.units : resource.resourceUnits;
@@ -49,7 +55,7 @@ const Project = ({ project }) => {
 
   const requestNumber = () => {
     if(project.requestNumber && project.requestNumber != '') return `(${project.requestNumber})`
-    return <></>
+    return "";
   }
 
   const renderTooltip = (
@@ -110,6 +116,76 @@ const Project = ({ project }) => {
     return <>{project.beginDate} to {project.endDate}</>
   }
 
+  const resourceList = (
+    <table className="table table-striped table-bordered mt-2 mb-0">
+      <thead>
+        <tr>
+          <td><span className="m-0 p-0">Resource</span></td>
+          <td><span className="m-0 p-0 d-inline">Allocation</span></td>
+        </tr>
+      </thead>
+      <tbody>
+        {resources.map((r,i) =>
+          <tr key={`resource_${project.requestId}_${i}`}>
+            <td>{r.resourceName}</td>
+            <td style={{ whiteSpace: 'nowrap' }}>{formatNumber(r)}</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  )
+
+  const projectContent = () => {
+
+    if(singleEntry){
+      return (
+        <>
+          <div className="row mt-2 fw-bold">
+            <div className="col-3 border-bottom">
+              Resources
+            </div>
+          </div>
+          <div className="row">
+            <div className="col">
+              { resourceList }
+            </div>
+          </div>
+          <div className="row mt-2 fw-bold">
+            <div className="col-3 border-bottom">
+              Abstract
+            </div>
+          </div>
+          <div className="row">
+            <div className="col">
+              <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{ project.abstract }</div>
+            </div>
+          </div>
+        </>
+      )
+    }
+
+    return (
+      <Accordion {...accordionProps}>
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>
+              Resources
+          </Accordion.Header>
+          <Accordion.Body>
+            { resourceList }
+          </Accordion.Body>
+        </Accordion.Item>
+        <Accordion.Item eventKey="1">
+          <Accordion.Header>
+            Abstract
+          </Accordion.Header>
+          <Accordion.Body>
+            <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{ project.abstract }</div>
+          </Accordion.Body>
+        </Accordion.Item>
+      </Accordion>
+    )
+  }
+
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white">
@@ -149,39 +225,7 @@ const Project = ({ project }) => {
           </div>
         </div>
 
-        <Accordion defaultActiveKey={defaultActiveKeys} activeKey={defaultActiveKeys} flush className="mt-3 mb-1" alwaysOpen>
-          <Accordion.Item eventKey="0">
-            <Accordion.Header>
-                Resources
-            </Accordion.Header>
-            <Accordion.Body>
-              <table className="table table-striped table-bordered mt-2 mb-0">
-                <thead>
-                  <tr>
-                    <td><span className="m-0 p-0">Resource</span></td>
-                    <td><span className="m-0 p-0 d-inline">Allocation</span></td>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resources.map((r,i) =>
-                    <tr key={`resource_${project.requestId}_${i}`}>
-                      <td>{r.resourceName}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{formatNumber(r)}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </Accordion.Body>
-          </Accordion.Item>
-          <Accordion.Item eventKey="1">
-            <Accordion.Header>
-              Abstract
-            </Accordion.Header>
-            <Accordion.Body>
-              <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{ project.abstract }</div>
-            </Accordion.Body>
-          </Accordion.Item>
-        </Accordion>
+        { projectContent() }
 
       </div>
     </div>
