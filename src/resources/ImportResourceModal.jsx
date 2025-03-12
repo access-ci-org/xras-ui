@@ -127,6 +127,9 @@ export default function ImportResourceModal({ onClose }) {
           options={resourceOptions}
           onChange={(e) => setSelectedCiderResourceId(parseInt(e.target.value))}
         ></SelectInput>
+        {!resourceData && selectedCiderResourceId !== -1 ? (
+          <p>Loading&hellip;</p>
+        ) : null}
         {resourceData && (
           <>
             <h2>Resource Properties</h2>
