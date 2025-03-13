@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.10.0](https://github.com/access-ci-org/xras-ui/compare/v0.9.1...v0.10.0) (2025-03-13)
+
+
+### Features
+
+* **resources:** add loading indicator for CIDeR resource details ([5387dd0](https://github.com/access-ci-org/xras-ui/commit/5387dd0ee7b7c47c05c31636c2497dd51f447cdf))
+
+
+### Bug Fixes
+
+* **alert:** remove broken close button on Bootstrap 5 sites ([31c7b18](https://github.com/access-ci-org/xras-ui/commit/31c7b184c2c8e71b8cdc607c57c16a5303bbb39d))
+
 ## [0.9.1](https://github.com/access-ci-org/xras-ui/compare/v0.9.0...v0.9.1) (2025-03-10)
 
 
