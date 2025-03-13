@@ -102,7 +102,7 @@ export default function EditResource({
     return (
       <div>
         {errors.map((error, index) => (
-          <Alert key={index} color="danger">
+          <Alert key={index} color="danger" dismissable={true}>
             {error}
           </Alert>
         ))}
@@ -114,7 +114,9 @@ export default function EditResource({
   return (
     <div className="edit-resource">
       {successMessage.message && (
-        <Alert color={successMessage.color}>{successMessage.message}</Alert>
+        <Alert color={successMessage.color} dismissable={true}>
+          {successMessage.message}
+        </Alert>
       )}
       <div>
         <h2>Resource Propeties</h2>
