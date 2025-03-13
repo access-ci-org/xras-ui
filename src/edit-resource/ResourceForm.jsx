@@ -12,7 +12,23 @@ export const ResourceForm = React.memo(function ResourceForm({
   dispatch,
   isDollarValueEditing,
   onDollarValueEditingChange,
+  showDollarValue = true,
+  showResourceId = true,
+  useAdvancedSettings = true,
 }) {
+  const dollarValueLabel = "Dollar Value per SUs";
+  const dollarValueInput = showDollarValue ? (
+    <TextInput
+      label={useAdvancedSettings ? null : dollarValueLabel}
+      value={resourceDetails.dollar_value}
+      onChange={(e) =>
+        dispatch(updateResourceField("dollar_value", e.target.value))
+      }
+      type="number"
+      inputAddon={"$"}
+      inputClassName="span4"
+    />
+  ) : null;
   return (
     <>
       <TextInput
@@ -23,28 +39,26 @@ export const ResourceForm = React.memo(function ResourceForm({
         }
         inputClassName="span8"
       />
-      <TextInput
-        label="Resource ID"
-        value={resourceDetails.resource_id}
-        disabled
-        inputClassName="span8"
-      />
-      <AdvancedSettingsSection
-        headerText={<label>Dollar Value per SUs</label>}
-        isEditing={isDollarValueEditing}
-        onEditingChange={onDollarValueEditingChange}
-        warningMessage="Dollar value is for reporting and should only be modified if the SU rate changes."
-      >
+      {showResourceId && (
         <TextInput
-          value={resourceDetails.dollar_value}
-          onChange={(e) =>
-            dispatch(updateResourceField("dollar_value", e.target.value))
-          }
-          type="number"
-          inputAddon={"$"}
-          inputClassName="span4"
+          label="Resource ID"
+          value={resourceDetails.resource_id}
+          disabled
+          inputClassName="span8"
         />
-      </AdvancedSettingsSection>
+      )}
+      {useAdvancedSettings && showDollarValue ? (
+        <AdvancedSettingsSection
+          headerText={<label>{dollarValueLabel}</label>}
+          isEditing={isDollarValueEditing}
+          onEditingChange={onDollarValueEditingChange}
+          warningMessage="Dollar value is for reporting and should only be modified if the SU rate changes."
+        >
+          {dollarValueInput}
+        </AdvancedSettingsSection>
+      ) : (
+        dollarValueInput
+      )}
       <TextInput
         label="Allocations Description"
         type="textarea"
@@ -84,4 +98,9 @@ ResourceForm.propTypes = {
   resourceTypesOptions: PropTypes.array.isRequired,
   unitTypesOptions: PropTypes.array.isRequired,
   dispatch: PropTypes.func.isRequired,
+  isDollarValueEditing: PropTypes.bool,
+  onDollarValueEditingChange: PropTypes.func,
+  showDollarValue: PropTypes.bool,
+  showResourceId: PropTypes.bool,
+  useAdvancedSettings: PropTypes.bool,
 };
