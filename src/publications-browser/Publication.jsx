@@ -5,7 +5,7 @@ export const cleanDOI = (doi) => {
 
 const Publication = ({publication}) => {
 
-  const fields = ["Publication Type", "Publication Year", "DOI", "Journal" ];
+  const fields = ["Publication Type", "Publication Year", "DOI", "Journal", "Volume/Issue", "Pages" ];
   const authors = publication.authors
     .map((author) => `${author.last_name}, ${author.first_name.substr(0,1)}.`)
     .join(', ')
@@ -14,6 +14,8 @@ const Publication = ({publication}) => {
     textIndent: "-50px",
     marginLeft: "50px"
   }
+
+  const pub_datas = publication.publication_datas
 
   const getFieldContent = (field) => {
     switch (field) {
@@ -34,6 +36,12 @@ const Publication = ({publication}) => {
         )
       case "Journal":
         return publication.journal.title ? publication.journal.title : false;
+      case "Volume/Issue":
+        return pub_datas["Volume/Issue"] ? pub_datas["Volume/Issue"] : false;
+      case "Pages":
+        return pub_datas["Pages"] ? pub_datas["Pages"] : false;
+      case "Publisher":
+        return pub_datas["Publisher"] ? pub_datas["Publisher"] : false;
     }
   }
 
@@ -64,14 +72,63 @@ const Publication = ({publication}) => {
     let title = publication.title;
     const journal = getFieldContent("Journal");
     const doi = getFieldContent("DOI");
+    const volume = getFieldContent("Volume/Issue");
+    const pages = getFieldContent("Pages");
+    const publisher = getFieldContent("Publisher")
 
     if(title[title.length - 1]  != '.') title += ".";
 
-    if(publication.publication_type == "Journal Paper"){
+    if(publication.publication_type === "Journal Paper"){
       return (
         <>
           { authors } ({year}). {title}
           { journal ? <em className="ms-1">{journal}.</em> : ''}
+          { volume ?  <span className="ms-1">{volume}</span> : ''}
+          { pages ?  <span className="ms-1">,{pages}</span> : ''}
+          { doi ? <span className="ms-1">.{doi}</span> : ''}
+        </>
+      );
+    }
+
+    if ((publication.publication_type === 'Conference Paper') || (publication.publication_type === 'Software')) {
+      return(
+        <>
+          { authors } ({year}). {title}
+          { journal ? <em className="ms-1">{journal}.</em> : ''}
+          { doi ? <span className="ms-1">{doi}</span> : ''}
+        </>
+      );
+    }
+
+    if (publication.publication_type === 'Book') {
+      return(
+        <>
+          { authors } ({year}).
+          { <em className="ms-1">{title}</em>}
+          { publisher ? <em className="ms-1">{publisher}.</em> : ''}
+          { doi ? <span className="ms-1">{doi}</span> : ''}
+        </>
+      );
+    }
+
+    if (publication.publication_type === 'Dataset') {
+      return(
+        <>
+          { authors } ({year}).
+          { <em className="ms-1">{title}</em>}
+          [Dataset].
+          { publisher ? publisher : ''}.
+          { doi ? <span className="ms-1">{doi}</span> : ''}
+        </>
+      );
+    }
+
+    if (publication.publication_type === 'Dissertation') {
+      return(
+        <>
+          { authors } ({year}).
+          { <em className="ms-1">{title}</em>}.
+          [Doctoral dissertation{ publisher ? ", " + publisher : ''}].
           { doi ? <span className="ms-1">{doi}</span> : ''}
         </>
       );
