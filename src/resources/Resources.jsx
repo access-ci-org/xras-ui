@@ -5,7 +5,11 @@ import styles from "./Resources.module.scss";
 
 import ImportResourceModal from "./ImportResourceModal";
 
-export default function Resources({ availableResources, relativeUrlRoot }) {
+export default function Resources({
+  availableResources,
+  canAdd = false,
+  relativeUrlRoot,
+}) {
   const sortedResources = useMemo(
     () => sortResources(availableResources),
     [availableResources]
@@ -62,12 +66,14 @@ export default function Resources({ availableResources, relativeUrlRoot }) {
   return (
     <>
       <div className={styles["resources-container"]}>
-        <button
-          className="btn btn-primary pull-right"
-          onClick={() => setShowImportModal(true)}
-        >
-          Add a Resource from CIDeR
-        </button>
+        {canAdd && (
+          <button
+            className="btn btn-primary pull-right"
+            onClick={() => setShowImportModal(true)}
+          >
+            Add a Resource from CIDeR
+          </button>
+        )}
         <h2>Select a resource from the list to modify</h2>
         <p className={styles["drag-instruction"]}>
           Drag items to reorder the list.

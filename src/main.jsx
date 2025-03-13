@@ -27,7 +27,12 @@ import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
 export function shadowTarget(
   host,
-  { bootstrapFonts = true, bootstrapVariables = true, access = false, baseUrl = null } = {}
+  {
+    bootstrapFonts = true,
+    bootstrapVariables = true,
+    access = false,
+    baseUrl = null,
+  } = {}
 ) {
   const shadow = host.attachShadow({ mode: "open" });
   const bsOuter = document.createElement("div");
@@ -68,10 +73,16 @@ export function allocationsMap({ target }) {
   ReactDOM.createRoot(target).render(<AllocationsMap />);
 }
 
-export function resources({ target, availableResources, relativeUrlRoot }) {
+export function resources({
+  availableResources,
+  canAdd,
+  relativeUrlRoot,
+  target,
+}) {
   ReactDOM.createRoot(target).render(
     <Resources
       availableResources={availableResources}
+      canAdd={canAdd}
       relativeUrlRoot={relativeUrlRoot}
     />
   );
@@ -153,7 +164,12 @@ export function publicationsSelect({ target, routes }) {
   );
 }
 
-export function onRampsResourceCatalog({ target, catalogSources, onRamps, baseUrl }) {
+export function onRampsResourceCatalog({
+  target,
+  catalogSources,
+  onRamps,
+  baseUrl,
+}) {
   const store = configureStore({
     reducer: {
       resourceCatalog: onRampsCatalogSlice,
@@ -161,7 +177,11 @@ export function onRampsResourceCatalog({ target, catalogSources, onRamps, baseUr
   });
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
-      <OnRampsResourceCatalog catalogSources={catalogSources} onRamps={onRamps} baseUrl={baseUrl} />
+      <OnRampsResourceCatalog
+        catalogSources={catalogSources}
+        onRamps={onRamps}
+        baseUrl={baseUrl}
+      />
     </Provider>
   );
 }
