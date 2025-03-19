@@ -7,7 +7,9 @@ export const initialState = {
   filterSelections: {
     allJournalsToggled: false,
     doi: '',
-    journals: []
+    journal: '',
+    firstName: '',
+    lastName: ''
   },
   pageData: {
     current_page: 1,

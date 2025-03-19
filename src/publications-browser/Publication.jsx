@@ -9,6 +9,8 @@ const Publication = ({publication}) => {
   const authors = publication.authors
     .map((author) => `${author.last_name}, ${author.first_name.substr(0,1)}.`)
     .join(', ')
+  const grant_numbers = publication.projects
+    .map((project) => project.grant_number)
 
   const citationStyle = {
     textIndent: "-50px",
@@ -78,7 +80,7 @@ const Publication = ({publication}) => {
 
     if(title[title.length - 1]  != '.') title += ".";
 
-    if(publication.publication_type === "Journal Paper"){
+    if(publication.publication_type === "Journal Paper" || (publication.publication_type === 'Other')) {
       return (
         <>
           { authors } ({year}). {title}
@@ -146,9 +148,16 @@ const Publication = ({publication}) => {
           <p style={citationStyle}>
             { buildCitation() }
           </p>
-          <span>
-            <a href="">Link To Project</a>
-          </span>
+          {grant_numbers.map((grant, index) => (
+          <div key={`grant_${index}`} id={`project_${index}`} >
+            <a
+              href={`https://allocations.access-ci.org/current-projects?_requestNumber=${grant}`}
+              id={`grant_link${index}`}
+            >
+              Link To Project {grant}
+            </a>
+          </div>
+          ))}
         </div>
       </div>
     </div>

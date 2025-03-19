@@ -19,9 +19,19 @@ export const getPublications = createAsyncThunk(
       url += `&doi=${encodeURIComponent(state.filterSelections.doi)}`;
     }
 
-    const selectedJournals = state.filterSelections.journals;
-    if (selectedJournals && selectedJournals.length > 0) {
-      url += `&journals=${encodeURIComponent(selectedJournals.join(','))}`;
+    if (state.filterSelections.first_name !== '') {
+      url += `&first_name=${encodeURIComponent(state.filterSelections.firstName)}`;
+    }
+
+    if (state.filterSelections.last_name !== '') {
+      url += `&last_name=${encodeURIComponent(state.filterSelections.lastName)}`;
+    }
+
+    if (state.filterSelections.journal !== '') {
+      const journal = state.filterSelections.journal
+      if(state.filterOptions.journals.includes(journal)) {
+        url += `&journal=${encodeURIComponent(state.filterSelections.journal)}`;
+      }
     }
 
     const response = await fetch(url);
@@ -62,31 +72,11 @@ export const publicationsSlice = createSlice({
       state.filterSelections = {
         doi: '',
         allJournalsToggled: false,
-        journals: []
+        journal: '',
+        firstName: '',
+        lastName: ''
       };
-    },
-    toggleAllJournals: (state) => {
-      const newState = !state.filterSelections.allJournalsToggled;
-      state.filterSelections.allJournalsToggled = newState;
-      if (newState) {
-        state.filterSelections.journals = [...state.filterOptions.journals];
-      } else {
-        state.filterSelections.journals = [];
-      }
-    },
-    toggleJournal: (state, { payload }) => {
-      const index = state.filterSelections.journals.indexOf(payload);
-      if (index >= 0) {
-        state.filterSelections.journals.splice(index, 1);
-      } else {
-        state.filterSelections.journals.push(payload);
-      }
-      if (state.filterSelections.journals.length === state.filterOptions.journals.length) {
-        state.filterSelections.allJournalsToggled = true;
-      } else {
-        state.filterSelections.allJournalsToggled = false;
-      }
-    },
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -120,8 +110,6 @@ export const {
   updatePageData,
   updateFilterSelection ,
   resetFilters,
-  toggleJournal,
-  toggleAllJournals,
 } = publicationsSlice.actions;
 
 export const selectFilterSelections = (state) => state.publicationsBrowser.filterSelections;
@@ -129,7 +117,4 @@ export const selectPublicationsLoaded = (state) => state.publicationsBrowser.pub
 export const selectPublications = (state) => state.publicationsBrowser.publications
 export const selectFilterOptions = (state) => state.publicationsBrowser.filterOptions;
 export const selectPageData = (state) => state.publicationsBrowser.pageData;
-export const selectShowPagination = (state) =>
-  state.publicationsBrowser.publicationsLoaded &&
-  state.publicationsBrowser.pageData.last_page > 1;
 export default publicationsSlice.reducer;

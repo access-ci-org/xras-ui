@@ -4,9 +4,7 @@ import {
   selectFilterSelections,
   updateFilterSelection,
   getPublications,
-  resetFilters,
-  toggleJournal,
-  toggleAllJournals
+  resetFilters
 } from "./helpers/publicationsSlice.js";
 import {setShowPagination, updatePageData} from "../projects-browser/helpers/browserSlice.js";
 import {cleanDOI} from "./Publication.jsx";
@@ -33,57 +31,72 @@ const Filters = () => {
     return <p>Loading filters...</p>;
   }
 
-  const journalSelectListStyle = {
-    height: "200px",
-    overflowY: "auto",
-    padding: "2px",
-  }
-
   const handleFilterChange = (e) => {
     dispatch(updateFilterSelection({ name: e.target.name, value: e.target.value }));
   };
+
+  const handleSelection = (e) => {
+    dispatch(updateFilterSelection({ name: e.target.name, value: e.target.value }));
+  }
 
   return (
     <div className="row sticky-top mb-2">
       <div className="col">
         <h3 className="mb-2">Filters</h3>
 
-        <h5 className="mb-1">Journal</h5>
-        <div className={`border mb-3`} style={journalSelectListStyle}>
-          <div className="form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              value=""
-              id="toggle_all"
-              checked={filterSelections.allJournalsToggled}
-              onChange={() => {
-                dispatch(toggleAllJournals());
-              }}
-            />
-            <label className="form-check-label" htmlFor={`toggle_all`}>
-              (Toggle All)
-            </label>
-          </div>
-          {filterOptions.journals.map((journal) => (
-              <div className="form-check" key={`journal_${journal}`}>
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  value={journal}
-                  id={`journal_${journal}`}
-                  checked={filterSelections.journals.includes(journal)}
-                  onChange={() => dispatch(toggleJournal(journal))}
-                />
-                <label
-                  className="form-check-label"
-                  htmlFor={`journal_${journal}`}
-                >
-                  {journal}
-                </label>
-              </div>
-            )
-          )}
+        <h5 id="journals_filter_label" className="mb-1">
+          Journals
+        </h5>
+        <div className="mb-3">
+          <input
+            placeholder="Type to search..."
+            list="journal_list"
+            name="journal"
+            id="journal_select"
+            value={filterSelections.journal}
+            className="form-control"
+            aria-labelledby="journal_filter_label"
+            onChange={(e) => handleFilterChange(e)}
+            onInput={(e) => handleSelection(e)}
+          />
+
+          <datalist id="journal_list">
+            {filterOptions.journals.map((j, i) => (
+              <option value={j} key={`journal_${i}`}>
+                {j}
+              </option>
+            ))}
+          </datalist>
+        </div>
+
+        <h5 id="first_name_label" className="mb-1">
+          Author First Name
+        </h5>
+        <div className="mb-3">
+          <input
+            type="text"
+            className="form-control"
+            value={filterSelections.firstName}
+            name="firstName"
+            id="firstName"
+            aria-labelledby="first_name"
+            onChange={handleFilterChange}
+          />
+        </div>
+
+        <h5 id="last_name_label" className="mb-1">
+          Author Last Name
+        </h5>
+        <div className="mb-3">
+          <input
+            type="text"
+            className="form-control"
+            value={filterSelections.lastName}
+            name="lastName"
+            id="lastName"
+            aria-labelledby="last_name"
+            onChange={handleFilterChange}
+          />
         </div>
 
         <h5 id="doi_number_label" className="mb-1">
