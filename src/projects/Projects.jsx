@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
 import { useProjectsList } from "./helpers/hooks";
-import config from "./helpers/config";
+import config from "../shared/helpers/config";
 
 import Alert from "../shared/Alert";
 import Project from "./Project";
@@ -8,38 +7,8 @@ import LoadingSpinner from "../shared/LoadingSpinner";
 
 export default function Projects({ username, openFirst = 1 }) {
   const { error, loading, projects } = useProjectsList(username);
-  const [expandedGrantNumber, setExpandedGrantNumber] = useState(null);
-  const getGrantNumberFromHash = () => {
-    const hash = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
-    return params.get("grantNumber");
-  };
-
-  useEffect(() => {
-    if (!loading && projects.length > 0) {
-      const grantNumberFromHash = getGrantNumberFromHash();
-
-      if (grantNumberFromHash) {
-        setExpandedGrantNumber(grantNumberFromHash);
-      }
-    }
-  }, [loading, projects]);
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      const grantNumberFromHash = getGrantNumberFromHash();
-      setExpandedGrantNumber(grantNumberFromHash);
-    };
-
-    window.addEventListener("hashchange", handleHashChange);
-
-    return () => {
-      window.removeEventListener("hashchange", handleHashChange);
-    };
-  }, []);
   
   if (loading) return <LoadingSpinner />;
-  
   if (error)
     return (
       <Alert color="danger">
@@ -88,20 +57,7 @@ export default function Projects({ username, openFirst = 1 }) {
       </div>
     );
   
-  // Map projects and determine if they should be open
-  return (
-    <div>
-      {projects.map((project, i) => (
-        <Project
-          key={project.grantNumber}
-          open={
-            expandedGrantNumber === project.grantNumber || // Open if it matches the hash
-            (!expandedGrantNumber && i < openFirst) // Open the first `openFirst` projects if no hash
-          }
-          onExpand={(grantNumber) => setExpandedGrantNumber(grantNumber)} // Handle expanding another project
-          {...project}
-        />
-      ))}
-    </div>
-  );
+  return projects.map((project, i) => (
+    <Project open={i < openFirst} key={project.grantNumber} {...project} />
+  ));
 }
