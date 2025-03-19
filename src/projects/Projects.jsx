@@ -7,7 +7,7 @@ import LoadingSpinner from "../shared/LoadingSpinner";
 
 export default function Projects({ username, openFirst = 1 }) {
   const { error, loading, projects } = useProjectsList(username);
-
+  
   if (loading) return <LoadingSpinner />;
   if (error)
     return (
@@ -25,7 +25,7 @@ export default function Projects({ username, openFirst = 1 }) {
         to try again.
       </Alert>
     );
-
+  
   if (!projects.length)
     return (
       <div className="pt-5 pb-5 text-bg-light border border-light-subtle">
@@ -56,7 +56,7 @@ export default function Projects({ username, openFirst = 1 }) {
         </div>
       </div>
     );
-
+  
   return projects.map((project, i) => (
     <Project open={i < openFirst} key={project.grantNumber} {...project} />
   ));
