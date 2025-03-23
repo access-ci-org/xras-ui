@@ -78,13 +78,15 @@ export default function Project({ open = false, grantNumber, title, status, onEx
           className={style.expand}
           onClick={handleToggle}
         >
-          <h2 className="mb-1 mt-1 text-start">
-            <i className={`bi bi-caret-${expanded ? "down" : "right"}-fill`} />{" "}
-            {(grantNumber && (
-              <span className="grant-number">{grantNumber}:</span>
-            )) || "Untitled Project"}
-            {` ${title || "Untitled Project"}`}
-          </h2>
+        <h2 className="mb-1 mt-1 text-start">
+          <i className={`bi bi-caret-${expanded ? "down" : "right"}-fill`} />{" "}
+          {/^[A-Z]/.test(grantNumber) ? (
+            <>
+              <span className="grant-number">{grantNumber}:</span>{" "}
+            </>
+          ) : null}
+          {title || project.title}
+        </h2>
         </button>
         <StatusBadge status={status || project?.status} />
       </div>
