@@ -12,6 +12,9 @@ const Publication = ({publication}) => {
   const grant_numbers = publication.projects
     .map((project) => project.grant_number)
 
+  const projects = publication.projects;
+  console.log(projects);
+
   const citationStyle = {
     textIndent: "-50px",
     marginLeft: "50px"
@@ -142,22 +145,28 @@ const Publication = ({publication}) => {
 
 
   return (
-    <div className="col-12 mb-2">
-      <div className="card" style={{ borderRadius: '0.375rem' }}>
+    <div className="col-12 mb-2 border-bottom">
+      <div className="card" style={{ border: "unset" }}>
         <div className="card-body pt-2">
           <p style={citationStyle}>
             { buildCitation() }
           </p>
-          {grant_numbers.map((grant, index) => (
-          <div key={`grant_${index}`} id={`project_${index}`} >
-            <a
-              href={`https://allocations.access-ci.org/current-projects?_requestNumber=${grant}`}
-              id={`grant_link${index}`}
-            >
-              Link To Project {grant}
-            </a>
-          </div>
-          ))}
+          <p className="text-decoration-underline mb-2">Projects Supporting this Publication</p>
+
+            <ul style={{ ...citationStyle, listStyleType: "none" }}>
+              {grant_numbers.map((grant, index) => (
+                <li key={`grant_${index}`} id={`project_${index}`} >
+                  <a
+                    href={`https://allocations.access-ci.org/current-projects?_requestNumber=${grant}`}
+                    id={`grant_link${index}`}
+                    target="_blank"
+                    style={{ fontWeight: '600' }}
+                  >
+                    {grant}
+                  </a>
+                </li>
+              ))}
+            </ul>
         </div>
       </div>
     </div>
