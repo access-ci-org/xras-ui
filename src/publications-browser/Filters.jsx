@@ -69,32 +69,18 @@ const Filters = () => {
           </datalist>
         </div>
 
-        <h5 id="first_name_label" className="mb-1">
-          Author First Name
+        <h5 id="author_name_label" className="mb-1">
+          Author Name
         </h5>
         <div className="mb-3">
           <input
+            placeholder="Last Name, First Initial"
             type="text"
             className="form-control"
-            value={filterSelections.firstName}
-            name="firstName"
-            id="firstName"
-            aria-labelledby="first_name"
-            onChange={handleFilterChange}
-          />
-        </div>
-
-        <h5 id="last_name_label" className="mb-1">
-          Author Last Name
-        </h5>
-        <div className="mb-3">
-          <input
-            type="text"
-            className="form-control"
-            value={filterSelections.lastName}
-            name="lastName"
-            id="lastName"
-            aria-labelledby="last_name"
+            value={filterSelections.authorName}
+            name="authorName"
+            id="authorName"
+            aria-labelledby="author_name"
             onChange={handleFilterChange}
           />
         </div>
@@ -112,6 +98,27 @@ const Filters = () => {
             aria-labelledby="doi_number_label"
             onChange={handleFilterChange}
           />
+        </div>
+
+        <h5 id="publication_type_label" className="mb-1">
+            Publication Type
+        </h5>
+        <div className="mb-3">
+          <select
+            name="publicationType"
+            id="publication_type_select"
+            value={filterSelections.publicationType}
+            className="form-control"
+            aria-labelledby="publication_type_label"
+            onChange={(e) => handleFilterChange(e)}
+          >
+            <option value="">-- All --</option>
+            {filterOptions.publication_types.map((a, i) => (
+              <option value={a} key={`publication_type_${i}`}>
+                {a}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="mt-2">

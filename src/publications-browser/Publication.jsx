@@ -11,6 +11,7 @@ const Publication = ({publication}) => {
     .join(', ')
   const grant_numbers = publication.projects
     .map((project) => project.grant_number)
+  const publication_type = publication.publication_type === 'Other' ? 'Publication' : publication.publication_type;
 
   const projects = publication.projects;
   console.log(projects);
@@ -144,33 +145,36 @@ const Publication = ({publication}) => {
   }
 
 
-  return (
-    <div className="col-12 mb-2 border-bottom">
-      <div className="card" style={{ border: "unset" }}>
-        <div className="card-body pt-2">
-          <p style={citationStyle}>
-            { buildCitation() }
-          </p>
-          <p className="text-decoration-underline mb-2">Projects Supporting this Publication</p>
-
-            <ul style={{ ...citationStyle, listStyleType: "none" }}>
-              {grant_numbers.map((grant, index) => (
-                <li key={`grant_${index}`} id={`project_${index}`} >
-                  <a
-                    href={`https://allocations.access-ci.org/current-projects?_requestNumber=${grant}`}
-                    id={`grant_link${index}`}
-                    target="_blank"
-                    style={{ fontWeight: '600' }}
-                  >
-                    {grant}
-                  </a>
-                </li>
-              ))}
-            </ul>
+    return (
+      <div className="col-12 mb-2 border-bottom">
+        <div className="card" style={{ border: "unset" }}>
+          <div className="card-body pt-2">
+            <p style={citationStyle}>
+              { buildCitation() }
+            </p>
+            {projects.length > 0 && (
+              <>
+                <p className="text-decoration-underline mb-2">Projects Supporting this {publication_type}</p>
+                <ul style={{ ...citationStyle, listStyleType: "none" }}>
+                  {grant_numbers.map((grant, index) => (
+                    <li key={`grant_${index}`} id={`project_${index}`} >
+                      <a
+                        href={`https://allocations.access-ci.org/current-projects?_requestNumber=${grant}`}
+                        id={`grant_link${index}`}
+                        target="_blank"
+                        style={{ fontWeight: '600' }}
+                      >
+                        {grant}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
 }
 
 export default Publication;

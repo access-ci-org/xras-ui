@@ -19,12 +19,8 @@ export const getPublications = createAsyncThunk(
       url += `&doi=${encodeURIComponent(state.filterSelections.doi)}`;
     }
 
-    if (state.filterSelections.first_name !== '') {
-      url += `&first_name=${encodeURIComponent(state.filterSelections.firstName)}`;
-    }
-
-    if (state.filterSelections.last_name !== '') {
-      url += `&last_name=${encodeURIComponent(state.filterSelections.lastName)}`;
+    if (state.filterSelections.authorName !== '') {
+      url += `&author_name=${encodeURIComponent(state.filterSelections.authorName)}`;
     }
 
     if (state.filterSelections.journal !== '') {
@@ -32,6 +28,10 @@ export const getPublications = createAsyncThunk(
       if(state.filterOptions.journals.includes(journal)) {
         url += `&journal=${encodeURIComponent(state.filterSelections.journal)}`;
       }
+    }
+
+    if (state.filterSelections.publicationType !== '') {
+      url += `&publication_type=${encodeURIComponent(state.filterSelections.publicationType)}`;
     }
 
     const response = await fetch(url);
@@ -73,8 +73,8 @@ export const publicationsSlice = createSlice({
         doi: '',
         allJournalsToggled: false,
         journal: '',
-        firstName: '',
-        lastName: ''
+        authorName: '',
+        publicationType: ''
       };
     }
   },

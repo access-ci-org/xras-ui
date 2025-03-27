@@ -8,14 +8,15 @@ export const initialState = {
     allJournalsToggled: false,
     doi: '',
     journal: '',
-    firstName: '',
-    lastName: ''
+    authorName: '',
+    publicationType: ''
   },
   pageData: {
     current_page: 1,
     last_page: 1
   },
   filterOptions: {
-    journals: []
+    journals: [],
+    publication_types: []
   }
 };
