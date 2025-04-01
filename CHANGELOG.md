@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.11.0](https://github.com/access-ci-org/xras-ui/compare/v0.10.1...v0.11.0) (2025-04-01)
+
+
+### Features
+
+* **projects:** add URL hash parameter to expand a specific projects ([5e0d8c2](https://github.com/access-ci-org/xras-ui/commit/5e0d8c2d3206936051a54bd7d429d97a5a2aaa8c)), closes [#15](https://github.com/access-ci-org/xras-ui/issues/15)
+
 ## [0.10.1](https://github.com/access-ci-org/xras-ui/compare/v0.10.0...v0.10.1) (2025-03-13)
 
 
