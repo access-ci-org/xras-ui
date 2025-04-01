@@ -57,7 +57,18 @@ export default function Projects({ username, openFirst = 1 }) {
       </div>
     );
 
+  const expandedGrantNumber = new URLSearchParams(
+    window.location.hash.slice(1)
+  ).get("grantNumber");
   return projects.map((project, i) => (
-    <Project open={i < openFirst} key={project.grantNumber} {...project} />
+    <Project
+      open={
+        expandedGrantNumber
+          ? expandedGrantNumber == project.grantNumber
+          : i < openFirst
+      }
+      key={project.grantNumber}
+      {...project}
+    />
   ));
 }
