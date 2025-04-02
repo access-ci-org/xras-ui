@@ -35,6 +35,16 @@ export const AllocationGrid = React.memo(function AllocationGrid({
         rowClasses={Array(rows.length).fill(style["vertical-align-center"])}
         scroll={false}
       />
+      <p
+        style={{
+          margin: "0",
+          fontStyle: "italic",
+          fontWeight: "bold",
+        }}
+      >
+        Note: You may need to contact your Allocations Coordinator if you have
+        added this resource to an allocation type.
+      </p>
     </div>
   );
 });
