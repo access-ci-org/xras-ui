@@ -41,8 +41,8 @@ export const ResourceForm = React.memo(function ResourceForm({
       />
       {showResourceId && (
         <TextInput
-          label="Resource ID"
-          value={resourceDetails.resource_id}
+          label="Resource Repository Key"
+          value={resourceDetails.resource_repository_key}
           disabled
           inputClassName="span8"
         />
