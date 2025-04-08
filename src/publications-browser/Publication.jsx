@@ -89,9 +89,9 @@ const Publication = ({publication}) => {
         <>
           { authors } ({year}). {title}
           { journal ? <em className="ms-1">{journal}.</em> : ''}
-          { volume ?  <span className="ms-1">{volume}</span> : ''}
-          { pages ?  <span className="ms-1">,{pages}</span> : ''}
-          { doi ? <span className="ms-1">.{doi}</span> : ''}
+          { volume ?  <span className="ms-1">{volume},</span> : ''}
+          { pages ?  <span className="ms-1">{pages}.</span> : ''}
+          { doi ? <span className="ms-1">{doi}</span> : ''}
         </>
       );
     }
@@ -106,7 +106,7 @@ const Publication = ({publication}) => {
       );
     }
 
-    if (publication.publication_type === 'Book') {
+    if ((publication.publication_type === 'Book') || (publication.publication_type === 'Book Chapter')) {
       return(
         <>
           { authors } ({year}).
@@ -122,7 +122,7 @@ const Publication = ({publication}) => {
         <>
           { authors } ({year}).
           { <em className="ms-1">{title}</em>}
-          [Dataset].
+          {' [Dataset]. '}
           { publisher ? publisher : ''}.
           { doi ? <span className="ms-1">{doi}</span> : ''}
         </>
