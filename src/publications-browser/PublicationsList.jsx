@@ -8,7 +8,7 @@ const ProjectList = () => {
   return (
     <div>
       {publications.map((pub, index) => (
-          <Publication key={`publication_${index}`} publication={pub} />
+          <Publication key={`publication_${index}`} publication={pub} index={index} />
       ))}
     </div>
   );

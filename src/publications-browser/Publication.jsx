@@ -3,7 +3,7 @@ export const cleanDOI = (doi) => {
   return doi
 }
 
-const Publication = ({publication}) => {
+const Publication = ({publication, index}) => {
 
   const fields = ["Publication Type", "Publication Year", "DOI", "Journal", "Volume/Issue", "Pages" ];
   const authors = publication.authors
@@ -14,7 +14,8 @@ const Publication = ({publication}) => {
   const publication_type = publication.publication_type === 'Other' ? 'Publication' : publication.publication_type;
 
   const projects = publication.projects;
-  console.log(projects);
+
+  const bgColor = index % 2 == 0 ? 'bg-light' : '';
 
   const citationStyle = {
     textIndent: "-50px",
@@ -49,28 +50,6 @@ const Publication = ({publication}) => {
       case "Publisher":
         return pub_datas["Publisher"] ? pub_datas["Publisher"] : false;
     }
-  }
-
-  const renderField = (field) => {
-    const content = getFieldContent(field);
-    if(!content) return "";
-
-    return (
-      <div className="col-12 col-md-6 mb-2" key={`field_${field}_${publication.publication_id}`}>
-        <div className="row fw-bold">
-          <div className="col">
-            <span className="mb-1 pe-3 border-bottom">{field}</span>
-          </div>
-        </div>
-        <div className="row">
-          <div className="col">
-            <span className="mb-1 pb-0">
-              { content }
-            </span>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const buildCitation = () => {
@@ -148,7 +127,7 @@ const Publication = ({publication}) => {
     return (
       <div className="col-12 mb-2 border-bottom">
         <div className="card" style={{ border: "unset" }}>
-          <div className="card-body pt-2">
+          <div className={`card-body pt-2 mb-2 ${bgColor}`}>
             <p style={citationStyle}>
               { buildCitation() }
             </p>

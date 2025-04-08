@@ -106,7 +106,7 @@ export function projectsBrowser({ target, apiUrl }) {
 }
 
 export function publicationsBrowser({ target, apiUrl }) {
-  console.log("🔎 publicationsBrowser() called with:", { target, apiUrl });
+
   const publicationsBrowserStore = configureStore({
     reducer: {
       publicationsBrowser: publicationsSlice,
