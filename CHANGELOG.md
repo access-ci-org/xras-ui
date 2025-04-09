@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.12.0](https://github.com/access-ci-org/xras-ui/compare/v0.11.1...v0.12.0) (2025-04-09)
+
+
+### Features
+
+* Created Publications browser app ([fcb8414](https://github.com/access-ci-org/xras-ui/commit/fcb84141a0ae331a20e0fd4a743b235bb443a4b8))
+
 ## [0.11.1](https://github.com/access-ci-org/xras-ui/compare/v0.11.0...v0.11.1) (2025-04-02)
 
 
