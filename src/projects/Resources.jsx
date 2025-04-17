@@ -40,7 +40,7 @@ export default function Resources({ requestId, grantNumber }) {
     toggleResourcesModal,
   } = useRequest(requestId, grantNumber);
   const { project } = useProject(
-    grantNumber || (request && request.grantNumber)
+    grantNumber || (request && request.grantNumber),
   );
   const resourceSearch = useRef(null);
   const submitButton = useRef(null);
@@ -51,6 +51,7 @@ export default function Resources({ requestId, grantNumber }) {
   const saving = request.exchangeStatus == statuses.pending;
   const saved = request.exchangeStatus == statuses.success;
   const error = request.exchangeStatus == statuses.error;
+  const errorMessages = request.exchangeErrors;
   const previous = request.exchangeActionId !== null;
 
   const resources = request.resources;
@@ -91,10 +92,10 @@ export default function Resources({ requestId, grantNumber }) {
                   userGuide={false}
                 />
               )),
-              "or"
+              "or",
             )}
             .
-          </span>
+          </span>,
         );
     }
   }
@@ -105,18 +106,17 @@ export default function Resources({ requestId, grantNumber }) {
     alert = (
       <Alert color="info">Your exchange request has been submitted.</Alert>
     );
+  else if (error)
+    alert = (
+      <Alert color="danger">
+        Sorry, something went wrong: {errorMessages.join(", ")}.
+      </Alert>
+    );
   else if (previous)
     alert = (
       <Alert color="warning">
         You have an exchange request under review. The information below
         reflects the pending exchange request.
-      </Alert>
-    );
-  else if (error)
-    alert = (
-      <Alert color="danger">
-        Sorry, your exchange request could not be submitted. Please try again
-        later.
       </Alert>
     );
   else if (request.timeStatus == "current" && !project.isManager)
@@ -176,8 +176,8 @@ export default function Resources({ requestId, grantNumber }) {
         !saved && !previous && (res.isNew || res.allocated != res.requested)
           ? gridStyle.edited
           : exchangeActionResourceIds.includes(res.resourceId)
-          ? ""
-          : gridStyle.disabled
+            ? ""
+            : gridStyle.disabled,
       );
     }
   }
@@ -192,7 +192,7 @@ export default function Resources({ requestId, grantNumber }) {
     const allocatedBalance = row.allocated - row.used;
     const desiredBalance = roundNumber(
       Number(balanceString.replace(/[^0-9-.]/g, "")),
-      row.decimalPlaces
+      row.decimalPlaces,
     );
     const minBalance = Math.min(0, allocatedBalance);
     if (desiredBalance < minBalance) return minBalance;
@@ -252,7 +252,7 @@ export default function Resources({ requestId, grantNumber }) {
               title={formatExchangeRate(
                 value,
                 row.exchangeRates.base.unitCost,
-                credit.name
+                credit.name,
               )}
             >
               {value}
@@ -278,7 +278,7 @@ export default function Resources({ requestId, grantNumber }) {
             {formatNumber(value)}
             {(project.currentUser.resourceIds.includes(row.resourceId) ||
               project.currentUser.resourceAccountInactiveIds.includes(
-                row.resourceId
+                row.resourceId,
               )) && (
               <InlineButton
                 icon="table"

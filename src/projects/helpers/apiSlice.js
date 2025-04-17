@@ -25,12 +25,12 @@ const getUserSortKey = (user) =>
 const addProject = (
   state,
   { grantNumber, projectManager, requestMasterId, requests, title, users },
-  projectStatus
+  projectStatus,
 ) => {
   grantNumber = grantNumber || requestMasterId;
   requests.sort((a, b) => (getSortDate(a) > getSortDate(b) ? -1 : 1));
   const currentRequest = requests.find(
-    (request) => request.timeStatus == "current"
+    (request) => request.timeStatus == "current",
   );
   const currentRequestId = currentRequest ? currentRequest.requestId : null;
   state.projects[grantNumber] = {
@@ -72,7 +72,7 @@ const addProject = (
           const userResources = resources.filter(
             (res) =>
               res.userAccountState == "active" &&
-              res.unitType != "ACCESS Credits"
+              res.unitType != "ACCESS Credits",
           );
           const resourceIds = userResources.map((res) => res.xrasResourceId);
           const resourceAccountPendingIds = userResources
@@ -98,7 +98,7 @@ const addProject = (
             role,
             username,
           };
-        }
+        },
       )
       .sort((a, b) => (getUserSortKey(a) < getUserSortKey(b) ? -1 : 1)),
     usersNewRowIndex: 0,
@@ -123,7 +123,7 @@ const addRequest = (
     status,
     timeStatus,
   },
-  { entryDate, grantNumber }
+  { entryDate, grantNumber },
 ) => {
   resources = resources || [];
   const request = {
@@ -144,7 +144,7 @@ const addRequest = (
         allowedOperations,
         detailAvailable,
         date: (entryDate || approvedStartDate || requestedStartDate).split(
-          "T"
+          "T",
         )[0],
         deleteStatus: null,
         isRequest,
@@ -152,13 +152,14 @@ const addRequest = (
         showDeleteModal: false,
         status: actionStatusType,
         type: actionType,
-      })
+      }),
     ),
     allocationType,
     allowedActions: makeAllowedActionsMap(allowedActions),
     endDate,
     entryDate,
     exchangeActionId: null,
+    exchangeErrors: [],
     exchangeStatus: null,
     grantNumber,
     isMaximize: allocationType == "Maximize",
@@ -169,7 +170,7 @@ const addRequest = (
       .sort(sortResources),
     resourcesReason: "",
     returnedForCorrections: actions.find(
-      (action) => action.returnedForCorrections
+      (action) => action.returnedForCorrections,
     )
       ? true
       : false,
@@ -207,7 +208,7 @@ const addRequest = (
         ...Object.values(exchangeResources).map((res) => ({
           ...res,
           isNew: true,
-        }))
+        })),
       );
       break;
     }
@@ -321,7 +322,7 @@ const makeResource = ({
     allocated: roundNumber(
       coalesce(amountAllocated, amountApproved) || 0,
       0,
-      "floor"
+      "floor",
     ),
     decimalPlaces: 0,
     endDate,
@@ -367,7 +368,7 @@ const makeResource = ({
     requested: roundNumber(
       coalesce(amountRequested, amountAllocated) || 0,
       0,
-      "floor"
+      "floor",
     ),
     requires: dependentResourceXrasIds || [],
     resourceId: xrasResourceId,
@@ -400,7 +401,7 @@ const getRequest = (state, action) => state.requests[action.payload.requestId];
 
 const getUser = (state, action) =>
   getProject(state, action).users.find(
-    ({ username }) => username == action.payload.username
+    ({ username }) => username == action.payload.username,
   );
 
 export const filterResource = ({ allocated, isActive, isCredit }) =>
@@ -425,7 +426,7 @@ export const searchUsers = async (searchText) => {
       lastName: last_name,
       username,
       organization,
-    })
+    }),
   );
 };
 
@@ -437,34 +438,34 @@ export const fetchProjectsList = createAsyncThunk(
       return { username, projectsList: (await res.json()).result };
 
     return rejectWithValue({});
-  }
+  },
 );
 
 export const fetchProjectDetail = createAsyncThunk(
   "api/fetchProjectDetail",
   async ({ grantNumber }, { rejectWithValue }) => {
     return rejectWithValue({ grantNumber });
-  }
+  },
 );
 
 export const fetchRequestDetail = createAsyncThunk(
   "api/fetchRequestDetail",
   async ({ grantNumber, requestId }, { rejectWithValue }) => {
     return rejectWithValue({ grantNumber, requestId });
-  }
+  },
 );
 
 export const fetchUsageDetail = createAsyncThunk(
   "api/fetchUsageDetail",
   async (
     { grantNumber, requestId, resourceRepositoryKey },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     const res = await fetch(
       `${config.routes.usage_detail_path(
         grantNumber,
-        resourceRepositoryKey
-      )}.json`
+        resourceRepositoryKey,
+      )}.json`,
     );
     if (res.status == 200)
       return {
@@ -475,7 +476,7 @@ export const fetchUsageDetail = createAsyncThunk(
       };
 
     return rejectWithValue({ grantNumber, requestId, resourceRepositoryKey });
-  }
+  },
 );
 
 export const deleteAction = createAsyncThunk(
@@ -483,7 +484,7 @@ export const deleteAction = createAsyncThunk(
   async ({ actionId, requestId }, { getState, rejectWithValue }) => {
     const request = getState().api.requests[requestId];
     const action = request.actions.find(
-      (requestAction) => requestAction.actionId == actionId
+      (requestAction) => requestAction.actionId == actionId,
     );
     if (
       !action ||
@@ -494,7 +495,7 @@ export const deleteAction = createAsyncThunk(
 
     const url = config.routes.request_action_path(
       request.requestId,
-      action.actionId
+      action.actionId,
     );
     const data = {
       _method: "delete",
@@ -503,7 +504,8 @@ export const deleteAction = createAsyncThunk(
     const res = await fetch(url, {
       body: Object.keys(data)
         .map(
-          (key) => `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`
+          (key) =>
+            `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`,
         )
         .join("&"),
       headers: {
@@ -516,7 +518,7 @@ export const deleteAction = createAsyncThunk(
     return res.status == 200
       ? { actionId, requestId }
       : rejectWithValue({ actionId, requestId });
-  }
+  },
 );
 
 export const saveResources = createAsyncThunk(
@@ -543,15 +545,15 @@ export const saveResources = createAsyncThunk(
           if (values.length) {
             let attrId = attributes[0].resourceAttributeId;
             let isIdField = ["drop_down", "single_sel", "multi_sel"].includes(
-              fieldType
+              fieldType,
             );
             let isMulti = fieldType == "multi_sel";
             let attrData = {
               resource_attribute_id: isMulti
                 ? values
                 : isIdField
-                ? values[0]
-                : attrId,
+                  ? values[0]
+                  : attrId,
             };
             if (!isIdField) attrData.attribute_value = values[0];
             resource_attributes[attrId] = attrData;
@@ -572,7 +574,7 @@ export const saveResources = createAsyncThunk(
     const url = request.exchangeActionId
       ? config.routes.request_action_path(
           request.requestId,
-          request.exchangeActionId
+          request.exchangeActionId,
         )
       : config.routes.request_actions_path(request.requestId);
 
@@ -584,13 +586,21 @@ export const saveResources = createAsyncThunk(
       method: request.exchangeActionId ? "PUT" : "POST",
     });
 
-    // After a successful POST, the API returns a redirect to the action page.
-    if (res.status == 200) {
-      const exchangeActionId = parseInt(res.url.split("/").pop(), 10);
-      return { requestId, exchangeActionId };
+    let errors, actionId;
+    try {
+      const data = await res.json();
+      errors = data.errors;
+      actionId = data.actionId;
+    } catch {
+      errors = ["Unable to save exchange"];
+      actionId = null;
     }
-    return rejectWithValue({ requestId });
-  }
+
+    if (res.status == 200) {
+      return { requestId, exchangeActionId: actionId };
+    }
+    return rejectWithValue({ requestId, exchangeActionId: actionId, errors });
+  },
 );
 
 export const saveUsers = createAsyncThunk(
@@ -604,7 +614,7 @@ export const saveUsers = createAsyncThunk(
     const resourceChanges =
       users.filter(
         (user) =>
-          !arrayEquals(user.resourceIds, user.initialResourceIds) || user.isNew
+          !arrayEquals(user.resourceIds, user.initialResourceIds) || user.isNew,
       ).length == 0
         ? []
         : users.map((user) => {
@@ -647,7 +657,7 @@ export const saveUsers = createAsyncThunk(
     }
 
     return rejectWithValue({ grantNumber });
-  }
+  },
 );
 
 export const apiSlice = createSlice({
@@ -672,7 +682,7 @@ export const apiSlice = createSlice({
         exchangeResourcesMap[res.resourceId] = res;
 
       const currentIds = request.resources.map(
-        (resource) => resource.resourceId
+        (resource) => resource.resourceId,
       );
 
       const addIds = [
@@ -687,7 +697,7 @@ export const apiSlice = createSlice({
           isNew: true,
           used: 0,
           requested: 0,
-        }))
+        })),
       );
     },
     addUser: (state, action) => {
@@ -784,7 +794,7 @@ export const apiSlice = createSlice({
         credit.requested = roundNumber(
           availableCredits,
           credit.decimalPlaces,
-          "floor"
+          "floor",
         );
     },
     setResourcesReason: (state, action) => {
@@ -850,7 +860,7 @@ export const apiSlice = createSlice({
       })
       .addCase(fetchProjectsList.fulfilled, (state, action) => {
         action.payload.projectsList.sort((a, b) =>
-          getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1
+          getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1,
         );
         state.username = action.payload.username;
         state.projectsList = action.payload.projectsList.map((project) => {
@@ -859,7 +869,7 @@ export const apiSlice = createSlice({
           const returnedForCorrections =
             project.requests.filter(
               (r) =>
-                r.actions.filter((a) => a.returnedForCorrections).length > 0
+                r.actions.filter((a) => a.returnedForCorrections).length > 0,
             ).length > 0;
           const projectStatus = returnedForCorrections
             ? "Returned for Corrections"
@@ -868,8 +878,8 @@ export const apiSlice = createSlice({
                 (requests.find(({ timeStatus }) => timeStatus == "current")
                   ? "Active"
                   : requests[0].timeStatus == "past"
-                  ? "Inactive"
-                  : requests[0].status));
+                    ? "Inactive"
+                    : requests[0].status));
           if (requests) addProject(state, project, projectStatus);
           return {
             grantNumber: grantNumber || requestMasterId,
@@ -921,7 +931,7 @@ export const apiSlice = createSlice({
           requestAction.allowedOperations = [];
         } else {
           request.actions = request.actions.filter(
-            (a) => a.actionId != requestAction.actionId
+            (a) => a.actionId != requestAction.actionId,
           );
         }
 
@@ -940,10 +950,13 @@ export const apiSlice = createSlice({
       .addCase(saveResources.fulfilled, (state, action) => {
         const request = getRequest(state, action);
         request.exchangeActionId = action.payload.exchangeActionId;
+        request.exchangeErrors = [];
         request.exchangeStatus = statuses.success;
       })
       .addCase(saveResources.rejected, (state, action) => {
         const request = getRequest(state, action);
+        request.exchangeActionId = action.payload.exchangeActionId;
+        request.exchangeErrors = action.payload.errors;
         request.exchangeStatus = statuses.error;
       })
       .addCase(saveUsers.pending, (state, action) => {
