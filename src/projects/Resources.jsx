@@ -109,7 +109,12 @@ export default function Resources({ requestId, grantNumber }) {
   else if (error)
     alert = (
       <Alert color="danger">
-        Sorry, something went wrong: {errorMessages.join(", ")}.
+        Sorry, something went wrong: {errorMessages.join(", ")}. For assistance,
+        please{" "}
+        <a href="https://support.access-ci.org/open-a-ticket">
+          open a help ticket
+        </a>{" "}
+        and include this message.
       </Alert>
     );
   else if (previous)
