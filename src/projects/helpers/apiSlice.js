@@ -159,6 +159,7 @@ const addRequest = (
     endDate,
     entryDate,
     exchangeActionId: null,
+    exchangeActionEditable: true,
     exchangeErrors: [],
     exchangeStatus: null,
     grantNumber,
@@ -194,9 +195,10 @@ const addRequest = (
   for (let action of request.actions) {
     if (
       ["Exchange", "Transfer"].includes(action.type) &&
-      ["Submitted", "Under Review"].includes(action.status)
+      ["Submitted", "Under Review", "Incomplete"].includes(action.status)
     ) {
       request.exchangeActionId = action.actionId;
+      request.exchangeActionEditable = action.status === "Incomplete";
       for (let res of action.resources) exchangeResources[res.resourceId] = res;
       for (let res of request.resources) {
         if (res.resourceId in exchangeResources) {
@@ -950,12 +952,14 @@ export const apiSlice = createSlice({
       .addCase(saveResources.fulfilled, (state, action) => {
         const request = getRequest(state, action);
         request.exchangeActionId = action.payload.exchangeActionId;
+        request.exchangeActionEditable = false;
         request.exchangeErrors = [];
         request.exchangeStatus = statuses.success;
       })
       .addCase(saveResources.rejected, (state, action) => {
         const request = getRequest(state, action);
         request.exchangeActionId = action.payload.exchangeActionId;
+        request.exchangeActionEditable = true;
         request.exchangeErrors = action.payload.errors;
         request.exchangeStatus = statuses.error;
       })

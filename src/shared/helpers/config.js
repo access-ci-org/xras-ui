@@ -13,6 +13,7 @@ const config = {
     edit_request_path: (requestId) => `/requests/${requestId}/edit`,
     how_to_path: () => "/how-to",
     get_your_first_project_path: () => `${baseUrl}/get-your-first-project`,
+    profile_path: () => `${baseUrl}/profile`,
     project_types_path: () => `${baseUrl}/project-types`,
     projects_path: () => `${baseUrl}/projects`,
     projects_save_users_path: () => "/projects/save_users",

@@ -53,6 +53,7 @@ export default function Resources({ requestId, grantNumber }) {
   const error = request.exchangeStatus == statuses.error;
   const errorMessages = request.exchangeErrors;
   const previous = request.exchangeActionId !== null;
+  const exchangeEditable = request.exchangeActionEditable;
 
   const resources = request.resources;
   const reason = request.resourcesReason;
@@ -106,6 +107,34 @@ export default function Resources({ requestId, grantNumber }) {
     alert = (
       <Alert color="info">Your exchange request has been submitted.</Alert>
     );
+  else if (
+    error &&
+    errorMessages.length > 0 &&
+    errorMessages[0].includes("PI") &&
+    errorMessages[0].includes("person status Unknown")
+  )
+    alert = (
+      <Alert color="danger">
+        {project.currentUser.role === "pi" ? (
+          <>
+            Please{" "}
+            <a href={config.routes.profile_path()}>
+              update your academic status
+            </a>{" "}
+            before making an exchange request.
+          </>
+        ) : (
+          <>
+            The primary investigator for this project has an unknown academic
+            status. Please ask{" "}
+            {project.users
+              .filter((user) => user.role === "pi")
+              .map((user) => `${user.firstName} ${user.lastName}`)}{" "}
+            to update the academic status in their profile, and then try again.
+          </>
+        )}
+      </Alert>
+    );
   else if (error)
     alert = (
       <Alert color="danger">
@@ -151,7 +180,7 @@ export default function Resources({ requestId, grantNumber }) {
   const resourceIds = resources.map((res) => res.resourceId);
   const availableResourcesMap = {};
   const availableResourceOptions =
-    canExchange && !saved && !previous
+    canExchange && exchangeEditable
       ? request.allowedActions.Exchange.resources
           .filter((res) => !resourceIds.includes(res.resourceId))
           .map((res) => {
@@ -178,7 +207,7 @@ export default function Resources({ requestId, grantNumber }) {
     } else {
       rows.push(res);
       rowClasses.push(
-        !saved && !previous && (res.isNew || res.allocated != res.requested)
+        exchangeEditable && (res.isNew || res.allocated != res.requested)
           ? gridStyle.edited
           : exchangeActionResourceIds.includes(res.resourceId)
             ? ""
@@ -303,15 +332,12 @@ export default function Resources({ requestId, grantNumber }) {
       name: "Balance",
       class: "text-end",
       rowClass: (row) =>
-        !saved &&
-        !previous &&
-        exchangeActionResourceIds.includes(row.resourceId)
+        exchangeEditable && exchangeActionResourceIds.includes(row.resourceId)
           ? gridStyle.input
           : "",
       format: (value, row) => {
         const editable =
-          !saved &&
-          !previous &&
+          exchangeEditable &&
           exchangeActionResourceIds.includes(row.resourceId);
         return row.isBoolean ? (
           <input
@@ -342,7 +368,7 @@ export default function Resources({ requestId, grantNumber }) {
       formatHeader: (name) => (
         <>
           {name}
-          {!saved && !previous ? (
+          {exchangeEditable ? (
             <InfoTip
               bg="secondary"
               color="dark"
@@ -449,7 +475,7 @@ export default function Resources({ requestId, grantNumber }) {
         </>
       ) : null}
 
-      {canExchange && !saved && !previous ? (
+      {canExchange && exchangeEditable ? (
         <>
           <div className="mb-3">
             <label htmlFor="resources-reason" className="form-label required">
