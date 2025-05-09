@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.13.0](https://github.com/access-ci-org/xras-ui/compare/v0.12.0...v0.13.0) (2025-05-09)
+
+
+### Features
+
+* **projects:** allow resubmitting incomplete exchanges ([c72cf0a](https://github.com/access-ci-org/xras-ui/commit/c72cf0aead64fc87e0a2bbe21338ec27a22f638f))
+* **projects:** improve error reporting for exchanges ([7da1db9](https://github.com/access-ci-org/xras-ui/commit/7da1db98c519615757a3c2b59dc3915ec7bf1d3e))
+* **projects:** link to help ticket form in exchange error message ([c38eee0](https://github.com/access-ci-org/xras-ui/commit/c38eee04504c92ad0e1622426fbc85cf1a857ed3))
+
+
+### Bug Fixes
+
+* **projects:** prevent editing or deleting exchanges ([fca197b](https://github.com/access-ci-org/xras-ui/commit/fca197b03fb105f9af880f6553b5ccf3973f8eae))
+
 ## [0.12.0](https://github.com/access-ci-org/xras-ui/compare/v0.11.1...v0.12.0) (2025-04-09)
 
 
