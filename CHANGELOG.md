@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.14.0](https://github.com/access-ci-org/xras-ui/compare/v0.13.0...v0.14.0) (2025-06-02)
+
+
+### Features
+
+* **projects:** allow exchange to credits for all supported allocation ([4bff1dd](https://github.com/access-ci-org/xras-ui/commit/4bff1dd7c5f6df90337578ce955fc897441c6371))
+* **projects:** allow exchange to credits for all supported allocation types ([7303eba](https://github.com/access-ci-org/xras-ui/commit/7303eba4412fc8515a30f7e2f62b31b92641fee9))
+
 ## [0.13.0](https://github.com/access-ci-org/xras-ui/compare/v0.12.0...v0.13.0) (2025-05-09)
 
 
