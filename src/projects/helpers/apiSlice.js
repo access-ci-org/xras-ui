@@ -229,14 +229,14 @@ const addRequest = (
           exchangeResources[resource.resourceId].questions || [];
   }
 
-  // Ensure all requests that support exchanges have a credit-like resource.
+  // Ensure all requests have a credit-like resource.
   if (
-    exchangeAction &&
     request.resources.length &&
     !request.resources.find((res) => res.isCredit)
   )
     request.resources.push(
-      exchangeAction.resources.find((res) => res.isCredit) || {
+      (exchangeAction &&
+        exchangeAction.resources.find((res) => res.isCredit)) || {
         allocated: 0,
         decimalPlaces: 0,
         exchangeRates: {
