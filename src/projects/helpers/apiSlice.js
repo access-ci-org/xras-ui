@@ -229,33 +229,40 @@ const addRequest = (
           exchangeResources[resource.resourceId].questions || [];
   }
 
-  // Add a fake credit-like resource to Maximize requests to enable exchanges.
-  if (!request.usesCredits && resources.length)
-    request.resources.push({
-      allocated: 0,
-      decimalPlaces: 0,
-      exchangeRates: {
-        base: {
-          type: "base",
-          unitCost: 1.0,
+  // Ensure all requests that support exchanges have a credit-like resource.
+  if (
+    exchangeAction &&
+    request.resources.length &&
+    !request.resources.find((res) => res.isCredit)
+  )
+    request.resources.push(
+      exchangeAction.resources.find((res) => res.isCredit) || {
+        allocated: 0,
+        decimalPlaces: 0,
+        exchangeRates: {
+          base: {
+            type: "base",
+            unitCost: 1.0,
+          },
+          current: {
+            type: "base",
+            unitCost: 1.0,
+          },
         },
-        current: {
-          type: "base",
-          unitCost: 1.0,
-        },
+        icon: "credit",
+        isActive: true,
+        isBoolean: false,
+        isCredit: true,
+        isFake: true,
+        name: "Credit Equivalents",
+        requested: 0,
+        requires: [],
+        resourceId: 0,
+        unit: "Credit Equivalents",
+        used: 0,
       },
-      icon: "credit",
-      isActive: true,
-      isBoolean: false,
-      isCredit: true,
-      isFake: true,
-      name: "Credit Equivalents",
-      requested: 0,
-      requires: [],
-      resourceId: 0,
-      unit: "Credit Equivalents",
-      used: 0,
-    });
+    );
+
   state.requests[requestId] = request;
 };
 
