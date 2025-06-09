@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.14.2](https://github.com/access-ci-org/xras-ui/compare/v0.14.1...v0.14.2) (2025-06-09)
+
+
+### Bug Fixes
+
+* force new release to work around CDN caching issues ([7ddda4e](https://github.com/access-ci-org/xras-ui/commit/7ddda4e40ac9b4f15d8967ac9d35291534a7f37c))
+
 ## [0.14.1](https://github.com/access-ci-org/xras-ui/compare/v0.14.0...v0.14.1) (2025-06-02)
 
 
