@@ -79,7 +79,7 @@ export function allocationsMap({ target }) {
 }
 
 export function resources({
-  availableResources,
+  availableResources, unavailableResources,
   canAdd,
   relativeUrlRoot,
   target,
@@ -87,6 +87,7 @@ export function resources({
   ReactDOM.createRoot(target).render(
     <Resources
       availableResources={availableResources}
+      unavailableResources={unavailableResources}
       canAdd={canAdd}
       relativeUrlRoot={relativeUrlRoot}
     />
