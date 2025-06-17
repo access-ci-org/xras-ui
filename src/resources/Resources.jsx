@@ -6,15 +6,19 @@ import styles from "./Resources.module.scss";
 import ImportResourceModal from "./ImportResourceModal";
 
 export default function Resources({
-  availableResources, inavailableResources = [],
+  availableResources, unavailableResources = [],
   canAdd = false,
   relativeUrlRoot,
 }) {
-  const sortedResources = useMemo(
+  const sortedAvailableResources = useMemo(
     () => sortResources(availableResources),
     [availableResources]
   );
-  const [resources, setResources] = useState(sortedResources);
+  const sortedUnavailableResources = useMemo(
+      () => sortResources(unavailableResources),
+      [unavailableResources]
+  );
+  const [resources, setResources] = useState(sortedAvailableResources);
   const [showImportModal, setShowImportModal] = useState(false);
 
   const draggedIndexRef = useRef(null);
@@ -28,9 +32,9 @@ export default function Resources({
     setActiveTab(tabName);
     console.log(tabName)
     if(tabName == activeResourcesTabName) {
-      setResources(availableResources)
+      setResources(sortedAvailableResources)
     } else {
-      setResources(inavailableResources)
+      setResources(sortedUnavailableResources)
     }
   };
 
@@ -41,8 +45,8 @@ export default function Resources({
   };
 
   useEffect(() => {
-    setResources(sortedResources);
-  }, [sortedResources]);
+    setResources(sortedAvailableResources);
+  }, [sortedAvailableResources]);
 
   const handleDragStart = (e, index) => {
     draggedIndexRef.current = index;
