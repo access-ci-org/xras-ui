@@ -109,10 +109,15 @@ export default function Resources({
               <a
                   className={`nav-link ${activeTab === activeResourcesTabName ? 'active' : ''}`}
                   data-toggle={activeTab === activeResourcesTabName ? "tab" : undefined}
-                  style={activeTab === activeResourcesTabName ? {
-                    border: '1px solid #ddd', borderBottomColor: 'transparent',
-                    color: '#555', backgroundColor: '#fff'
-                  } : {}}
+                  style={{
+                    cursor: 'default',
+                    ...(activeTab === activeResourcesTabName ? {
+                      border: '1px solid #ddd',
+                      borderBottomColor: 'transparent',
+                      color: '#555',
+                      backgroundColor: '#fff'
+                    } : {})
+                  }}
                   onClick={(e) => handleTabChange(activeResourcesTabName, e)}
               >
                 {activeResourcesTabName}
@@ -122,6 +127,7 @@ export default function Resources({
               <a
                   className={`nav-link ${activeTab === inactiveResourcesTabName ? 'active' : ''}`}
                   data-toggle={activeTab === inactiveResourcesTabName ? "tab" : undefined}
+                  style={{cursor: 'default'}}
                   onClick={(e) => handleTabChange(inactiveResourcesTabName, e)}
               >
                 {inactiveResourcesTabName}
