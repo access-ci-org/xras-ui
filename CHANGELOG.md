@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.15.0](https://github.com/access-ci-org/xras-ui/compare/v0.14.2...v0.15.0) (2025-07-10)
+
+
+### Features
+
+* **resources:** add active and inactive tab ([aa60fe0](https://github.com/access-ci-org/xras-ui/commit/aa60fe0039fad3472525571643f2b3d6fdc49884))
+
 ## [0.14.2](https://github.com/access-ci-org/xras-ui/compare/v0.14.1...v0.14.2) (2025-06-09)
 
 
