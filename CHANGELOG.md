@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.16.0](https://github.com/access-ci-org/xras-ui/compare/v0.15.0...v0.16.0) (2025-07-29)
+
+
+### Features
+
+* Added conditional handling for NAIRR Start-Up projects ([9ff4adc](https://github.com/access-ci-org/xras-ui/commit/9ff4adc53d50cbff19897144710d40495ebbc71a))
+
 ## [0.15.0](https://github.com/access-ci-org/xras-ui/compare/v0.14.2...v0.15.0) (2025-07-10)
 
 
