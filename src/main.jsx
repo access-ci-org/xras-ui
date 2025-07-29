@@ -30,6 +30,7 @@ import publicationsSlice from "./publications-browser/helpers/publicationsSlice"
 import { initialState as publicationsBrowserInitialState } from "./publications-browser/helpers/initialState.js"
 import publication from "./publications/Publication.jsx";
 
+import Keywords from "./keywords/Keywords.jsx";
 export function shadowTarget(
   host,
   {
@@ -239,4 +240,8 @@ export function resourceCatalog({
       />
     </Provider>
   );
+}
+
+export function keywords({ allocationTypes, target }) {
+  ReactDOM.createRoot(target).render(<Keywords allocationTypes={allocationTypes} />);
 }
