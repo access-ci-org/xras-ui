@@ -63,7 +63,6 @@ const Project = ({ project }) => {
       Link Copied!
     </Tooltip>
   )
-
   const requestNumberLink = () => {
     if(requestNumber()){
       const btnStyle = {
@@ -96,6 +95,10 @@ const Project = ({ project }) => {
     return <></>
   }
 
+  const formattedPIName = () =>  {
+      const newName = project.pi.split(",");
+      return `${newName[1]} ${newName[0]}`
+  }
   const coPIs = () =>  {
     if(!project.coPis || project.coPis.length <= 0) return "";
 
@@ -114,6 +117,21 @@ const Project = ({ project }) => {
     if(!project.beginDate || !project.endDate) return "-";
 
     return <>{project.beginDate} to {project.endDate}</>
+  }
+
+  const requestTitle = () => {
+    if (project.allocationType === "NAIRR Start-Up") {
+      return (
+          <span className="fw-bold">{requestNumber()} Start-Up: {formattedPIName()}, <em> {project.piInstitution} </em> </span>
+      )
+    }
+    return (
+        <>
+          <span className="fw-bold">{requestNumber()} {project.requestTitle}</span> <br />
+          <span className="fst-italic">{project.pi} <small> ({project.piInstitution}) </small></span>
+          { coPIs() }
+        </>
+    )
   }
 
   const resourceList = (
@@ -135,21 +153,31 @@ const Project = ({ project }) => {
     </table>
   )
 
+  const resourcesRow = (
+    <>
+      <div className="row mt-2 fw-bold">
+        <div className="col-3 border-bottom">
+          Resources
+        </div>
+      </div>
+      <div className="row">
+        <div className="col">
+          { resourceList }
+        </div>
+      </div>
+    </>
+  )
+
+
   const projectContent = () => {
+    if (project.allocationType === "NAIRR Start-Up"){
+      return resourcesRow;
+    }
 
     if(singleEntry){
       return (
         <>
-          <div className="row mt-2 fw-bold">
-            <div className="col-3 border-bottom">
-              Resources
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              { resourceList }
-            </div>
-          </div>
+          {resourcesRow}
           <div className="row mt-2 fw-bold">
             <div className="col-3 border-bottom">
               Abstract
@@ -191,9 +219,7 @@ const Project = ({ project }) => {
       <div className="card-header bg-primary text-white">
           <div className="d-flex justify-content-between">
             <div>
-              <span className="fw-bold">{requestNumber()} {project.requestTitle}</span> <br />
-              <span className="fst-italic">{project.pi} <small> ({project.piInstitution}) </small></span>
-              { coPIs() }
+              { requestTitle() }
             </div>
             <div>
               { requestNumberLink() }
