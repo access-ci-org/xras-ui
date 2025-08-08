@@ -16,12 +16,10 @@ import gridStyle from "../shared/Grid.module.scss";
 import Select from "react-select";
 
 import Alert from "../shared/Alert";
-import DiscountBadge from "../shared/DiscountBadge";
 import Grid from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
 import InlineButton from "../shared/InlineButton";
 import ResourceName from "../shared/ResourceName";
-import ResourceDiscountsBanner from "../shared/ResourceDiscountsBanner";
 import ResourcesDiagram from "./ResourcesDiagram";
 import StatusBadge from "../shared/StatusBadge";
 import BlurInput from "../shared/BlurInput";
@@ -254,6 +252,22 @@ export default function Resources({ requestId, grantNumber }) {
     return desiredBalance;
   };
 
+  const formatUnitCost = (resource) =>
+    resource.isBoolean ? (
+      <>&mdash;</>
+    ) : (
+      <>
+        {icon(config.resourceTypeIcons[credit.icon])}
+        <span className="ms-2">
+          {formatExchangeRate(
+            resource.unit,
+            resource.exchangeRates.current.unitCost,
+            credit.name,
+          )}
+        </span>
+      </>
+    );
+
   // Grid columns
   const columns = [
     {
@@ -283,19 +297,8 @@ export default function Resources({ requestId, grantNumber }) {
     {
       key: "unit",
       name: "Unit Cost",
-      width: 275,
-      format: (value, row) =>
-        row.isBoolean ? (
-          <>&mdash;</>
-        ) : (
-          [
-            formatExchangeRate(
-              value,
-              row.exchangeRates.current.unitCost,
-              credit.name,
-            ),
-          ]
-        ),
+      width: 300,
+      format: (value, row) => formatUnitCost(row),
     },
   ];
 
@@ -443,14 +446,21 @@ export default function Resources({ requestId, grantNumber }) {
               placeholder={resourceAddMessage}
               value={null}
               aria-label={resourceAddMessage}
-              formatOptionLabel={({ value, label }) => [
-                label,
-                <DiscountBadge
-                  creditResource={credit}
-                  key="discount"
-                  resource={availableResourcesMap[value]}
-                />,
-              ]}
+              formatOptionLabel={({ value, label }) => {
+                const resource = availableResourcesMap[value];
+                return (
+                  <span className="d-flex justify-content-between">
+                    <span>
+                      <ResourceName
+                        key={label}
+                        resource={resource}
+                        userGuide={false}
+                      />
+                    </span>
+                    <span>{formatUnitCost(resource)}</span>
+                  </span>
+                );
+              }}
             />
           </div>
           {!rows.length ? (
