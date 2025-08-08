@@ -322,20 +322,27 @@ export default function Resources({ requestId, grantNumber }) {
               setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
             }
           />
-        ) : editable ? (
-          <BlurInput
-            classes="text-end w-100"
-            clean={(balanceString) => cleanBalance(balanceString, row)}
-            format={formatNumber}
-            label={`Balance for ${row.name}`}
-            setValue={(cleaned) => {
-              setResourceRequest(row.resourceId, cleaned + row.used);
-            }}
-            style={{ padding: "0.1rem 0.5rem" }}
-            value={getBalance(row)}
-          />
         ) : (
-          formatNumber(getBalance(row))
+          <span className="d-flex">
+            {editable ? (
+              <BlurInput
+                classes="text-end w-100"
+                clean={(balanceString) => cleanBalance(balanceString, row)}
+                format={formatNumber}
+                label={`Balance for ${row.name}`}
+                setValue={(cleaned) => {
+                  setResourceRequest(row.resourceId, cleaned + row.used);
+                }}
+                style={{ padding: "0.1rem 0.5rem" }}
+                value={getBalance(row)}
+              />
+            ) : (
+              <span>{formatNumber(getBalance(row))}</span>
+            )}
+            <span className="text-start ps-2" style={{ width: "8rem" }}>
+              {row.unit}
+            </span>
+          </span>
         );
       },
       formatHeader: (name) => (
