@@ -427,11 +427,6 @@ export default function Resources({ requestId, grantNumber }) {
       )}
       {availableResourceOptions.length ? (
         <>
-          <ResourceDiscountsBanner
-            resources={
-              (canExchange && request.allowedActions.Exchange.resources) || []
-            }
-          />
           <div
             className="p-2"
             style={{
