@@ -282,29 +282,18 @@ export default function Resources({ requestId, grantNumber }) {
     },
     {
       key: "unit",
-      name: "Unit",
-      width: 150,
+      name: "Unit Cost",
+      width: 250,
       format: (value, row) =>
         row.isBoolean ? (
           <>&mdash;</>
         ) : (
           [
-            <abbr
-              key="base"
-              title={formatExchangeRate(
-                value,
-                row.exchangeRates.base.unitCost,
-                credit.name,
-              )}
-            >
-              {value}
-            </abbr>,
-            <DiscountBadge
-              creditResource={credit}
-              key="discount"
-              resource={row}
-              short={true}
-            />,
+            formatExchangeRate(
+              value,
+              row.exchangeRates.base.unitCost,
+              credit.name,
+            ),
           ]
         ),
     },
