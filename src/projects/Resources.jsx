@@ -283,7 +283,7 @@ export default function Resources({ requestId, grantNumber }) {
     {
       key: "unit",
       name: "Unit Cost",
-      width: 250,
+      width: 275,
       format: (value, row) =>
         row.isBoolean ? (
           <>&mdash;</>
@@ -291,7 +291,7 @@ export default function Resources({ requestId, grantNumber }) {
           [
             formatExchangeRate(
               value,
-              row.exchangeRates.base.unitCost,
+              row.exchangeRates.current.unitCost,
               credit.name,
             ),
           ]
@@ -300,70 +300,92 @@ export default function Resources({ requestId, grantNumber }) {
   ];
 
   if (canExchange)
-    columns.push({
-      key: "requested",
-      name: "Balance",
-      class: "text-end",
-      rowClass: (row) =>
-        exchangeEditable && exchangeActionResourceIds.includes(row.resourceId)
-          ? gridStyle.input
-          : "",
-      format: (value, row) => {
-        const editable =
-          exchangeEditable &&
-          exchangeActionResourceIds.includes(row.resourceId);
-        return row.isBoolean ? (
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={value == 1}
-            disabled={!editable}
-            onChange={(e) =>
-              setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
-            }
-          />
-        ) : (
-          <span className="d-flex">
-            {editable ? (
-              <BlurInput
-                classes="text-end w-100"
-                clean={(balanceString) => cleanBalance(balanceString, row)}
-                format={formatNumber}
-                label={`Balance for ${row.name}`}
-                setValue={(cleaned) => {
-                  setResourceRequest(row.resourceId, cleaned + row.used);
-                }}
-                style={{ padding: "0.1rem 0.5rem" }}
-                value={getBalance(row)}
-              />
-            ) : (
-              <span>{formatNumber(getBalance(row))}</span>
-            )}
-            <span className="text-start ps-2" style={{ width: "8rem" }}>
-              {row.unit}
+    columns.push(
+      {
+        key: "requested",
+        name: "Balance",
+        class: "text-end",
+        rowClass: (row) =>
+          exchangeEditable && exchangeActionResourceIds.includes(row.resourceId)
+            ? gridStyle.input
+            : "",
+        format: (value, row) => {
+          const editable =
+            exchangeEditable &&
+            exchangeActionResourceIds.includes(row.resourceId);
+          return row.isBoolean ? (
+            <input
+              className="form-check-input"
+              type="checkbox"
+              checked={value == 1}
+              disabled={!editable}
+              onChange={(e) =>
+                setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
+              }
+            />
+          ) : (
+            <span className="d-flex">
+              {editable ? (
+                <BlurInput
+                  classes="text-end w-100"
+                  clean={(balanceString) => cleanBalance(balanceString, row)}
+                  format={formatNumber}
+                  label={`Balance for ${row.name}`}
+                  setValue={(cleaned) => {
+                    setResourceRequest(row.resourceId, cleaned + row.used);
+                  }}
+                  style={{ padding: "0.1rem 0.5rem" }}
+                  value={getBalance(row)}
+                />
+              ) : (
+                <span>{formatNumber(getBalance(row))}</span>
+              )}
+              <span className="text-start ps-2" style={{ width: "8rem" }}>
+                {row.unit}
+              </span>
             </span>
-          </span>
-        );
+          );
+        },
+        formatHeader: (name) => (
+          <>
+            {name}
+            {exchangeEditable ? (
+              <InfoTip
+                bg="secondary"
+                color="dark"
+                initial="myprojects.requestedAllocation"
+                placement="top-end"
+                visible={project.tab == "resources"}
+              >
+                You can increase or decrease the balance below to change your
+                allocation on a resource. Enter the total amount you would like
+                to have available once the exchange is complete.
+              </InfoTip>
+            ) : null}
+          </>
+        ),
       },
-      formatHeader: (name) => (
-        <>
-          {name}
-          {exchangeEditable ? (
-            <InfoTip
-              bg="secondary"
-              color="dark"
-              initial="myprojects.requestedAllocation"
-              placement="top-end"
-              visible={project.tab == "resources"}
+      {
+        key: "change",
+        name: "Credit Change",
+        format: (value, row) => {
+          const transfer = row.requested - row.allocated;
+          const cost = -1 * transfer * row.exchangeRates.current.unitCost;
+          return cost !== 0 ? (
+            <span
+              className={`badge bg-${
+                cost > 0 ? "primary" : "danger"
+              } rounded-pill`}
             >
-              You can increase or decrease the balance below to change your
-              allocation on a resource. Enter the total amount you would like to
-              have available once the exchange is complete.
-            </InfoTip>
-          ) : null}
-        </>
-      ),
-    });
+              {cost > 0 ? "+" : ""}
+              {formatNumber(cost, credit)} {credit.unit}
+            </span>
+          ) : (
+            <>&mdash;</>
+          );
+        },
+      },
+    );
 
   return (
     <div className="resources">
