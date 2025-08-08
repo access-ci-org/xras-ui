@@ -317,15 +317,22 @@ export default function Resources({ requestId, grantNumber }) {
             exchangeEditable &&
             exchangeActionResourceIds.includes(row.resourceId);
           return row.isBoolean ? (
-            <input
-              className="form-check-input"
-              type="checkbox"
-              checked={value == 1}
-              disabled={!editable}
-              onChange={(e) =>
-                setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
-              }
-            />
+            <span className="d-flex">
+              <span className="w-100">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={value == 1}
+                  disabled={!editable}
+                  onChange={(e) =>
+                    setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
+                  }
+                />
+              </span>
+              <span className="text-start ps-2" style={{ width: "8rem" }}>
+                Requested
+              </span>
+            </span>
           ) : (
             <span className="d-flex">
               {editable ? (

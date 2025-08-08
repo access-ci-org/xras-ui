@@ -325,7 +325,7 @@ const makeResource = ({
   userGuideUrl,
   xrasResourceId,
 }) => {
-  const isBoolean = unitType == "[Yes = 1, No = 0]";
+  const isBoolean = unitType == "Yes / No";
   const isCredit = unitType == "ACCESS Credits";
   return {
     allocated: roundNumber(
