@@ -259,18 +259,26 @@ export default function Resources({ requestId, grantNumber }) {
     {
       key: "name",
       name: "Resource",
-      format: (name, row) => <ResourceName resource={row} />,
-      width: Math.min(350, window.innerWidth * 0.3),
-    },
-    {
-      key: "isActive",
-      name: "Status",
-      format: (value, row) => (
-        <StatusBadge
-          status={value ? "Active" : row.isNew ? "New" : "Inactive"}
-        />
+      format: (name, row) => (
+        <>
+          <ResourceName resource={row} />
+          {(project.currentUser.resourceIds.includes(row.resourceId) ||
+            project.currentUser.resourceAccountInactiveIds.includes(
+              row.resourceId,
+            )) && (
+            <InlineButton
+              icon="table"
+              onClick={() => openUsageDetailModal(row.resourceRepositoryKey)}
+              target="_blank"
+              title={`${row.name} Usage Details`}
+            />
+          )}{" "}
+          <StatusBadge
+            status={row.isActive ? "Active" : row.isNew ? "New" : "Inactive"}
+          />
+        </>
       ),
-      width: 100,
+      width: Math.min(350, window.innerWidth * 0.3),
     },
     {
       key: "unit",
@@ -298,30 +306,6 @@ export default function Resources({ requestId, grantNumber }) {
               short={true}
             />,
           ]
-        ),
-    },
-    {
-      key: "used",
-      name: "Usage",
-      class: "text-end",
-      format: (value, row) =>
-        row.isBoolean ? (
-          <>&mdash;</>
-        ) : (
-          <>
-            {formatNumber(value)}
-            {(project.currentUser.resourceIds.includes(row.resourceId) ||
-              project.currentUser.resourceAccountInactiveIds.includes(
-                row.resourceId,
-              )) && (
-              <InlineButton
-                icon="table"
-                onClick={() => openUsageDetailModal(row.resourceRepositoryKey)}
-                target="_blank"
-                title={`${row.name} Usage Details`}
-              />
-            )}
-          </>
         ),
     },
   ];
