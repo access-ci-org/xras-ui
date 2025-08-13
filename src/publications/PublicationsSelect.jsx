@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import AddPublication from "./AddPublication";
 import config from "../shared/helpers/config";
+
+import AddPublication from "./AddPublication";
+import Grid from "../shared/Grid";
+import MultiStateCheckbox from "../shared/MultiStateCheckbox";
 
 const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
   const [authors, _setAuthors] = useState(usernames);
@@ -18,10 +21,17 @@ const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
 
   const updatePublications = async () => {
     const res = await fetch(
-      config.routes.search_publications_path({ usernames: authors })
+      config.routes.search_publications_path({ usernames: authors }),
     );
     const pubs = await res.json();
-    setPublications(pubs);
+    setPublications(
+      pubs.sort((a, b) =>
+        new Date(a.publication_year, b.publication_month - 1) >
+        new Date(b.publication_year, b.publication_month - 1)
+          ? -1
+          : 1,
+      ),
+    );
   };
 
   // Fetch a new list of publications when the author usernames change.
@@ -33,89 +43,69 @@ const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
   // or removed from the request.
   useEffect(() => {
     addEventListener("requestAddRole", (e) =>
-      setAuthors([...authorsRef.current, e.detail.username])
+      setAuthors([...authorsRef.current, e.detail.username]),
     );
     addEventListener("requestRemoveRole", (e) =>
-      setAuthors(authorsRef.current.filter((a) => a != e.detail.username))
+      setAuthors(authorsRef.current.filter((a) => a != e.detail.username)),
     );
   }, []);
 
-  // Format table rows.
-  let hasSelected = false;
-  let hasUnselected = false;
-  const rows = publications.map((pub) => {
-    const isSelected = selected.includes(pub.publication_id);
-    hasSelected = hasSelected || isSelected;
-    hasUnselected = hasUnselected || !isSelected;
-    const pubDate = new Date(pub.publication_year, pub.publication_month - 1);
-    return (
-      <tr key={pub.publication_id}>
-        <td>
+  const columns = [
+    {
+      key: "publication_id",
+      format: (value) => {
+        const isSelected = selected.includes(value);
+        return (
           <input
             type="checkbox"
             name="publication_ids[]"
-            value={pub.publication_id}
+            value={value}
             checked={isSelected}
             onChange={() =>
               setSelected(
                 isSelected
-                  ? selected.filter((s) => s != pub.publication_id)
-                  : [...selected, pub.publication_id]
+                  ? selected.filter((s) => s != value)
+                  : [...selected, value],
               )
             }
           />
-        </td>
-        <td>{pub.title}</td>
-        <td>
-          {pub.authors
-            .map((author) => `${author.first_name} ${author.last_name}`)
-            .join(", ")}
-        </td>
-        <td>{pub.publication_type}</td>
-        <td>
-          {pubDate.toLocaleString("default", { month: "short" })}{" "}
-          {pub.publication_year}
-        </td>
-      </tr>
-    );
-  });
-
-  const checkboxLabel = `${hasUnselected ? "Select" : "Deselect"} all`;
+        );
+      },
+      formatHeader: () => (
+        <MultiStateCheckbox
+          selectedLength={selected.length}
+          totalLength={publications.length}
+          onChange={(checked) =>
+            setSelected(
+              checked ? publications.map((pub) => pub.publication_id) : [],
+            )
+          }
+        />
+      ),
+    },
+    { key: "title", name: "Title" },
+    {
+      key: "authors",
+      name: "Authors",
+      format: (value) =>
+        value
+          .map((author) => `${author.first_name} ${author.last_name}`)
+          .join(", "),
+    },
+    { key: "publication_type", name: "Type" },
+    {
+      key: "publication_year",
+      name: "Date",
+      format: (value, row) => {
+        const pubDate = new Date(value, row.publication_month - 1);
+        return `${pubDate.toLocaleString("default", { month: "short" })} ${value}`;
+      },
+    },
+  ];
 
   return (
     <div className="publications-select">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>
-              <input
-                type="checkbox"
-                value=""
-                aria-label={checkboxLabel}
-                title={checkboxLabel}
-                checked={hasSelected && !hasUnselected}
-                onChange={() =>
-                  setSelected(
-                    hasUnselected
-                      ? publications.map((pub) => pub.publication_id)
-                      : []
-                  )
-                }
-                ref={(el) => {
-                  if (el) {
-                    el.indeterminate = hasSelected && hasUnselected;
-                  }
-                }}
-              />
-            </th>
-            <th>Title</th>
-            <th>Authors</th>
-            <th>Type</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>{rows}</tbody>
-      </table>
+      <Grid columns={columns} rows={publications} />
       <AddPublication updatePublications={updatePublications} />
     </div>
   );
