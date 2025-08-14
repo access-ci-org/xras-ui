@@ -1,15 +1,11 @@
 import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  initApp,
-  selectPublicationsLoaded,
-} from "./helpers/publicationsSlice.js";
+import { useDispatch } from "react-redux";
+import { initApp } from "./helpers/publicationsSlice.js";
 import PublicationsList from "./PublicationsList.jsx";
 import Filters from "../publications-browser/Filters.jsx";
 
 const PublicationsBrowser = () => {
   const dispatch = useDispatch();
-  const publicationsLoaded = useSelector(selectPublicationsLoaded);
 
   useEffect(() => {
     dispatch(initApp());

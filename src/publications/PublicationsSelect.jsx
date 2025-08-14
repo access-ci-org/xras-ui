@@ -4,6 +4,7 @@ import config from "../shared/helpers/config";
 import AddPublication from "./AddPublication";
 import Grid from "../shared/Grid";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
+import PublicationCitation from "../publications-browser/PublicationCitation";
 
 const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
   const [authors, _setAuthors] = useState(usernames);
@@ -21,11 +22,15 @@ const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
 
   const updatePublications = async () => {
     const res = await fetch(
-      config.routes.search_publications_path({ usernames: authors }),
+      config.routes.search_publications_path({
+        created_by: authors,
+        per_page: 9999,
+      }),
+      { headers: { Accept: "application/json" } },
     );
-    const pubs = await res.json();
+    const data = await res.json();
     setPublications(
-      pubs.sort((a, b) =>
+      data.publications.sort((a, b) =>
         new Date(a.publication_year, b.publication_month - 1) >
         new Date(b.publication_year, b.publication_month - 1)
           ? -1
@@ -83,23 +88,14 @@ const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
         />
       ),
     },
-    { key: "title", name: "Title" },
     {
-      key: "authors",
-      name: "Authors",
-      format: (value) =>
-        value
-          .map((author) => `${author.first_name} ${author.last_name}`)
-          .join(", "),
+      key: "publication",
+      name: "Publication",
+      format: (_value, row) => <PublicationCitation publication={row} />,
     },
-    { key: "publication_type", name: "Type" },
     {
-      key: "publication_year",
-      name: "Date",
-      format: (value, row) => {
-        const pubDate = new Date(value, row.publication_month - 1);
-        return `${pubDate.toLocaleString("default", { month: "short" })} ${value}`;
-      },
+      key: "created_by",
+      name: "Entered By",
     },
   ];
 

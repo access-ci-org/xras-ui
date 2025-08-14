@@ -27,17 +27,11 @@ import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
 import PublicationsBrowser from "./publications-browser/PublicationsBrowser";
 import publicationsSlice from "./publications-browser/helpers/publicationsSlice";
-import { initialState as publicationsBrowserInitialState } from "./publications-browser/helpers/initialState.js"
-import publication from "./publications/Publication.jsx";
+import { initialState as publicationsBrowserInitialState } from "./publications-browser/helpers/initialState.js";
 
 export function shadowTarget(
   host,
-  {
-    bootstrapFonts = true,
-    bootstrapVariables = true,
-    access = false,
-    baseUrl = null,
-  } = {}
+  { bootstrapFonts = true, bootstrapVariables = true, baseUrl = null } = {},
 ) {
   const shadow = host.attachShadow({ mode: "open" });
   const bsOuter = document.createElement("div");
@@ -79,7 +73,8 @@ export function allocationsMap({ target }) {
 }
 
 export function resources({
-  availableResources, unavailableResources,
+  availableResources,
+  unavailableResources,
   canAdd,
   relativeUrlRoot,
   target,
@@ -90,7 +85,7 @@ export function resources({
       unavailableResources={unavailableResources}
       canAdd={canAdd}
       relativeUrlRoot={relativeUrlRoot}
-    />
+    />,
   );
 }
 
@@ -105,7 +100,7 @@ export function editResource({
       resourceId={resourceId}
       setExternalSubmit={setExternalSubmit}
       relativeUrlRoot={relativeUrlRoot}
-    />
+    />,
   );
 }
 
@@ -119,7 +114,7 @@ export function projects({ target, username, routes }) {
   ReactDOM.createRoot(target).render(
     <Provider store={projectsStore}>
       <Projects username={username} />
-    </Provider>
+    </Provider>,
   );
 }
 
@@ -138,12 +133,12 @@ export function projectsBrowser({ target, apiUrl }) {
   ReactDOM.createRoot(target).render(
     <Provider store={projectsBrowserStore}>
       <ProjectsBrowser />
-    </Provider>
+    </Provider>,
   );
 }
 
-export function publicationsBrowser({ target, apiUrl }) {
-
+export function publicationsBrowser({ target, routes }) {
+  addRoutes(routes);
   const publicationsBrowserStore = configureStore({
     reducer: {
       publicationsBrowser: publicationsSlice,
@@ -151,15 +146,14 @@ export function publicationsBrowser({ target, apiUrl }) {
     preloadedState: {
       publicationsBrowser: {
         ...publicationsBrowserInitialState,
-        apiUrl
-      }
-    }
+      },
+    },
   });
 
   ReactDOM.createRoot(target).render(
     <Provider store={publicationsBrowserStore}>
-      <PublicationsBrowser apiUrl={apiUrl} />
-    </Provider>
+      <PublicationsBrowser />
+    </Provider>,
   );
 }
 
@@ -176,7 +170,7 @@ export function publications({ target, routes }) {
   ReactDOM.createRoot(target).render(
     <Provider store={publicationsStore()}>
       <Publications />
-    </Provider>
+    </Provider>,
   );
 }
 
@@ -187,7 +181,7 @@ export function publicationsSelect({ target, routes }) {
       <PublicationsSelect
         {...JSON.parse(target.dataset.publicationsSelectProps)}
       />
-    </Provider>
+    </Provider>,
   );
 }
 
@@ -209,7 +203,7 @@ export function onRampsResourceCatalog({
         onRamps={onRamps}
         baseUrl={baseUrl}
       />
-    </Provider>
+    </Provider>,
   );
 }
 
@@ -237,6 +231,6 @@ export function resourceCatalog({
         allowedCategories={allowedCategories}
         allowedFilters={allowedFilters}
       />
-    </Provider>
+    </Provider>,
   );
 }

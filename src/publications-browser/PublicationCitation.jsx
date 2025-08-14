@@ -9,13 +9,17 @@ export default function PublicationCitation({ publication }) {
   const {
     authors: authorsList,
     doi,
-    journal,
-    publication_datas: data,
+    fields,
     publication_type: pubType,
     publication_year: pubYear,
     title: pubTitle,
   } = publication;
-  const { Pages: pages, Publisher: publisher, "Volume/Issue": volume } = data;
+  const {
+    "Journal name": journal,
+    Pages: pages,
+    Publisher: publisher,
+    "Volume/Issue": volume,
+  } = fields;
   const authors = authorsList
     .map((author) => `${author.last_name}, ${author.first_name.substr(0, 1)}.`)
     .join(", ");
@@ -31,17 +35,15 @@ export default function PublicationCitation({ publication }) {
   if (["Journal Paper", "Other"].includes(pubType))
     return (
       <>
-        {authors} ({year}). {title}{" "}
-        {journal?.title && <em>{journal.title}.</em>} {volume && <>{volume},</>}{" "}
-        {pages && <>{pages}.</>} {doiLink}
+        {authors} ({year}). {title} {journal && <em>{journal}.</em>}{" "}
+        {volume && <>{volume},</>} {pages && <>{pages}.</>} {doiLink}
       </>
     );
 
   if (["Conference Paper", "Software"].includes(pubType))
     return (
       <>
-        {authors} ({year}). {title}{" "}
-        {journal?.title && <em>{journal.title}.</em>} {doiLink}
+        {authors} ({year}). {title} {journal && <em>{journal}.</em>} {doiLink}
       </>
     );
 

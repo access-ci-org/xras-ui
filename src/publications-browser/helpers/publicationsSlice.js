@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { initialState } from "./initialState";
+import config from "../../shared/helpers/config";
 
 export const initApp = createAsyncThunk(
   "publicationsBrowser/initApp",
@@ -13,40 +14,30 @@ export const getPublications = createAsyncThunk(
   "publicationsBrowser/getPublications",
   async (args, { getState }) => {
     const state = getState().publicationsBrowser;
-    let url = `${state.apiUrl}?page=${state.page.current + 1}`;
+    const params = { page: state.page.current + 1 };
+    const { doi, authorName, journal, publicationType } =
+      state.filterSelections;
 
-    if (state.filterSelections.doi !== "") {
-      url += `&doi=${encodeURIComponent(state.filterSelections.doi)}`;
-    }
+    if (doi) params["doi"] = doi;
+    if (authorName) params["author_name"] = authorName;
+    if (journal && state.filterOptions.journals.includes(journal))
+      params["journal"] = journal;
+    if (publicationType) params["publication_type"] = publicationType;
 
-    if (state.filterSelections.authorName !== "") {
-      url += `&author_name=${encodeURIComponent(state.filterSelections.authorName)}`;
-    }
-
-    if (state.filterSelections.journal !== "") {
-      const journal = state.filterSelections.journal;
-      if (state.filterOptions.journals.includes(journal)) {
-        url += `&journal=${encodeURIComponent(state.filterSelections.journal)}`;
-      }
-    }
-
-    if (state.filterSelections.publicationType !== "") {
-      url += `&publication_type=${encodeURIComponent(state.filterSelections.publicationType)}`;
-    }
-
-    const response = await fetch(url);
+    const response = await fetch(
+      config.routes.search_publications_path(params),
+    );
     return await response.json();
   },
 );
 
 export const getFilters = createAsyncThunk(
   "publicationsBrowser/getFilters",
-  async (args, { getState }) => {
-    const state = getState().publicationsBrowser;
-    const url = `${state.apiUrl}?filters=1`;
-    const response = await fetch(url);
+  async () => {
+    const response = await fetch(
+      config.routes.search_publications_filters_path(),
+    );
     const data = await response.json();
-
     return data.filters || [];
   },
 );
