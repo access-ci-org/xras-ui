@@ -6,7 +6,7 @@ import {
   getPublications,
   resetFilters,
   resetPublications,
-} from "./helpers/publicationsSlice.js";
+} from "./helpers/publicationsBrowserSlice.js";
 import { cleanDOI } from "./PublicationCitation.jsx";
 
 const Filters = () => {

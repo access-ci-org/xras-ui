@@ -26,7 +26,7 @@ export const doiLookup = () => async (dispatch, getState) => {
       (data) => {
         if (data.title != "") {
           let pub_type = getState().publications_store.publication_types.find(
-            (pt) => pt.citation_style_type == data.type
+            (pt) => pt.citation_style_type == data.type,
           );
 
           if (!pub_type) {
@@ -42,7 +42,7 @@ export const doiLookup = () => async (dispatch, getState) => {
       },
       (err) => {
         dispatch(updateErrors(lookup_error));
-      }
+      },
     );
 };
 
@@ -58,9 +58,9 @@ export const grantSearch = () => async (dispatch, getState) => {
       },
       () => {
         dispatch(
-          updateErrors("Unable to find a project with this grant number.")
+          updateErrors("Unable to find a project with this grant number."),
         );
-      }
+      },
     );
 };
 
@@ -86,7 +86,7 @@ export const savePublication = () => async (dispatch, getState) => {
   const { formValid, missingFields } = validateForm(
     publication,
     ["title", "publication_year", "publication_month"],
-    ["first_name", "last_name"]
+    ["first_name", "last_name"],
   );
 
   if (!formValid) {
@@ -143,6 +143,6 @@ export const savePublication = () => async (dispatch, getState) => {
     () => {
       dispatch(updateSaving(false));
       dispatch(updateErrors("There was an error saving this publication."));
-    }
+    },
   );
 };

@@ -15,7 +15,7 @@ import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
 import browserSlice from "./projects-browser/helpers/browserSlice";
 import { initialState as projectsBrowserInitialState } from "./projects-browser/helpers/initialState";
 
-import Publications from "./publications/Publications";
+import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsSelect from "./publications/PublicationsSelect";
 import { publications_store } from "./publications/helpers/reducers";
 
@@ -25,9 +25,8 @@ import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
-import PublicationsBrowser from "./publications-browser/PublicationsBrowser";
-import publicationsSlice from "./publications-browser/helpers/publicationsSlice";
-import { initialState as publicationsBrowserInitialState } from "./publications-browser/helpers/initialState.js";
+import PublicationsBrowser from "./publications/PublicationsBrowser";
+import publicationsBrowserSlice from "./publications/helpers/publicationsBrowserSlice";
 
 export function shadowTarget(
   host,
@@ -141,12 +140,7 @@ export function publicationsBrowser({ target, routes }) {
   addRoutes(routes);
   const publicationsBrowserStore = configureStore({
     reducer: {
-      publicationsBrowser: publicationsSlice,
-    },
-    preloadedState: {
-      publicationsBrowser: {
-        ...publicationsBrowserInitialState,
-      },
+      publicationsBrowser: publicationsBrowserSlice,
     },
   });
 
@@ -169,7 +163,7 @@ export function publications({ target, routes }) {
   addRoutes(routes);
   ReactDOM.createRoot(target).render(
     <Provider store={publicationsStore()}>
-      <Publications />
+      <PublicationEdit />
     </Provider>,
   );
 }

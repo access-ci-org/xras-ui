@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { initialState } from "./initialState";
 import config from "../../shared/helpers/config";
 
 export const initApp = createAsyncThunk(
@@ -42,9 +41,26 @@ export const getFilters = createAsyncThunk(
   },
 );
 
-export const publicationsSlice = createSlice({
+export const publicationsBrowserSlice = createSlice({
   name: "publicationsBrowser",
-  initialState,
+  initialState: {
+    publications: [],
+    publicationsLoaded: false,
+    filterSelections: {
+      doi: "",
+      journal: "",
+      authorName: "",
+      publicationType: "",
+    },
+    page: {
+      current: 0,
+      last: 1,
+    },
+    filterOptions: {
+      journals: [],
+      publication_types: [],
+    },
+  },
   reducers: {
     updateFilterSelection: (state, { payload }) => {
       state.filterSelections[payload.name] = payload.value;
@@ -52,7 +68,6 @@ export const publicationsSlice = createSlice({
     resetFilters: (state) => {
       state.filterSelections = {
         doi: "",
-        allJournalsToggled: false,
         journal: "",
         authorName: "",
         publicationType: "",
@@ -88,7 +103,7 @@ export const publicationsSlice = createSlice({
 });
 
 export const { updateFilterSelection, resetFilters, resetPublications } =
-  publicationsSlice.actions;
+  publicationsBrowserSlice.actions;
 
 export const selectFilterSelections = (state) =>
   state.publicationsBrowser.filterSelections;
@@ -99,4 +114,4 @@ export const selectPublications = (state) =>
 export const selectFilterOptions = (state) =>
   state.publicationsBrowser.filterOptions;
 export const selectPage = (state) => state.publicationsBrowser.page;
-export default publicationsSlice.reducer;
+export default publicationsBrowserSlice.reducer;

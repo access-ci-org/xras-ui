@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { getSaving, getShowSaved, getSaveEnabled } from "./helpers/selectors";
+import { getSaving, getShowSaved } from "./helpers/selectors";
 import { savePublication } from "./helpers/thunks";
 
 import Modal from "react-bootstrap/Modal";
-import Publications from "./Publications";
+import PublicationEdit from "./PublicationEdit";
 
 const AddPublication = ({
   saving,
   savePublication,
   showSaved,
   updatePublications,
-  save_enabled,
 }) => {
   const [showModal, setShowModal] = useState(false);
   useEffect(() => {
@@ -32,7 +31,7 @@ const AddPublication = ({
           <Modal.Title>Add Publication</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Publications />
+          <PublicationEdit />
         </Modal.Body>
         <Modal.Footer>
           <div className="d-flex">
@@ -70,7 +69,6 @@ const AddPublication = ({
 const mapStateToProps = (state) => ({
   saving: getSaving(state),
   showSaved: getShowSaved(state),
-  save_enabled: getSaveEnabled(state),
 });
 
 const mapDispatchToProps = (dispatch) => ({

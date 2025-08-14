@@ -4,7 +4,7 @@ import config from "../shared/helpers/config";
 import AddPublication from "./AddPublication";
 import Grid from "../shared/Grid";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
-import PublicationCitation from "../publications-browser/PublicationCitation";
+import PublicationCitation from "./PublicationCitation";
 
 const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
   const [authors, _setAuthors] = useState(usernames);

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { connect } from "react-redux";
-import Publication from "./Publication";
+import PublicationForm from "./PublicationForm";
 import { getData } from "./helpers/thunks";
 import { getDataLoaded } from "./helpers/selectors";
 import ErrorMessages from "./ErrorMessages";
@@ -8,7 +8,7 @@ import SavedMessage from "./SavedMessage";
 
 import LoadingSpinner from "../shared/LoadingSpinner";
 
-const Publications = ({ getData, data_loaded }) => {
+const PublicationEdit = ({ getData, data_loaded }) => {
   useEffect(() => {
     getData();
   }, []);
@@ -17,7 +17,7 @@ const Publications = ({ getData, data_loaded }) => {
     <>
       <SavedMessage />
       <ErrorMessages />
-      {data_loaded ? <Publication /> : <LoadingSpinner />}
+      {data_loaded ? <PublicationForm /> : <LoadingSpinner />}
     </>
   );
 };
@@ -30,4 +30,4 @@ const mapDispatchToProps = (dispatch) => ({
   getData: () => dispatch(getData()),
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(Publications);
+export default connect(mapStateToProps, mapDispatchToProps)(PublicationEdit);

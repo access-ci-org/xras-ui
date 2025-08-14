@@ -4,7 +4,7 @@ import {
   selectPage,
   selectPublications,
   selectPublicationsLoaded,
-} from "./helpers/publicationsSlice.js";
+} from "./helpers/publicationsBrowserSlice.js";
 
 import InfiniteScroll from "../shared/InfiniteScroll.jsx";
 import Publication from "./Publication";
