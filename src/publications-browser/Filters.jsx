@@ -5,11 +5,8 @@ import {
   updateFilterSelection,
   getPublications,
   resetFilters,
+  resetPublications,
 } from "./helpers/publicationsSlice.js";
-import {
-  setShowPagination,
-  updatePageData,
-} from "../projects-browser/helpers/browserSlice.js";
 import { cleanDOI } from "./PublicationCitation.jsx";
 
 const Filters = () => {
@@ -18,13 +15,13 @@ const Filters = () => {
   const filterSelections = useSelector(selectFilterSelections);
 
   const handleSubmit = () => {
+    dispatch(resetPublications());
     window.scrollTo(0, 0);
-    dispatch(setShowPagination(false));
-    dispatch(updatePageData({ current_page: 1 }));
     dispatch(getPublications());
   };
 
   const handleReset = () => {
+    dispatch(resetPublications());
     dispatch(resetFilters());
     window.scrollTo(0, 0);
     dispatch(getPublications());

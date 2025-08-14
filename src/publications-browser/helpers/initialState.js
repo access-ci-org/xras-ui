@@ -1,22 +1,20 @@
 export const initialState = {
   apiUrl: null,
-  pages: 1,
   publications: [],
-  publicationsLoaded: true,
-  showPagination: false,
+  publicationsLoaded: false,
   filterSelections: {
     allJournalsToggled: false,
-    doi: '',
-    journal: '',
-    authorName: '',
-    publicationType: ''
+    doi: "",
+    journal: "",
+    authorName: "",
+    publicationType: "",
   },
-  pageData: {
-    current_page: 1,
-    last_page: 1
+  page: {
+    current: 0,
+    last: 1,
   },
   filterOptions: {
     journals: [],
-    publication_types: []
-  }
+    publication_types: [],
+  },
 };
