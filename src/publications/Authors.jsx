@@ -1,12 +1,20 @@
-import { connect } from "react-redux";
-import { getAuthors, getAuthorsExist } from "./helpers/selectors";
-import { addAuthor } from "./helpers/actions";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  addAuthor,
+  getAuthors,
+  getAuthorsExist,
+} from "./helpers/publicationEditSlice";
+
 import Author from "./Author";
 
-const Authors = ({ authors, addAuthor, authors_exist }) => {
+export default function Authors() {
+  const dispatch = useDispatch();
+  const authors = useSelector(getAuthors);
+  const authorsExist = useSelector(getAuthorsExist);
+
   const noAuthors = authors.length === 0;
   const showError = () => {
-    return authors_exist ? (
+    return authorsExist ? (
       ""
     ) : (
       <div className={"alert alert-danger"}>
@@ -32,23 +40,15 @@ const Authors = ({ authors, addAuthor, authors_exist }) => {
           {authors.map((a, i) => (
             <Author author={a} authorKey={i} key={`author_${i}`} />
           ))}
-          {noAuthors && <Author author={addAuthor()} />}
+          {noAuthors && <Author author={dispatch(addAuthor())} />}
         </tbody>
       </table>
-      <button className={"btn btn-primary mt-3"} onClick={() => addAuthor()}>
+      <button
+        className={"btn btn-primary mt-3"}
+        onClick={() => dispatch(addAuthor())}
+      >
         Add Author
       </button>
     </div>
   );
-};
-
-const mapStateToProps = (state) => ({
-  authors: getAuthors(state),
-  authors_exist: getAuthorsExist(state),
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  addAuthor: () => dispatch(addAuthor()),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(Authors);
+}

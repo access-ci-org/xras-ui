@@ -2,7 +2,7 @@ import PublicationCitation from "./PublicationCitation";
 import { parseResourceName } from "../shared/helpers/utils";
 import style from "./Publication.module.css";
 
-const Publication = ({ publication }) => {
+export default function Publication({ publication }) {
   const { projects, publication_type: pubType, tags } = publication;
   const grant_numbers = projects.map((project) => project.grant_number);
 
@@ -46,6 +46,4 @@ const Publication = ({ publication }) => {
       </div>
     </div>
   );
-};
-
-export default Publication;
+}

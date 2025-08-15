@@ -1,8 +1,9 @@
-import { connect } from "react-redux";
-import { getErrors } from "./helpers/selectors";
-import { hideError } from "./helpers/actions";
+import { useDispatch, useSelector } from "react-redux";
+import { getErrors, hideError } from "./helpers/publicationEditSlice";
 
-const ErrorMessages = ({ errors, hideError }) => {
+export default function ErrorMessages() {
+  const dispatch = useDispatch();
+  const errors = useSelector(getErrors);
   return (
     <>
       {errors.map((err) => (
@@ -15,20 +16,10 @@ const ErrorMessages = ({ errors, hideError }) => {
             type={"button"}
             className={"btn-close"}
             aria-label={"Close"}
-            onClick={() => hideError(err.id)}
+            onClick={() => dispatch(hideError(err.id))}
           ></button>
         </div>
       ))}
     </>
   );
-};
-
-const mapStateToProps = (state) => ({
-  errors: getErrors(state),
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  hideError: (id) => dispatch(hideError(id)),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(ErrorMessages);
+}

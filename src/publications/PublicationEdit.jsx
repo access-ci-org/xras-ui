@@ -1,33 +1,25 @@
 import { useEffect } from "react";
-import { connect } from "react-redux";
-import PublicationForm from "./PublicationForm";
-import { getData } from "./helpers/thunks";
-import { getDataLoaded } from "./helpers/selectors";
+import { useDispatch, useSelector } from "react-redux";
+import { getData, getDataLoaded } from "./helpers/publicationEditSlice";
+
 import ErrorMessages from "./ErrorMessages";
+import LoadingSpinner from "../shared/LoadingSpinner";
+import PublicationForm from "./PublicationForm";
 import SavedMessage from "./SavedMessage";
 
-import LoadingSpinner from "../shared/LoadingSpinner";
+export default function PublicationEdit() {
+  const dispatch = useDispatch();
+  const dataLoaded = useSelector(getDataLoaded);
 
-const PublicationEdit = ({ getData, data_loaded }) => {
   useEffect(() => {
-    getData();
+    dispatch(getData());
   }, []);
 
   return (
     <>
       <SavedMessage />
       <ErrorMessages />
-      {data_loaded ? <PublicationForm /> : <LoadingSpinner />}
+      {dataLoaded ? <PublicationForm /> : <LoadingSpinner />}
     </>
   );
-};
-
-const mapStateToProps = (state) => ({
-  data_loaded: getDataLoaded(state),
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  getData: () => dispatch(getData()),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(PublicationEdit);
+}

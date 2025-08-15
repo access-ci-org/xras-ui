@@ -17,7 +17,7 @@ import { initialState as projectsBrowserInitialState } from "./projects-browser/
 
 import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsSelect from "./publications/PublicationsSelect";
-import { publications_store } from "./publications/helpers/reducers";
+import publicationEditSlice from "./publications/helpers/publicationEditSlice";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
 import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice";
@@ -151,27 +151,29 @@ export function publicationsBrowser({ target, routes }) {
   );
 }
 
-function publicationsStore() {
-  return configureStore({
+export function publications({ target, routes }) {
+  const store = configureStore({
     reducer: {
-      publications_store,
+      publicationEdit: publicationEditSlice,
     },
   });
-}
-
-export function publications({ target, routes }) {
   addRoutes(routes);
   ReactDOM.createRoot(target).render(
-    <Provider store={publicationsStore()}>
+    <Provider store={store}>
       <PublicationEdit />
     </Provider>,
   );
 }
 
 export function publicationsSelect({ target, routes }) {
+  const store = configureStore({
+    reducer: {
+      publicationEdit: publicationEditSlice,
+    },
+  });
   addRoutes(routes);
   ReactDOM.createRoot(target).render(
-    <Provider store={publicationsStore()}>
+    <Provider store={store}>
       <PublicationsSelect
         {...JSON.parse(target.dataset.publicationsSelectProps)}
       />

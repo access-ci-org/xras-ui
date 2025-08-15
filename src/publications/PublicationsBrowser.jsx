@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { initApp } from "./helpers/publicationsBrowserSlice.js";
+
 import PublicationsList from "./PublicationsList.jsx";
 import Filters from "./Filters.jsx";
 

@@ -1,33 +1,20 @@
-import { connect } from "react-redux";
-import { updateShowSaved } from "./helpers/actions";
-import { getShowSaved } from "./helpers/selectors";
+import { useDispatch, useSelector } from "react-redux";
+import { getShowSaved, updateShowSaved } from "./helpers/publicationEditSlice";
 
-const SavedMessage = ({ show_saved, updateShowSaved }) => {
-  const message = (
-    <div className={"alert alert-success alert-dismissible sticky-top"}>
-      Publication Saved Successfully!
-      <button
-        type={"button"}
-        className={"btn-close"}
-        aria-label={"Close"}
-        onClick={() => updateShowSaved(false)}
-      ></button>
-    </div>
-  );
+export default function SavedMessage() {
+  const dispatch = useDispatch();
+  const showSaved = useSelector(getShowSaved);
 
-  if (show_saved) {
-    return message;
-  }
-
-  return <></>;
-};
-
-const mapStateToProps = (state) => ({
-  show_saved: getShowSaved(state),
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  updateShowSaved: (data) => dispatch(updateShowSaved(data)),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(SavedMessage);
+  if (showSaved)
+    return (
+      <div className={"alert alert-success alert-dismissible sticky-top"}>
+        Publication Saved Successfully!
+        <button
+          type={"button"}
+          className={"btn-close"}
+          aria-label={"Close"}
+          onClick={() => dispatch(updateShowSaved(false))}
+        ></button>
+      </div>
+    );
+}

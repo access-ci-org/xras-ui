@@ -1,24 +1,27 @@
 import { useEffect, useState } from "react";
-import { connect } from "react-redux";
-import { getSaving, getShowSaved } from "./helpers/selectors";
-import { savePublication } from "./helpers/thunks";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getSaving,
+  getShowSaved,
+  savePublication,
+} from "./helpers/publicationEditSlice";
 
 import Modal from "react-bootstrap/Modal";
 import PublicationEdit from "./PublicationEdit";
 
-const AddPublication = ({
-  saving,
-  savePublication,
-  showSaved,
-  updatePublications,
-}) => {
+export default function AddPublication({ updatePublications }) {
+  const dispatch = useDispatch();
+  const saving = useSelector(getSaving);
+  const showSaved = useSelector(getShowSaved);
   const [showModal, setShowModal] = useState(false);
+
   useEffect(() => {
     if (!saving && showSaved) {
       // Update the list of publications.
       updatePublications();
     }
   }, [saving, showSaved]);
+
   return (
     <>
       <Modal
@@ -46,7 +49,7 @@ const AddPublication = ({
               type="button"
               className="btn btn-primary"
               onClick={() => {
-                savePublication();
+                dispatch(savePublication());
                 setShowModal(false);
               }}
             >
@@ -64,15 +67,4 @@ const AddPublication = ({
       </button>
     </>
   );
-};
-
-const mapStateToProps = (state) => ({
-  saving: getSaving(state),
-  showSaved: getShowSaved(state),
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  savePublication: () => dispatch(savePublication()),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(AddPublication);
+}

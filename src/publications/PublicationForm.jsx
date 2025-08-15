@@ -1,44 +1,37 @@
-import { connect } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import DoiSearch from "./DoiSearch";
 import {
+  changePublicationType,
+  getFormValid,
+  getModal,
   getPublication,
   getPubTypes,
-  getTagCategories,
-  getSaving,
-  getModal,
   getSaveEnabled,
-  getFormValid,
-} from "./helpers/selectors";
-import {
-  updateField,
-  changePubType,
-  updatePublication,
+  getTagCategories,
+  savePublication,
   setFormValid,
-} from "./helpers/actions";
-import { savePublication } from "./helpers/thunks";
+  updateField,
+  updatePublication,
+} from "./helpers/publicationEditSlice";
+
 import Authors from "./Authors";
 import InfoTip from "../shared/InfoTip";
 import Tags from "./Tags";
 import Projects from "./Projects";
 import ProjectSearch from "./ProjectSearch";
 
-const PublicationForm = ({
-  publication,
-  updateField,
-  publication_types,
-  changePubType,
-  updatePublication,
-  tag_categories,
-  savePublication,
-  modal,
-  save_enabled,
-  setFormValid,
-  form_valid,
-}) => {
-  const updateTitle = (e) => {
-    e.target.value.trim() == "" ? setFormValid(false) : setFormValid(true);
+export default function PublicationForm() {
+  const dispatch = useDispatch();
+  const publication = useSelector(getPublication);
+  const publicationTypes = useSelector(getPubTypes);
+  const tagCategories = useSelector(getTagCategories);
+  const modal = useSelector(getModal);
+  const saveEnabled = useSelector(getSaveEnabled);
+  const formValid = useSelector(getFormValid);
 
-    updatePublication({ key: "title", value: e.target.value });
+  const updateTitle = (e) => {
+    dispatch(setFormValid(e.target.value.trim() !== ""));
+    dispatch(updatePublication({ key: "title", value: e.target.value }));
   };
 
   const dynamicFields = () => {
@@ -54,7 +47,9 @@ const PublicationForm = ({
             name={`field_${f.csl_field_name}`}
             id={`field_${f.csl_field_name}`}
             value={f.field_value}
-            onChange={(e) => updateField({ index: idx, value: e.target.value })}
+            onChange={(e) =>
+              dispatch(updateField({ index: idx, value: e.target.value }))
+            }
           />
         </div>
       </div>
@@ -95,7 +90,7 @@ const PublicationForm = ({
               name={"publication_title"}
               id={"publication_title"}
               type={"text"}
-              className={`form-control ${form_valid ? "" : "is-invalid"}`}
+              className={`form-control ${formValid ? "" : "is-invalid"}`}
               value={publication.title}
               onChange={(e) => updateTitle(e)}
             />
@@ -181,9 +176,9 @@ const PublicationForm = ({
               id={"publication_type"}
               className={"form-control"}
               value={publication.publication_type}
-              onChange={(e) => changePubType(e.target.value)}
+              onChange={(e) => dispatch(changePublicationType(e.target.value))}
             >
-              {publication_types.map((pt) => (
+              {publicationTypes.map((pt) => (
                 <option
                   key={`pub_type_${pt.type_id}`}
                   value={pt.publication_type}
@@ -229,7 +224,7 @@ const PublicationForm = ({
         </InfoTip>
       </div>
       <div className={"card-body"}>
-        {tag_categories.map((tc, idx) => (
+        {tagCategories.map((tc, idx) => (
           <Tags key={`tc_${idx}`} index={idx} category={tc} />
         ))}
       </div>
@@ -261,9 +256,9 @@ const PublicationForm = ({
       {modal ? null : (
         <p className={"mt-3"}>
           <button
-            onClick={() => savePublication()}
+            onClick={() => dispatch(savePublication())}
             className={"btn btn-success"}
-            disabled={!save_enabled}
+            disabled={!saveEnabled}
           >
             Save Publication
           </button>
@@ -271,24 +266,4 @@ const PublicationForm = ({
       )}
     </>
   );
-};
-
-const mapStateToProps = (state) => ({
-  publication: getPublication(state),
-  publication_types: getPubTypes(state),
-  tag_categories: getTagCategories(state),
-  saving: getSaving(state),
-  modal: getModal(state),
-  save_enabled: getSaveEnabled(state),
-  form_valid: getFormValid(state),
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  updateField: (f) => dispatch(updateField(f)),
-  changePubType: (id) => dispatch(changePubType(id)),
-  updatePublication: (data) => dispatch(updatePublication(data)),
-  savePublication: () => dispatch(savePublication()),
-  setFormValid: (data) => dispatch(setFormValid(data)),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(PublicationForm);
+}
