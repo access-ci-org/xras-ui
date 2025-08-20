@@ -37,6 +37,13 @@ export default function ActionsModal({ requestId, grantNumber }) {
   // Explore, Discover, Accelerate.
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
 
+  /* Determines if Renewal action should be hidden.
+    Hide Renewal action if:
+    - Renewal is not allowed, OR
+    - The allocation type is one of: Explore, Discover, Accelerate, AND
+    - > 30 days remain before projects' end date, AND
+    - usage (0..1) is <= the threshold for the allocation type.
+  */
   const thresholds = { "Explore": .90, "Discover": .75, "Accelerate": .75 };
 
   // Retrieve % of used resource
