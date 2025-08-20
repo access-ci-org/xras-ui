@@ -1,5 +1,6 @@
 import React from "react";
 import { useProject, useRequest } from "./helpers/hooks";
+import { getResourceUsagePercent } from "./helpers/utils";
 import config from "./helpers/config";
 
 import Dropdown from "react-bootstrap/Dropdown";
@@ -36,13 +37,10 @@ export default function ActionsModal({ requestId, grantNumber }) {
   // Explore, Discover, Accelerate.
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
 
-  // Temporary threshold value; needs to be updated once exact criteria are defined.
-  const tempThreshold = 100000;
+  const thresholds = { "Explore": .90, "Discover": .75, "Accelerate": .75 };
 
-  // Retrieve available request balance
-  const balance = (request.resources || [])
-    .find((res) =>
-      res.isCredit).allocated;
+  // Retrieve % of used resource
+  let usedPercent = getResourceUsagePercent(request);
 
   // Calculate number of days until the allocation end date
   const endDate = new Date(request.endDate);
@@ -56,7 +54,8 @@ export default function ActionsModal({ requestId, grantNumber }) {
   if (showRenewal) {
     if (renewableAllocations.includes(request.allocationType)) {
       if (daysUntilEndDate > 30) {
-        showRenewal = tempThreshold > balance;
+        const threshold = thresholds[request.allocationType];
+        showRenewal = usedPercent > threshold;
       }
     }
   }
