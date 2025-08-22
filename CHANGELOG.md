@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.17.0](https://github.com/access-ci-org/xras-ui/compare/v0.16.0...v0.17.0) (2025-08-22)
+
+
+### Features
+
+* Created keyword component for keyword management table ([bdf2698](https://github.com/access-ci-org/xras-ui/commit/bdf269898ad89198a4c055922011c79ebab04a42))
+
 ## [0.16.0](https://github.com/access-ci-org/xras-ui/compare/v0.15.0...v0.16.0) (2025-07-29)
 
 
