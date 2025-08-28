@@ -177,19 +177,43 @@ export default function Resources({ requestId, grantNumber }) {
 
   const resourceIds = resources.map((res) => res.resourceId);
   const availableResourcesMap = {};
-  const availableResourceOptions =
-    canExchange && exchangeEditable
-      ? request.allowedActions.Exchange.resources
-          .filter((res) => !resourceIds.includes(res.resourceId))
+  const groupedResourcesMap = {};
+  const availableResourceGroups = [];
+  if (canExchange && exchangeEditable) {
+    request.allowedActions.Exchange.resources
+      .filter((res) => !resourceIds.includes(res.resourceId))
+      .map((res) => {
+        availableResourcesMap[res.resourceId] = res;
+        const groupLabel = `${res.type} Resources (${res.unit})`;
+        groupedResourcesMap[groupLabel] = groupedResourcesMap[groupLabel] || [];
+        groupedResourcesMap[groupLabel].push(res);
+      });
+
+    for (const [label, options] of Object.entries(groupedResourcesMap)) {
+      availableResourceGroups.push({
+        label,
+        options: options
+          .sort((a, b) =>
+            a.exchangeRates.current.unitCost <
+              b.exchangeRates.current.unitCost ||
+            (a.exchangeRates.current.unitCost ==
+              b.exchangeRates.current.unitCost &&
+              a.name < b.name)
+              ? -1
+              : 1,
+          )
           .map((res) => {
-            availableResourcesMap[res.resourceId] = res;
             const parsed = parseResourceName(res.name);
             const label = parsed.short
               ? `${parsed.short} (${parsed.full.replace(/ \([^(]+\)/, "")})`
               : parsed.full;
             return { value: res.resourceId, label };
-          })
-      : [];
+          }),
+      });
+      availableResourceGroups.sort((a, b) => (a.label < b.label ? -1 : 1));
+    }
+  }
+
   const exchangeActionResourceIds = canExchange
     ? request.allowedActions.Exchange.resources.map((res) => res.resourceId)
     : [];
@@ -426,7 +450,7 @@ export default function Resources({ requestId, grantNumber }) {
           columns={columns}
           rows={rows}
           rowClasses={rowClasses}
-          classes={availableResourceOptions.length ? "mb-0" : ""}
+          classes={availableResourceGroups.length ? "mb-0" : ""}
           frozenColumns={2}
           minWidth="800px"
         />
@@ -435,7 +459,7 @@ export default function Resources({ requestId, grantNumber }) {
           This project does not have any resources.
         </div>
       )}
-      {availableResourceOptions.length ? (
+      {availableResourceGroups.length ? (
         <>
           <div
             className="p-2"
@@ -448,7 +472,7 @@ export default function Resources({ requestId, grantNumber }) {
           >
             <Select
               classNames={{ control: () => "react-select mb-1" }}
-              options={availableResourceOptions}
+              options={availableResourceGroups}
               onChange={(option) => addResource(option.value)}
               placeholder={resourceAddMessage}
               value={null}
