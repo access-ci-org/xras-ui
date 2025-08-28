@@ -21,7 +21,7 @@ const initialState = {
   grant_number: "",
 };
 
-export const publicationEditSlice = createSlice({
+const publicationEditSlice = createSlice({
   name: "publicationEdit",
   initialState,
   reducers: {
@@ -208,12 +208,10 @@ export const getAuthorsExist = (state) => {
 
 export const doiLookup = () => async (dispatch, getState) => {
   const doi = getState().publicationEdit.publication.doi;
-
-  const formatted_DOI = encodeURIComponent(doi).replaceAll(".", "%2E");
   const lookup_error =
     "Unable to retrieve publication. Double check your DOI, or continue entering information manually.";
 
-  fetch(`/publications/lookup?doi=${formatted_DOI}`)
+  fetch(config.routes.publications_lookup_path({ doi }))
     .then((res) => res.json())
     .then(
       (data) => {
@@ -241,8 +239,7 @@ export const doiLookup = () => async (dispatch, getState) => {
 
 export const grantSearch = () => async (dispatch, getState) => {
   const grant_number = getState().publicationEdit.grant_number;
-  const path = config.routes.publications_find_project_path();
-  await fetch(`${path}?grant_number=${grant_number}`)
+  await fetch(config.routes.publications_find_project_path({ grant_number }))
     .then((res) => res.json())
     .then(
       (data) => {
@@ -257,11 +254,11 @@ export const grantSearch = () => async (dispatch, getState) => {
     );
 };
 
-export const getData = () => async (dispatch) => {
-  const path = /^\/requests/.test(window.location.pathname)
-    ? config.routes.publication_path("new.json")
-    : window.location.href + ".json";
-  await fetch(path)
+export const getData = (publicationId) => async (dispatch) => {
+  const url = publicationId
+    ? `${config.routes.edit_publication_path(publicationId)}.json`
+    : config.routes.publication_path("new.json");
+  await fetch(url)
     .then((res) => res.json())
     .then((data) => {
       dispatch(dataLoaded(data));

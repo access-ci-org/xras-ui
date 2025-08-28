@@ -151,7 +151,7 @@ export function publicationsBrowser({ target, routes }) {
   );
 }
 
-export function publications({ target, routes }) {
+export function publicationEdit({ publicationId, target, routes }) {
   const store = configureStore({
     reducer: {
       publicationEdit: publicationEditSlice,
@@ -160,7 +160,7 @@ export function publications({ target, routes }) {
   addRoutes(routes);
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
-      <PublicationEdit />
+      <PublicationEdit publicationId={publicationId} />
     </Provider>,
   );
 }

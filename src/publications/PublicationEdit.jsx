@@ -7,13 +7,13 @@ import LoadingSpinner from "../shared/LoadingSpinner";
 import PublicationForm from "./PublicationForm";
 import SavedMessage from "./SavedMessage";
 
-export default function PublicationEdit() {
+export default function PublicationEdit({ publicationId }) {
   const dispatch = useDispatch();
   const dataLoaded = useSelector(getDataLoaded);
 
   useEffect(() => {
-    dispatch(getData());
-  }, []);
+    dispatch(getData(publicationId));
+  }, [publicationId]);
 
   return (
     <>
