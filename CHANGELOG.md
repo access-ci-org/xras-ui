@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.18.0](https://github.com/access-ci-org/xras-ui/compare/v0.17.0...v0.18.0) (2025-09-04)
+
+
+### Features
+
+* **projects:** add newly-required resources to exchanges ([4fceefe](https://github.com/access-ci-org/xras-ui/commit/4fceefe273bd5eadd8766c37d3ddbcf8af19ab5d))
+
 ## [0.17.0](https://github.com/access-ci-org/xras-ui/compare/v0.16.0...v0.17.0) (2025-08-22)
 
 
