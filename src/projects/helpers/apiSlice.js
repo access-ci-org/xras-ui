@@ -466,7 +466,17 @@ export const searchUsers = async (searchText) => {
   const params = new URLSearchParams({ q: searchText });
   const res = await fetch(`${config.routes.search_people_path()}?${params}`);
   return (await res.json()).map(
-    ({ email, first_name, last_name, username, organization }) => ({
+    ({
+      eligible_reason,
+      email,
+      first_name,
+      is_eligible,
+      last_name,
+      username,
+      organization,
+    }) => ({
+      eligibility: is_eligible,
+      eligibilityReason: eligible_reason,
       email,
       firstName: first_name,
       lastName: last_name,

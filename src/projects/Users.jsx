@@ -78,7 +78,7 @@ export default function Users({ grantNumber, requestId }) {
           <a
             href={config.routes.request_action_path(
               request.requestId,
-              "new?action_type=Exchange"
+              "new?action_type=Exchange",
             )}
             onClick={(e) => {
               e.preventDefault();
@@ -111,7 +111,7 @@ export default function Users({ grantNumber, requestId }) {
       description = `all users for ${column.name}`;
       onChange = (checked) => toggleUsersResources(checked, null, column.key);
       selectedLength = users.filter(({ resourceIds }) =>
-        resourceIds.includes(column.key)
+        resourceIds.includes(column.key),
       ).length;
       totalLength = users.length;
     }
@@ -170,7 +170,7 @@ export default function Users({ grantNumber, requestId }) {
         >
           {roleOptions.filter(
             (option) =>
-              option.key == value || !["pi", "co_pi"].includes(option.key)
+              option.key == value || !["pi", "co_pi"].includes(option.key),
           )}
         </select>
       ),
@@ -212,7 +212,7 @@ export default function Users({ grantNumber, requestId }) {
               toggleUsersResources(
                 e.target.checked,
                 row.username,
-                resource.resourceId
+                resource.resourceId,
               )
             }
             type="checkbox"
@@ -224,7 +224,7 @@ export default function Users({ grantNumber, requestId }) {
     });
 
   const rowClasses = users.map((user) =>
-    user.hasChanges ? gridStyle.edited : ""
+    user.hasChanges ? gridStyle.edited : "",
   );
 
   return (
@@ -246,10 +246,33 @@ export default function Users({ grantNumber, requestId }) {
             loadOptions={async (value) => {
               const users = await searchUsers(value);
               return users.map((user) => ({
+                isDisabled: user.eligibility === "no",
+                label: (
+                  <span className="d-flex justify-content-between">
+                    <span
+                      className={
+                        user.eligibility === "no"
+                          ? "text-decoration-line-through"
+                          : ""
+                      }
+                      style={{
+                        color:
+                          user.eligibility === "no" ? "#707070" : undefined,
+                      }}
+                    >
+                      {user.username} ({user.firstName} {user.lastName},{" "}
+                      {user.organization}
+                      {user.email ? `, ${user.email}` : ""}
+                    </span>
+                    {user.eligibility === "no" && user.eligibilityReason && (
+                      <span className="text-danger ms-2">
+                        <i className="bi bi-exclamation-octagon"></i>{" "}
+                        {user.eligibilityReason}
+                      </span>
+                    )}
+                  </span>
+                ),
                 value: user,
-                label: `${user.username} (${user.firstName} ${user.lastName}, ${
-                  user.organization
-                }${user.email ? `, ${user.email}` : ""})`,
               }));
             }}
             onChange={(option) => addUser(option.value)}
