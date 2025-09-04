@@ -216,17 +216,25 @@ const addRequest = (
     }
   }
 
-  // Add resource questions to request resources.
   const exchangeAction =
     request.allowedActions.Exchange || request.allowedActions.Transfer;
+
   if (exchangeAction) {
+    // Create a mapping of available resources.
     exchangeResources = {};
     for (let resource of exchangeAction.resources)
       exchangeResources[resource.resourceId] = resource;
+
+    // Iterate over all current resources in the request.
     for (let resource of request.resources)
-      if (resource.resourceId in exchangeResources)
+      if (resource.resourceId in exchangeResources) {
+        // Add resource questions.
         resource.questions =
           exchangeResources[resource.resourceId].questions || [];
+        // Add required resource IDs.
+        resource.requires =
+          exchangeResources[resource.resourceId].requires || [];
+      }
   }
 
   // Ensure all requests have a credit-like resource.
@@ -388,6 +396,35 @@ const makeResource = ({
     used: roundNumber(amountUsed || 0, 0, "ceil"),
     userGuideUrl,
   };
+};
+
+const addResourceAndDeps = (resourceId, request) => {
+  const exchangeAction = request.allowedActions.Exchange;
+  if (!exchangeAction) return;
+
+  const exchangeResourcesMap = {};
+  for (let res of exchangeAction.resources)
+    exchangeResourcesMap[res.resourceId] = res;
+
+  const currentIds = request.resources.map((resource) => resource.resourceId);
+  const requiredIds = exchangeResourcesMap[resourceId].requires || [];
+  let addRequiredIds = !requiredIds.some((requiredId) =>
+    currentIds.includes(requiredId),
+  );
+
+  const addIds = [resourceId, ...(addRequiredIds ? requiredIds : [])].filter(
+    (id) => id in exchangeResourcesMap && !currentIds.includes(id),
+  );
+
+  request.resources.push(
+    ...addIds.map((resourceId) => ({
+      ...exchangeResourcesMap[resourceId],
+      allocated: 0,
+      isNew: true,
+      used: 0,
+      requested: 0,
+    })),
+  );
 };
 
 const arrayEquals = (a, b) => {
@@ -683,31 +720,7 @@ export const apiSlice = createSlice({
     addResource: (state, action) => {
       const { resourceId } = action.payload;
       const request = getRequest(state, action);
-      const exchangeAction = request.allowedActions.Exchange;
-      if (!exchangeAction) return;
-
-      const exchangeResourcesMap = {};
-      for (let res of exchangeAction.resources)
-        exchangeResourcesMap[res.resourceId] = res;
-
-      const currentIds = request.resources.map(
-        (resource) => resource.resourceId,
-      );
-
-      const addIds = [
-        resourceId,
-        ...(exchangeResourcesMap[resourceId].requires || []),
-      ].filter((id) => id in exchangeResourcesMap && !currentIds.includes(id));
-
-      request.resources.push(
-        ...addIds.map((resourceId) => ({
-          ...exchangeResourcesMap[resourceId],
-          allocated: 0,
-          isNew: true,
-          used: 0,
-          requested: 0,
-        })),
-      );
+      addResourceAndDeps(resourceId, request);
     },
     addUser: (state, action) => {
       const project = getProject(state, action);
@@ -789,6 +802,10 @@ export const apiSlice = createSlice({
       for (let resource of request.resources) {
         if (resource.resourceId == resourceId) {
           resource.requested = requested;
+          // If the user is requesting a change to the resource,
+          // make sure required resources are present in the request.
+          if (resource.requested != resource.allocated)
+            addResourceAndDeps(resource.resourceId, request);
         }
         if (resource.isCredit) {
           credit = resource;
