@@ -61,8 +61,10 @@ const addProject = (
     users: users
       .map(
         ({
+          eligibleReason,
           email,
           firstName,
+          isEligible,
           lastName,
           organization,
           resources,
@@ -85,6 +87,8 @@ const addProject = (
           for (let res of userResources)
             resourceUsernames[res.xrasResourceId] = res.resourceUsername;
           return {
+            eligibility: isEligible,
+            eligibilityReason: eligibleReason,
             email,
             firstName,
             initialResourceIds: [...resourceIds],

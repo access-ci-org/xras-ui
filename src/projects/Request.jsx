@@ -19,7 +19,7 @@ import Users from "./Users";
 export default function Request({ requestId, grantNumber }) {
   const { request } = useRequest(requestId, grantNumber);
   const { project, setRequest, setTab } = useProject(
-    grantNumber || request.grantNumber
+    grantNumber || request.grantNumber,
   );
 
   if (!request) return;
@@ -29,12 +29,16 @@ export default function Request({ requestId, grantNumber }) {
     request.timeStatus || request.actions[0].status.toLowerCase();
 
   const deleteAction = request.actions.find(
-    ({ showDeleteModal }) => showDeleteModal
+    ({ showDeleteModal }) => showDeleteModal,
   );
 
   const disabledTabs = [];
   if (!request.resources.length) disabledTabs.push("resources");
   if (requestId != project.currentRequestId) disabledTabs.push("users");
+
+  const ineligibleUsers = (project.users || []).filter(
+    (user) => user.eligibility === "no" && user.role !== "user",
+  );
 
   return (
     <div className="request">
@@ -75,6 +79,26 @@ export default function Request({ requestId, grantNumber }) {
           ) : null}
         </Alert>
       ) : null}
+      {project.isManager &&
+        requestId === project.currentRequestId &&
+        ineligibleUsers.length > 0 && (
+          <Alert color="danger">
+            Some project personnel need to update their profiles. You will be
+            unable to submit exchanges, renewals, and other actions until these
+            issues are resolved:
+            <br />
+            <ul className="fs-6 mb-0">
+              {ineligibleUsers.map((user) => (
+                <li key={user.username}>
+                  <strong>
+                    {user.firstName} {user.lastName} ({user.username}):
+                  </strong>{" "}
+                  {user.eligibilityReason}
+                </li>
+              ))}
+            </ul>
+          </Alert>
+        )}
       <Tabs activeKey={project.tab} onSelect={setTab} className="mt-3 mb-3">
         <Tab eventKey="overview" title="Overview" className="mb-0">
           <Overview requestId={requestId} grantNumber={grantNumber} />
