@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - variable-marketplace
 
 jobs:
   release:
