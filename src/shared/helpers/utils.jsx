@@ -14,7 +14,7 @@ export const formatDate = (dateStr, options) =>
 
 export const formatNumber = (
   value,
-  { abbreviate = false, decimalPlaces = undefined } = {}
+  { abbreviate = false, decimalPlaces = undefined } = {},
 ) => {
   if (abbreviate) {
     let power = 0;
@@ -83,10 +83,10 @@ export const formatManagers = (project) =>
   formatArray(
     project.users
       .filter(({ role }) =>
-        ["pi", "co_pi", "allocation_manager"].includes(role)
+        ["pi", "co_pi", "allocation_manager"].includes(role),
       )
       .map((user) => `${user.firstName} ${user.lastName}`),
-    "or"
+    "or",
   );
 
 export const singularize = (name, count) => {
@@ -94,10 +94,10 @@ export const singularize = (name, count) => {
 };
 
 export const formatExchangeRate = (unit, unitCost, creditResourceName) =>
-  `1 ${singularize(unit, 1)} = ${formatNumber(unitCost)} ${singularize(
+  `${formatNumber(unitCost)} ${singularize(
     creditResourceName,
-    unitCost
-  )}`;
+    unitCost,
+  )} / ${singularize(unit, 1)}`;
 
 export const getResourceUsagePercent = (request) => {
   let total = 0;
