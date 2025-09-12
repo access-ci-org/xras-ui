@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.21.0-beta1](https://github.com/access-ci-org/xras-ui/compare/v0.20.0...v0.21.0-beta1) (2025-09-12)
+
+
+### Miscellaneous Chores
+
+* release 0.21.0-beta1 ([d41c717](https://github.com/access-ci-org/xras-ui/commit/d41c7179e959571db283e3177950b0f37deb8d16))
+
 ## [0.20.0](https://github.com/access-ci-org/xras-ui/compare/v0.19.0...v0.20.0) (2025-09-09)
 
 
