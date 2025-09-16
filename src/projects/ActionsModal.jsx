@@ -37,15 +37,6 @@ export default function ActionsModal({ requestId, grantNumber }) {
   // Explore, Discover, Accelerate.
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
 
-  /* Determines if Renewal action should be hidden.
-    Hide Renewal action if:
-    - Renewal is not allowed, OR
-    - The allocation type is one of: Explore, Discover, Accelerate, AND
-    - > 30 days remain before projects' end date, AND
-    - usage (0..1) is <= the threshold for the allocation type.
-  */
-  const thresholds = { "Explore": .90, "Discover": .75, "Accelerate": .75 };
-
   // Retrieve % of used resource
   let usedPercent = getResourceUsagePercent(request);
 
@@ -54,17 +45,47 @@ export default function ActionsModal({ requestId, grantNumber }) {
   const currentDate = new Date();
   const daysUntilEndDate = Math.max(0, Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24)));
 
-  // Determine if renewal action should be hidden
-  const renewableAllocations = ["Explore", "Discover", "Accelerate"];
-  let showRenewal = "Renewal" in request.allowedActions;
+  // Determine if upgrade action should be shown
+  // TODO: Update threshold logic once the information is available
+  let nextTier;
+  let nextTierId;
+  let upgradeAction;
+  let upgradeAllowed;
+  const renewalAllowed = "Renewal" in request.allowedActions;
+  const supplementAllowed = "Supplement" in request.allowedActions;
+  const upgradeEligible = !(renewalAllowed) && !(supplementAllowed);
 
-  if (showRenewal) {
-    if (renewableAllocations.includes(request.allocationType)) {
-      if (daysUntilEndDate > 30) {
-        const threshold = thresholds[request.allocationType];
-        showRenewal = usedPercent > threshold;
+  if (upgradeEligible) {
+    const nextTierMap = { Explore: "Discover", Discover: "Accelerate", Accelerate: null };
+    nextTier = nextTierMap[request.allocationType] || null;
+
+    if (nextTier) {
+      nextTierId = renewalActions.find(action => action.opportunityName.includes(nextTier)).opportunityId;
+      const upgradable = ["Explore", "Discover", "Accelerate"];
+
+      if (upgradable.includes(request.allocationType)) {
+        if (daysUntilEndDate > 30) {
+          const thresholds = { "Explore": .90, "Discover": .75, "Accelerate": .75 };
+          const threshold = thresholds[request.allocationType];
+          upgradeAllowed = usedPercent > threshold;
+        }
       }
     }
+  }
+
+  if (upgradeAllowed) {
+    upgradeAction =  {
+      id: "upgrade",
+      action: `${config.routes.renew_request_path(requestId)}?opportunity_id=${nextTierId}`,
+      method: "post",
+      isEnabled: true,
+      button: "Request an Upgrade",
+      enabled: (
+          <p>
+            Upgrade your {request.allocationType} project to {nextTier} by submitting an upgrade request.
+          </p>
+      )
+    };
   }
 
   const actions = [
@@ -141,7 +162,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
         }`,
         "post",
       ]),
-      isEnabled: showRenewal,
+      isEnabled: renewalAllowed,
       button: "Request a Renewal",
       enabled: (
         <p>
@@ -195,6 +216,10 @@ export default function ActionsModal({ requestId, grantNumber }) {
       ),
     },
   ];
+
+  if (upgradeAllowed) {
+      actions.push(upgradeAction);
+  }
 
   actions.sort((a, b) => (a.isEnabled < b.isEnabled ? 1 : -1));
 
