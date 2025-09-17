@@ -258,7 +258,7 @@ export const getData = (publicationId) => async (dispatch) => {
   const url = publicationId
     ? `${config.routes.edit_publication_path(publicationId)}.json`
     : config.routes.publication_path("new.json");
-  await fetch(url)
+  await fetch(url, { headers: { accept: "application/json" } })
     .then((res) => res.json())
     .then((data) => {
       dispatch(dataLoaded(data));

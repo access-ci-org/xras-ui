@@ -1,15 +1,34 @@
 import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getSaving,
+  getShowSaved,
+  savePublication,
+} from "./helpers/publicationEditSlice";
 import config from "../shared/helpers/config";
 
-import AddPublication from "./AddPublication";
 import Grid from "../shared/Grid";
+import InlineButton from "../shared/InlineButton";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
 import PublicationCitation from "./PublicationCitation";
+import PublicationEditModal from "./PublicationEditModal";
 
-const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
+export default function PublicationsGrid({
+  allowAdd = true,
+  allowEdit = true,
+  allowSelect = false,
+  usernames = [],
+  selectedPublicationIds = [],
+}) {
+  const dispatch = useDispatch();
+  const saving = useSelector(getSaving);
+  const showSaved = useSelector(getShowSaved);
+
+  const [currentPublicationId, setCurrentPublicationId] = useState(null);
   const [authors, _setAuthors] = useState(usernames);
-  const [selected, setSelected] = useState(publication_ids);
+  const [selected, setSelected] = useState(selectedPublicationIds);
   const [publications, setPublications] = useState([]);
+  const [showModal, setShowModal] = useState(false);
 
   // We need to use a ref so that event listeners can access the latest
   // value of authors. See:
@@ -39,10 +58,20 @@ const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
     );
   };
 
+  const editPublication = (publicationId) => {
+    setCurrentPublicationId(publicationId);
+    setShowModal(true);
+  };
+
   // Fetch a new list of publications when the author usernames change.
   useEffect(() => {
     updatePublications();
   }, [authors]);
+
+  // Fetch a new list of publications when a publication is added or edited.
+  useEffect(() => {
+    if (!saving && showSaved) updatePublications();
+  }, [saving, showSaved]);
 
   // Attach event listeners to detect when users are added to
   // or removed from the request.
@@ -57,6 +86,31 @@ const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
 
   const columns = [
     {
+      key: "publication",
+      name: "Publication",
+      format: (_value, row) => (
+        <>
+          <PublicationCitation publication={row} />
+          {allowEdit && row.can_edit && (
+            <InlineButton
+              key="edit"
+              onClick={() => editPublication(row.publication_id)}
+              icon="pencil"
+              title="Edit publication"
+            />
+          )}
+        </>
+      ),
+    },
+    {
+      key: "created_by",
+      name: "Entered By",
+      headerClass: "text-nowrap",
+    },
+  ];
+
+  if (allowSelect)
+    columns.splice(0, 0, {
       key: "publication_id",
       format: (value) => {
         const isSelected = selected.includes(value);
@@ -87,24 +141,28 @@ const PublicationsSelect = ({ usernames = [], publication_ids = [] }) => {
           }
         />
       ),
-    },
-    {
-      key: "publication",
-      name: "Publication",
-      format: (_value, row) => <PublicationCitation publication={row} />,
-    },
-    {
-      key: "created_by",
-      name: "Entered By",
-    },
-  ];
+    });
 
   return (
-    <div className="publications-select">
+    <>
       <Grid columns={columns} rows={publications} />
-      <AddPublication updatePublications={updatePublications} />
-    </div>
+      {allowAdd && (
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => editPublication(null)}
+        >
+          Add a New Publication
+        </button>
+      )}
+      <PublicationEditModal
+        publicationId={currentPublicationId}
+        show={showModal}
+        onHide={(save) => {
+          if (save) dispatch(savePublication());
+          setShowModal(false);
+        }}
+      />
+    </>
   );
-};
-
-export default PublicationsSelect;
+}

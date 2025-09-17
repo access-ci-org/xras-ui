@@ -16,7 +16,7 @@ import browserSlice from "./projects-browser/helpers/browserSlice";
 import { initialState as projectsBrowserInitialState } from "./projects-browser/helpers/initialState";
 
 import PublicationEdit from "./publications/PublicationEdit";
-import PublicationsSelect from "./publications/PublicationsSelect";
+import PublicationsGrid from "./publications/PublicationsGrid";
 import publicationEditSlice from "./publications/helpers/publicationEditSlice";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
@@ -174,7 +174,8 @@ export function publicationsSelect({ target, routes }) {
   addRoutes(routes);
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
-      <PublicationsSelect
+      <PublicationsGrid
+        allowSelect={true}
         {...JSON.parse(target.dataset.publicationsSelectProps)}
       />
     </Provider>,
