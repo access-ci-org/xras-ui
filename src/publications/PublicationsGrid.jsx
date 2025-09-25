@@ -1,14 +1,11 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { getSaving, getShowSaved } from "./helpers/publicationEditSlice";
+import { getSaving } from "./helpers/publicationEditSlice";
 import {
-  getAuthors,
   getPublications,
-  setAuthors,
-  addAuthor,
-  removeAuthor,
-  updatePublications,
-} from "./helpers/publicationsSearchSlice";
+  selectPublications,
+  setUsePagination,
+} from "./helpers/publicationsBrowserSlice";
 import {
   getSelected,
   setSelected,
@@ -26,50 +23,20 @@ export default function PublicationsGrid({
   allowAdd = true,
   allowEdit = true,
   allowSelect = false,
-  usernames = [],
-  selectedPublicationIds = [],
 }) {
   const dispatch = useDispatch();
   const saving = useSelector(getSaving);
-  const showSaved = useSelector(getShowSaved);
-  const authors = useSelector(getAuthors);
   const selected = useSelector(getSelected);
-  const publications = useSelector(getPublications);
+  const publications = useSelector(selectPublications);
   const { editPublication, ...modalProps } = useEditPublication();
-
-  // Initialize state with props if needed
-  useEffect(() => {
-    if (usernames.length > 0 && authors.length === 0) {
-      dispatch(setAuthors(usernames));
-    }
-  }, [usernames, authors.length, dispatch]);
-
-  useEffect(() => {
-    if (selectedPublicationIds.length > 0 && selected.length === 0) {
-      dispatch(setSelected(selectedPublicationIds));
-    }
-  }, [selectedPublicationIds, selected.length, dispatch]);
-
-  // Fetch a new list of publications when the author usernames change.
-  useEffect(() => {
-    dispatch(updatePublications());
-  }, [authors, dispatch]);
 
   // Fetch a new list of publications when a publication is added or edited.
   useEffect(() => {
-    if (!saving && showSaved) dispatch(updatePublications());
-  }, [saving, showSaved, dispatch]);
-
-  // Attach event listeners to detect when users are added to
-  // or removed from the request.
-  useEffect(() => {
-    addEventListener("requestAddRole", (e) =>
-      dispatch(addAuthor(e.detail.username)),
-    );
-    addEventListener("requestRemoveRole", (e) =>
-      dispatch(removeAuthor(e.detail.username)),
-    );
-  }, [dispatch]);
+    if (!saving) {
+      dispatch(setUsePagination(false));
+      dispatch(getPublications());
+    }
+  }, [saving, dispatch]);
 
   const columns = [
     {

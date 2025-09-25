@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = {
+export const initialState = {
   selected: [],
 };
 
@@ -25,11 +25,8 @@ const publicationsSelectSlice = createSlice({
   },
 });
 
-export const {
-  setSelected,
-  toggleSelected,
-  clearSelected,
-} = publicationsSelectSlice.actions;
+export const { setSelected, toggleSelected, clearSelected } =
+  publicationsSelectSlice.actions;
 
 export const getSelected = (state) => state.publicationsSelect.selected;
 

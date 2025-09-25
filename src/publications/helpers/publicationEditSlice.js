@@ -5,7 +5,7 @@ import { invalidFormAlert, validateForm } from "../FormValidation";
 const root = document.querySelector("#publications-react");
 const dataset = root ? root.dataset : {};
 
-const initialState = {
+export const initialState = {
   publication_types: [],
   tag_categories: [],
   publication: {},

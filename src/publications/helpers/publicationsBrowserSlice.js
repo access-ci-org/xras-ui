@@ -13,18 +13,23 @@ export const getPublications = createAsyncThunk(
   "publicationsBrowser/getPublications",
   async (args, { getState }) => {
     const state = getState().publicationsBrowser;
-    const params = { page: state.page.current + 1 };
-    const { doi, authorName, journal, publicationType } =
+    const params = {};
+    const { createdBy, doi, authorName, journal, publicationType } =
       state.filterSelections;
 
-    if (doi) params["doi"] = doi;
-    if (authorName) params["author_name"] = authorName;
+    if (doi) params.doi = doi;
+    if (authorName) params.author_name = authorName;
     if (journal && state.filterOptions.journals.includes(journal))
-      params["journal"] = journal;
-    if (publicationType) params["publication_type"] = publicationType;
+      params.journal = journal;
+    if (publicationType) params.publication_type = publicationType;
+    if (createdBy.length) params.created_by = createdBy;
+
+    if (state.usePagination) params.page = state.page.current + 1;
+    else params.per_page = 9999;
 
     const response = await fetch(
       config.routes.search_publications_path(params),
+      { headers: { Accept: "application/json" } },
     );
     return await response.json();
   },
@@ -41,32 +46,46 @@ export const getFilters = createAsyncThunk(
   },
 );
 
+export const initialState = {
+  publications: [],
+  publicationsLoaded: false,
+  filterSelections: {
+    createdBy: [],
+    doi: "",
+    journal: "",
+    authorName: "",
+    publicationType: "",
+  },
+  filterOptions: {
+    journals: [],
+    publication_types: [],
+  },
+  page: {
+    current: 0,
+    last: 1,
+  },
+  usePagination: true,
+};
+
 export const publicationsBrowserSlice = createSlice({
   name: "publicationsBrowser",
-  initialState: {
-    publications: [],
-    publicationsLoaded: false,
-    filterSelections: {
-      doi: "",
-      journal: "",
-      authorName: "",
-      publicationType: "",
-    },
-    page: {
-      current: 0,
-      last: 1,
-    },
-    filterOptions: {
-      journals: [],
-      publication_types: [],
-    },
-  },
+  initialState,
   reducers: {
+    addCreatedByUsername: (state, { payload }) => {
+      state.filterSelections.createdBy.push(payload);
+    },
+    removeCreatedByUsername: (state, { payload }) => {
+      state.filterSelections.createdBy =
+        state.filterSelections.createdBy.filter(
+          (username) => username !== payload,
+        );
+    },
     updateFilterSelection: (state, { payload }) => {
       state.filterSelections[payload.name] = payload.value;
     },
     resetFilters: (state) => {
       state.filterSelections = {
+        createdBy: [],
         doi: "",
         journal: "",
         authorName: "",
@@ -75,6 +94,9 @@ export const publicationsBrowserSlice = createSlice({
     },
     resetPublications: (state) => {
       state.publications = [];
+    },
+    setUsePagination: (state, { payload }) => {
+      state.usePagination = payload;
     },
   },
   extraReducers: (builder) => {
@@ -85,12 +107,16 @@ export const publicationsBrowserSlice = createSlice({
       })
       .addCase(getPublications.fulfilled, (state, action) => {
         state.publicationsLoaded = true;
-        state.publications = [
-          ...state.publications,
-          ...(action.payload.publications || []),
-        ];
-        state.page.current = action.payload?.pagination?.current_page || 0;
-        state.page.last = action.payload?.pagination?.last_page || 1;
+        if (state.usePagination) {
+          state.publications = [
+            ...state.publications,
+            ...(action.payload.publications || []),
+          ];
+          state.page.current = action.payload?.pagination?.current_page || 0;
+          state.page.last = action.payload?.pagination?.last_page || 1;
+        } else {
+          state.publications = action.payload.publications || [];
+        }
       })
       .addCase(getPublications.rejected, (state, action) => {
         state.publicationsLoaded = true;
@@ -102,8 +128,14 @@ export const publicationsBrowserSlice = createSlice({
   },
 });
 
-export const { updateFilterSelection, resetFilters, resetPublications } =
-  publicationsBrowserSlice.actions;
+export const {
+  addCreatedByUsername,
+  removeCreatedByUsername,
+  resetFilters,
+  resetPublications,
+  setUsePagination,
+  updateFilterSelection,
+} = publicationsBrowserSlice.actions;
 
 export const selectFilterSelections = (state) =>
   state.publicationsBrowser.filterSelections;

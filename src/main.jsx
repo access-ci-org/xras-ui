@@ -15,20 +15,24 @@ import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
 import browserSlice from "./projects-browser/helpers/browserSlice";
 import { initialState as projectsBrowserInitialState } from "./projects-browser/helpers/initialState";
 
+import PublicationsBrowser from "./publications/PublicationsBrowser";
 import PublicationEdit from "./publications/PublicationEdit";
-import PublicationsGrid from "./publications/PublicationsGrid";
-import publicationEditSlice from "./publications/helpers/publicationEditSlice";
-import publicationsSearchSlice from "./publications/helpers/publicationsSearchSlice";
-import publicationsSelectSlice from "./publications/helpers/publicationsSelectSlice";
+import PublicationsSelect from "./publications/PublicationsSelect";
+import publicationsBrowserSlice, {
+  initialState as publicationsBrowserInitialState,
+} from "./publications/helpers/publicationsBrowserSlice";
+import publicationEditSlice, {
+  initialState as publicationEditInitialState,
+} from "./publications/helpers/publicationEditSlice";
+import publicationsSelectSlice, {
+  initialState as publicationsSelectInitialState,
+} from "./publications/helpers/publicationsSelectSlice";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
 import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice";
 
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import catalogSlice from "./resource-catalog/helpers/catalogSlice";
-
-import PublicationsBrowser from "./publications/PublicationsBrowser";
-import publicationsBrowserSlice from "./publications/helpers/publicationsBrowserSlice";
 
 export function shadowTarget(
   host,
@@ -145,13 +149,12 @@ export function publicationsBrowser({ target, routes, authenticityToken }) {
       publicationsBrowser: publicationsBrowserSlice,
       publicationEdit: publicationEditSlice,
     },
-    preloadedState: authenticityToken
-      ? {
-          publicationEdit: {
-            authenticityToken: authenticityToken,
-          },
-        }
-      : undefined,
+    preloadedState: {
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
+    },
   });
 
   ReactDOM.createRoot(target).render(
@@ -171,13 +174,12 @@ export function publicationEdit({
     reducer: {
       publicationEdit: publicationEditSlice,
     },
-    preloadedState: authenticityToken
-      ? {
-          publicationEdit: {
-            authenticityToken: authenticityToken,
-          },
-        }
-      : undefined,
+    preloadedState: {
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
+    },
   });
   addRoutes(routes);
 
@@ -188,29 +190,42 @@ export function publicationEdit({
   );
 }
 
-export function publicationsSelect({ target, routes, authenticityToken }) {
+export function publicationsSelect({
+  authenticityToken,
+  routes,
+  selectedPublicationIds,
+  target,
+  usernames,
+}) {
   const store = configureStore({
     reducer: {
       publicationEdit: publicationEditSlice,
-      publicationsSearch: publicationsSearchSlice,
+      publicationsBrowser: publicationsBrowserSlice,
       publicationsSelect: publicationsSelectSlice,
     },
-    preloadedState: authenticityToken
-      ? {
-          publicationEdit: {
-            authenticityToken: authenticityToken,
-          },
-        }
-      : undefined,
+    preloadedState: {
+      publicationsBrowser: {
+        ...publicationsBrowserInitialState,
+        filterSelections: {
+          ...publicationsBrowserInitialState.filterSelections,
+          createdBy: usernames,
+        },
+      },
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
+      publicationsSelect: {
+        ...publicationsSelectInitialState,
+        selected: selectedPublicationIds,
+      },
+    },
   });
   addRoutes(routes);
 
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
-      <PublicationsGrid
-        allowSelect={true}
-        {...JSON.parse(target.dataset.publicationsSelectProps)}
-      />
+      <PublicationsSelect />
     </Provider>,
   );
 }
