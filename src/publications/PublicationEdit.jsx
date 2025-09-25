@@ -6,10 +6,8 @@ import {
   getPublicationId,
 } from "./helpers/publicationEditSlice";
 
-import ErrorMessages from "./ErrorMessages";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import PublicationForm from "./PublicationForm";
-import SavedMessage from "./SavedMessage";
 
 export default function PublicationEdit() {
   const dispatch = useDispatch();
@@ -20,11 +18,5 @@ export default function PublicationEdit() {
     dispatch(getData(publicationId));
   }, [publicationId, dispatch]);
 
-  return (
-    <>
-      <SavedMessage />
-      <ErrorMessages />
-      {dataLoaded ? <PublicationForm /> : <LoadingSpinner />}
-    </>
-  );
+  return <>{dataLoaded ? <PublicationForm /> : <LoadingSpinner />}</>;
 }

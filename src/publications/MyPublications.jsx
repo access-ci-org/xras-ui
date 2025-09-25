@@ -8,6 +8,7 @@ import {
 import PublicationAddButton from "./PublicationAddButton.jsx";
 import PublicationEditModal from "./PublicationEditModal.jsx";
 import PublicationsList from "./PublicationsList";
+import PublicationsAlerts from "./PublicationsAlerts.jsx";
 
 export default function MyPublications() {
   const dispatch = useDispatch();
@@ -19,6 +20,7 @@ export default function MyPublications() {
 
   return (
     <>
+      <PublicationsAlerts />
       <div className="d-flex justify-content-between align-items-start">
         <h1>My Publications</h1>
         <PublicationAddButton />

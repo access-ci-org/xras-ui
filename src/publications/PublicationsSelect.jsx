@@ -5,6 +5,7 @@ import {
   removeCreatedByUsername,
 } from "./helpers/publicationsSearchSlice";
 
+import PublicationsAlerts from "./PublicationsAlerts";
 import PublicationsGrid from "./PublicationsGrid";
 
 export default function PublicationsSelect() {
@@ -20,5 +21,10 @@ export default function PublicationsSelect() {
     );
   }, [dispatch]);
 
-  return <PublicationsGrid allowSelect={true} />;
+  return (
+    <>
+      <PublicationsAlerts />
+      <PublicationsGrid allowSelect={true} />
+    </>
+  );
 }
