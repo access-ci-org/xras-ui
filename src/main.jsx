@@ -136,13 +136,20 @@ export function projectsBrowser({ target, apiUrl }) {
   );
 }
 
-export function publicationsBrowser({ target, routes }) {
+export function publicationsBrowser({ target, routes, authenticityToken }) {
   addRoutes(routes);
   const publicationsBrowserStore = configureStore({
     reducer: {
       publicationsBrowser: publicationsBrowserSlice,
       publicationEdit: publicationEditSlice,
     },
+    preloadedState: authenticityToken
+      ? {
+          publicationEdit: {
+            authenticityToken: authenticityToken,
+          },
+        }
+      : undefined,
   });
 
   ReactDOM.createRoot(target).render(
@@ -152,13 +159,26 @@ export function publicationsBrowser({ target, routes }) {
   );
 }
 
-export function publicationEdit({ publicationId, target, routes }) {
+export function publicationEdit({
+  publicationId,
+  target,
+  routes,
+  authenticityToken,
+}) {
   const store = configureStore({
     reducer: {
       publicationEdit: publicationEditSlice,
     },
+    preloadedState: authenticityToken
+      ? {
+          publicationEdit: {
+            authenticityToken: authenticityToken,
+          },
+        }
+      : undefined,
   });
   addRoutes(routes);
+
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
       <PublicationEdit publicationId={publicationId} />
@@ -166,13 +186,21 @@ export function publicationEdit({ publicationId, target, routes }) {
   );
 }
 
-export function publicationsSelect({ target, routes }) {
+export function publicationsSelect({ target, routes, authenticityToken }) {
   const store = configureStore({
     reducer: {
       publicationEdit: publicationEditSlice,
     },
+    preloadedState: authenticityToken
+      ? {
+          publicationEdit: {
+            authenticityToken: authenticityToken,
+          },
+        }
+      : undefined,
   });
   addRoutes(routes);
+
   ReactDOM.createRoot(target).render(
     <Provider store={store}>
       <PublicationsGrid

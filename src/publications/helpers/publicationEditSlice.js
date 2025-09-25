@@ -19,6 +19,7 @@ const initialState = {
   modal: root == null,
   form_valid: false,
   grant_number: "",
+  authenticityToken: null,
 };
 
 const publicationEditSlice = createSlice({
@@ -291,9 +292,12 @@ export const savePublication = () => async (dispatch, getState) => {
     return;
   }
 
+  const token =
+    store.authenticityToken ||
+    document.querySelector("meta[name=csrf-token]").content;
+
   const formData = {
-    authenticity_token:
-      document.getElementsByName("authenticity_token")[0].value,
+    authenticity_token: token,
     publication: publication,
     authors: publication.authors.map((a) => ({ ...a, order: 0 })),
     tags: tags,
