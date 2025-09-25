@@ -1,8 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { useSelector } from "react-redux";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { getSaving, getShowSaved } from "./helpers/publicationEditSlice";
+import {
+  getAuthors,
+  getPublications,
+  setAuthors,
+  addAuthor,
+  removeAuthor,
+  updatePublications,
+} from "./helpers/publicationsSearchSlice";
+import {
+  getSelected,
+  setSelected,
+  toggleSelected,
+} from "./helpers/publicationsSelectSlice";
 import useEditPublication from "./hooks/useEditPublication";
-import config from "../shared/helpers/config";
 
 import Grid from "../shared/Grid";
 import InlineButton from "../shared/InlineButton";
@@ -17,62 +29,47 @@ export default function PublicationsGrid({
   usernames = [],
   selectedPublicationIds = [],
 }) {
+  const dispatch = useDispatch();
   const saving = useSelector(getSaving);
   const showSaved = useSelector(getShowSaved);
+  const authors = useSelector(getAuthors);
+  const selected = useSelector(getSelected);
+  const publications = useSelector(getPublications);
   const { editPublication, ...modalProps } = useEditPublication();
 
-  const [authors, _setAuthors] = useState(usernames);
-  const [selected, setSelected] = useState(selectedPublicationIds);
-  const [publications, setPublications] = useState([]);
+  // Initialize state with props if needed
+  useEffect(() => {
+    if (usernames.length > 0 && authors.length === 0) {
+      dispatch(setAuthors(usernames));
+    }
+  }, [usernames, authors.length, dispatch]);
 
-  // We need to use a ref so that event listeners can access the latest
-  // value of authors. See:
-  // https://medium.com/geographit/accessing-react-state-in-event-listeners-with-usestate-and-useref-hooks-8cceee73c559
-  const authorsRef = useRef(authors);
-  const setAuthors = (values) => {
-    authorsRef.current = values;
-    _setAuthors(values);
-  };
-
-  const updatePublications = async () => {
-    const res = await fetch(
-      config.routes.search_publications_path({
-        created_by: authors,
-        per_page: 9999,
-      }),
-      { headers: { Accept: "application/json" } },
-    );
-    const data = await res.json();
-    setPublications(
-      data.publications.sort((a, b) =>
-        new Date(a.publication_year, b.publication_month - 1) >
-        new Date(b.publication_year, b.publication_month - 1)
-          ? -1
-          : 1,
-      ),
-    );
-  };
+  useEffect(() => {
+    if (selectedPublicationIds.length > 0 && selected.length === 0) {
+      dispatch(setSelected(selectedPublicationIds));
+    }
+  }, [selectedPublicationIds, selected.length, dispatch]);
 
   // Fetch a new list of publications when the author usernames change.
   useEffect(() => {
-    updatePublications();
-  }, [authors]);
+    dispatch(updatePublications());
+  }, [authors, dispatch]);
 
   // Fetch a new list of publications when a publication is added or edited.
   useEffect(() => {
-    if (!saving && showSaved) updatePublications();
-  }, [saving, showSaved]);
+    if (!saving && showSaved) dispatch(updatePublications());
+  }, [saving, showSaved, dispatch]);
 
   // Attach event listeners to detect when users are added to
   // or removed from the request.
   useEffect(() => {
     addEventListener("requestAddRole", (e) =>
-      setAuthors([...authorsRef.current, e.detail.username]),
+      dispatch(addAuthor(e.detail.username)),
     );
     addEventListener("requestRemoveRole", (e) =>
-      setAuthors(authorsRef.current.filter((a) => a != e.detail.username)),
+      dispatch(removeAuthor(e.detail.username)),
     );
-  }, []);
+  }, [dispatch]);
 
   const columns = [
     {
@@ -110,13 +107,7 @@ export default function PublicationsGrid({
             name="publication_ids[]"
             value={value}
             checked={isSelected}
-            onChange={() =>
-              setSelected(
-                isSelected
-                  ? selected.filter((s) => s != value)
-                  : [...selected, value],
-              )
-            }
+            onChange={() => dispatch(toggleSelected(value))}
           />
         );
       },
@@ -125,8 +116,10 @@ export default function PublicationsGrid({
           selectedLength={selected.length}
           totalLength={publications.length}
           onChange={(checked) =>
-            setSelected(
-              checked ? publications.map((pub) => pub.publication_id) : [],
+            dispatch(
+              setSelected(
+                checked ? publications.map((pub) => pub.publication_id) : [],
+              ),
             )
           }
         />

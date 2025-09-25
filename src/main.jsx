@@ -18,6 +18,8 @@ import { initialState as projectsBrowserInitialState } from "./projects-browser/
 import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsGrid from "./publications/PublicationsGrid";
 import publicationEditSlice from "./publications/helpers/publicationEditSlice";
+import publicationsSearchSlice from "./publications/helpers/publicationsSearchSlice";
+import publicationsSelectSlice from "./publications/helpers/publicationsSelectSlice";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
 import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice";
@@ -190,6 +192,8 @@ export function publicationsSelect({ target, routes, authenticityToken }) {
   const store = configureStore({
     reducer: {
       publicationEdit: publicationEditSlice,
+      publicationsSearch: publicationsSearchSlice,
+      publicationsSelect: publicationsSelectSlice,
     },
     preloadedState: authenticityToken
       ? {
