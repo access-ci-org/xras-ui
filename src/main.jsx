@@ -141,6 +141,7 @@ export function publicationsBrowser({ target, routes }) {
   const publicationsBrowserStore = configureStore({
     reducer: {
       publicationsBrowser: publicationsBrowserSlice,
+      publicationEdit: publicationEditSlice,
     },
   });
 

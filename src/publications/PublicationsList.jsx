@@ -5,29 +5,39 @@ import {
   selectPublications,
   selectPublicationsLoaded,
 } from "./helpers/publicationsBrowserSlice.js";
+import useEditPublication from "./hooks/useEditPublication";
 
 import InfiniteScroll from "../shared/InfiniteScroll.jsx";
 import Publication from "./Publication";
+import PublicationEditModal from "./PublicationEditModal";
 
 const ProjectList = () => {
   const dispatch = useDispatch();
   const { current, last } = useSelector(selectPage);
   const publicationsLoaded = useSelector(selectPublicationsLoaded);
+  const { editPublication, ...modalProps } = useEditPublication();
 
   const publications = useSelector(selectPublications);
   if (publicationsLoaded && publications.length === 0)
     return <div>No matching publications.</div>;
 
   return (
-    <InfiniteScroll
-      isLoading={!publicationsLoaded}
-      hasMore={current < last}
-      loadMore={() => dispatch(getPublications())}
-    >
-      {publications.map((pub) => (
-        <Publication key={pub.publication_id} publication={pub} />
-      ))}
-    </InfiniteScroll>
+    <>
+      <InfiniteScroll
+        isLoading={!publicationsLoaded}
+        hasMore={current < last}
+        loadMore={() => dispatch(getPublications())}
+      >
+        {publications.map((pub) => (
+          <Publication
+            key={pub.publication_id}
+            publication={pub}
+            onEdit={editPublication}
+          />
+        ))}
+      </InfiniteScroll>
+      <PublicationEditModal {...modalProps} />
+    </>
   );
 };
 

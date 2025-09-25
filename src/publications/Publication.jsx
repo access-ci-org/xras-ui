@@ -1,8 +1,9 @@
 import PublicationCitation from "./PublicationCitation";
 import { parseResourceName } from "../shared/helpers/utils";
+import InlineButton from "../shared/InlineButton";
 import style from "./Publication.module.css";
 
-export default function Publication({ publication }) {
+export default function Publication({ publication, onEdit }) {
   const { projects, publication_type: pubType, tags } = publication;
   const grant_numbers = projects.map((project) => project.grant_number);
 
@@ -12,6 +13,13 @@ export default function Publication({ publication }) {
         <div className="card-body pt-2">
           <div className={style.citation}>
             <PublicationCitation publication={publication} />
+            {onEdit && publication.can_edit && (
+              <InlineButton
+                onClick={() => onEdit(publication.publication_id)}
+                icon="pencil"
+                title="Edit publication"
+              />
+            )}
           </div>
           <ul className={style.tags}>
             <li key="project-type">
