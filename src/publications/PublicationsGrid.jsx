@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  getSaving,
-  getShowSaved,
-  savePublication,
-} from "./helpers/publicationEditSlice";
+import { useSelector } from "react-redux";
+import { getSaving, getShowSaved } from "./helpers/publicationEditSlice";
+import useEditPublication from "./hooks/useEditPublication";
 import config from "../shared/helpers/config";
 
 import Grid from "../shared/Grid";
@@ -20,15 +17,13 @@ export default function PublicationsGrid({
   usernames = [],
   selectedPublicationIds = [],
 }) {
-  const dispatch = useDispatch();
   const saving = useSelector(getSaving);
   const showSaved = useSelector(getShowSaved);
+  const { editPublication, ...modalProps } = useEditPublication();
 
-  const [currentPublicationId, setCurrentPublicationId] = useState(null);
   const [authors, _setAuthors] = useState(usernames);
   const [selected, setSelected] = useState(selectedPublicationIds);
   const [publications, setPublications] = useState([]);
-  const [showModal, setShowModal] = useState(false);
 
   // We need to use a ref so that event listeners can access the latest
   // value of authors. See:
@@ -56,11 +51,6 @@ export default function PublicationsGrid({
           : 1,
       ),
     );
-  };
-
-  const editPublication = (publicationId) => {
-    setCurrentPublicationId(publicationId);
-    setShowModal(true);
   };
 
   // Fetch a new list of publications when the author usernames change.
@@ -155,14 +145,7 @@ export default function PublicationsGrid({
           Add a New Publication
         </button>
       )}
-      <PublicationEditModal
-        publicationId={currentPublicationId}
-        show={showModal}
-        onHide={(save) => {
-          if (save) dispatch(savePublication());
-          setShowModal(false);
-        }}
-      />
+      <PublicationEditModal {...modalProps} />
     </>
   );
 }
