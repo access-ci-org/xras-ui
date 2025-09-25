@@ -15,6 +15,7 @@ import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
 import browserSlice from "./projects-browser/helpers/browserSlice";
 import { initialState as projectsBrowserInitialState } from "./projects-browser/helpers/initialState";
 
+import MyPublications from "./publications/MyPublications";
 import PublicationsBrowser from "./publications/PublicationsBrowser";
 import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsSelect from "./publications/PublicationsSelect";
@@ -248,6 +249,40 @@ export function onRampsResourceCatalog({
         onRamps={onRamps}
         baseUrl={baseUrl}
       />
+    </Provider>,
+  );
+}
+
+export function myPublications({
+  authenticityToken,
+  routes,
+  target,
+  username,
+}) {
+  addRoutes(routes);
+  const myPublicationsStore = configureStore({
+    reducer: {
+      publicationEdit: publicationEditSlice,
+      publicationsSearch: publicationsSearchSlice,
+    },
+    preloadedState: {
+      publicationsSearch: {
+        ...publicationsSearchInitialState,
+        filterSelections: {
+          ...publicationsSearchInitialState.filterSelections,
+          createdBy: [username],
+        },
+      },
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
+    },
+  });
+
+  ReactDOM.createRoot(target).render(
+    <Provider store={myPublicationsStore}>
+      <MyPublications />
     </Provider>,
   );
 }

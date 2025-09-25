@@ -2,24 +2,21 @@ import { createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
 import { invalidFormAlert, validateForm } from "../FormValidation";
 
-const root = document.querySelector("#publications-react");
-const dataset = root ? root.dataset : {};
-
 export const initialState = {
-  publication_types: [],
-  tag_categories: [],
-  publication: {},
-  projects: [],
-  errors: [],
-  selected_tags: {},
+  authenticityToken: null,
   data_loaded: false,
-  saving: false,
-  show_saved: false,
-  redirect: dataset.redirect || false,
-  modal: root == null,
+  errors: [],
   form_valid: false,
   grant_number: "",
-  authenticityToken: null,
+  projects: [],
+  publication: {},
+  publicationId: null,
+  publication_types: [],
+  saving: false,
+  selected_tags: {},
+  show_saved: false,
+  showEditModal: false,
+  tag_categories: [],
 };
 
 const publicationEditSlice = createSlice({
@@ -103,6 +100,12 @@ const publicationEditSlice = createSlice({
 
       state.form_valid = payload["title"].trim() == "" ? false : true;
     },
+    setPublicationId: (state, { payload }) => {
+      state.publicationId = payload;
+    },
+    setShowEditModal: (state, { payload }) => {
+      state.showEditModal = payload;
+    },
     resetState: (state) => {
       for (const [key, value] of Object.entries(initialState))
         state[key] = value;
@@ -156,6 +159,8 @@ export const {
   setFormValid,
   setGrantNumber,
   setPublication,
+  setPublicationId,
+  setShowEditModal,
   resetState,
   toggleRequest,
   toggleTag,
@@ -178,9 +183,10 @@ export const getPublicationTags = (state) =>
   state.publicationEdit.publication.tags;
 export const getErrors = (state) => state.publicationEdit.errors;
 export const getDataLoaded = (state) => state.publicationEdit.data_loaded;
+export const getPublicationId = (state) => state.publicationEdit.publicationId;
+export const getShowEditModal = (state) => state.publicationEdit.showEditModal;
 export const getShowSaved = (state) => state.publicationEdit.show_saved;
 export const getSaving = (state) => state.publicationEdit.saving;
-export const getModal = (state) => state.publicationEdit.modal;
 export const getFormValid = (state) => state.publicationEdit.form_valid;
 export const getGrantNumber = (state) => state.publicationEdit.grant_number;
 
@@ -232,7 +238,7 @@ export const doiLookup = () => async (dispatch, getState) => {
           dispatch(updateErrors(lookup_error));
         }
       },
-      (err) => {
+      () => {
         dispatch(updateErrors(lookup_error));
       },
     );
@@ -253,6 +259,11 @@ export const grantSearch = () => async (dispatch, getState) => {
         );
       },
     );
+};
+
+export const editPublication = (publicationId) => async (dispatch) => {
+  dispatch(setPublicationId(publicationId));
+  dispatch(setShowEditModal(true));
 };
 
 export const getData = (publicationId) => async (dispatch) => {
@@ -322,17 +333,13 @@ export const savePublication = () => async (dispatch, getState) => {
     },
     body: JSON.stringify(formData),
   }).then(
-    (res) => {
-      if (store.redirect) {
-        window.location.href = config.routes.publications_path();
-      } else {
-        if (!publication.publication_id) {
-          dispatch(resetState());
-          dispatch(getData());
-        }
-        dispatch(updateShowSaved(true));
-        dispatch(updateSaving(false));
+    () => {
+      if (!publication.publication_id) {
+        dispatch(resetState());
+        dispatch(getData());
       }
+      dispatch(updateShowSaved(true));
+      dispatch(updateSaving(false));
     },
     () => {
       dispatch(updateSaving(false));

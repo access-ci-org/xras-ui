@@ -3,7 +3,6 @@ import DoiSearch from "./DoiSearch";
 import {
   changePublicationType,
   getFormValid,
-  getModal,
   getPublication,
   getPubTypes,
   getSaveEnabled,
@@ -25,7 +24,6 @@ export default function PublicationForm() {
   const publication = useSelector(getPublication);
   const publicationTypes = useSelector(getPubTypes);
   const tagCategories = useSelector(getTagCategories);
-  const modal = useSelector(getModal);
   const saveEnabled = useSelector(getSaveEnabled);
   const formValid = useSelector(getFormValid);
 
@@ -253,17 +251,6 @@ export default function PublicationForm() {
       {authors}
       {tags}
       {projects}
-      {modal ? null : (
-        <p className={"mt-3"}>
-          <button
-            onClick={() => dispatch(savePublication())}
-            className={"btn btn-success"}
-            disabled={!saveEnabled}
-          >
-            Save Publication
-          </button>
-        </p>
-      )}
     </>
   );
 }

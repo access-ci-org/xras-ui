@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { getSaving } from "./helpers/publicationEditSlice";
+import { editPublication, getSaving } from "./helpers/publicationEditSlice";
 import {
   getPublications,
   selectPublications,
@@ -11,13 +11,13 @@ import {
   setSelected,
   toggleSelected,
 } from "./helpers/publicationsSelectSlice";
-import useEditPublication from "./hooks/useEditPublication";
 
 import Grid from "../shared/Grid";
 import InlineButton from "../shared/InlineButton";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
 import PublicationCitation from "./PublicationCitation";
 import PublicationEditModal from "./PublicationEditModal";
+import PublicationAddButton from "./PublicationAddButton";
 
 export default function PublicationsGrid({
   allowAdd = true,
@@ -28,7 +28,6 @@ export default function PublicationsGrid({
   const saving = useSelector(getSaving);
   const selected = useSelector(getSelected);
   const publications = useSelector(selectPublications);
-  const { editPublication, ...modalProps } = useEditPublication();
 
   // Fetch a new list of publications when a publication is added or edited.
   useEffect(() => {
@@ -48,7 +47,7 @@ export default function PublicationsGrid({
           {allowEdit && row.can_edit && (
             <InlineButton
               key="edit"
-              onClick={() => editPublication(row.publication_id)}
+              onClick={() => dispatch(editPublication(row.publication_id))}
               icon="pencil"
               title="Edit publication"
             />
@@ -96,16 +95,8 @@ export default function PublicationsGrid({
   return (
     <>
       <Grid columns={columns} rows={publications} />
-      {allowAdd && (
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => editPublication(null)}
-        >
-          Add a New Publication
-        </button>
-      )}
-      <PublicationEditModal {...modalProps} />
+      {allowAdd && <PublicationAddButton />}
+      <PublicationEditModal />
     </>
   );
 }
