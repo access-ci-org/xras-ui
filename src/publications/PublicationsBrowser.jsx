@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { initApp } from "./helpers/publicationsSearchSlice.js";
+import {
+  getFilters,
+  getPublications,
+} from "./helpers/publicationsSearchSlice.js";
 
 import PublicationsList from "./PublicationsList.jsx";
 import Filters from "./Filters.jsx";
@@ -9,7 +12,8 @@ const PublicationsBrowser = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    dispatch(initApp());
+    dispatch(getPublications());
+    dispatch(getFilters());
   }, [dispatch]);
 
   return (

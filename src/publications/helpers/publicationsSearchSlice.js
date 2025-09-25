@@ -1,14 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
 
-export const initApp = createAsyncThunk(
-  "publicationsSearch/initApp",
-  async (args, { dispatch }) => {
-    await dispatch(getPublications());
-    await dispatch(getFilters());
-  },
-);
-
 export const getPublications = createAsyncThunk(
   "publicationsSearch/getPublications",
   async (args, { getState }) => {
