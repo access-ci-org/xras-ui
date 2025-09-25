@@ -12,7 +12,6 @@ export default function PublicationEdit({ publicationId }) {
   const dataLoaded = useSelector(getDataLoaded);
 
   useEffect(() => {
-    console.log(publicationId);
     dispatch(getData(publicationId));
   }, [publicationId]);
 

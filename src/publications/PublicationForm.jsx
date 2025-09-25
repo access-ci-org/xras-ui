@@ -46,7 +46,7 @@ export default function PublicationForm() {
             className={"form-control"}
             name={`field_${f.csl_field_name}`}
             id={`field_${f.csl_field_name}`}
-            value={f.field_value}
+            value={f.field_value || ""}
             onChange={(e) =>
               dispatch(updateField({ index: idx, value: e.target.value }))
             }
@@ -91,7 +91,7 @@ export default function PublicationForm() {
               id={"publication_title"}
               type={"text"}
               className={`form-control ${formValid ? "" : "is-invalid"}`}
-              value={publication.title}
+              value={publication.title || ""}
               onChange={(e) => updateTitle(e)}
             />
           </div>
@@ -106,7 +106,7 @@ export default function PublicationForm() {
               name={"publication_year"}
               id={"publication_year"}
               className={"form-control"}
-              value={publication.publication_year}
+              value={publication.publication_year || ""}
               onChange={(e) => {
                 updatePublication({
                   key: "publication_year",
@@ -132,7 +132,7 @@ export default function PublicationForm() {
               name={"publication_month"}
               id={"publication_month"}
               className={"form-control"}
-              value={publication.publication_month}
+              value={publication.publication_month || ""}
               onChange={(e) => {
                 updatePublication({
                   key: "publication_month",
@@ -175,7 +175,7 @@ export default function PublicationForm() {
               name={"publication[publication_type]"}
               id={"publication_type"}
               className={"form-control"}
-              value={publication.publication_type}
+              value={publication.publication_type || ""}
               onChange={(e) => dispatch(changePublicationType(e.target.value))}
             >
               {publicationTypes.map((pt) => (
