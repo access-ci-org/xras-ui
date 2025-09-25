@@ -1,4 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
 import {
   addAuthor,
   getAuthors,
@@ -13,6 +14,12 @@ export default function Authors() {
   const authorsExist = useSelector(getAuthorsExist);
 
   const noAuthors = authors.length === 0;
+
+  useEffect(() => {
+    if (noAuthors) {
+      dispatch(addAuthor());
+    }
+  }, [noAuthors, dispatch]);
   const showError = () => {
     return authorsExist ? (
       ""
@@ -40,7 +47,6 @@ export default function Authors() {
           {authors.map((a, i) => (
             <Author author={a} authorKey={i} key={`author_${i}`} />
           ))}
-          {noAuthors && <Author author={dispatch(addAuthor())} />}
         </tbody>
       </table>
       <button
