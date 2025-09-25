@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import {
   addCreatedByUsername,
   removeCreatedByUsername,
-} from "./helpers/publicationsBrowserSlice";
+} from "./helpers/publicationsSearchSlice";
 
 import PublicationsGrid from "./PublicationsGrid";
 

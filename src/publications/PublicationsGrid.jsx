@@ -5,7 +5,7 @@ import {
   getPublications,
   selectPublications,
   setUsePagination,
-} from "./helpers/publicationsBrowserSlice";
+} from "./helpers/publicationsSearchSlice";
 import {
   getSelected,
   setSelected,

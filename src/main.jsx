@@ -18,9 +18,9 @@ import { initialState as projectsBrowserInitialState } from "./projects-browser/
 import PublicationsBrowser from "./publications/PublicationsBrowser";
 import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsSelect from "./publications/PublicationsSelect";
-import publicationsBrowserSlice, {
-  initialState as publicationsBrowserInitialState,
-} from "./publications/helpers/publicationsBrowserSlice";
+import publicationsSearchSlice, {
+  initialState as publicationsSearchInitialState,
+} from "./publications/helpers/publicationsSearchSlice";
 import publicationEditSlice, {
   initialState as publicationEditInitialState,
 } from "./publications/helpers/publicationEditSlice";
@@ -144,9 +144,9 @@ export function projectsBrowser({ target, apiUrl }) {
 
 export function publicationsBrowser({ target, routes, authenticityToken }) {
   addRoutes(routes);
-  const publicationsBrowserStore = configureStore({
+  const publicationsSearchStore = configureStore({
     reducer: {
-      publicationsBrowser: publicationsBrowserSlice,
+      publicationsSearch: publicationsSearchSlice,
       publicationEdit: publicationEditSlice,
     },
     preloadedState: {
@@ -158,7 +158,7 @@ export function publicationsBrowser({ target, routes, authenticityToken }) {
   });
 
   ReactDOM.createRoot(target).render(
-    <Provider store={publicationsBrowserStore}>
+    <Provider store={publicationsSearchStore}>
       <PublicationsBrowser />
     </Provider>,
   );
@@ -200,14 +200,14 @@ export function publicationsSelect({
   const store = configureStore({
     reducer: {
       publicationEdit: publicationEditSlice,
-      publicationsBrowser: publicationsBrowserSlice,
+      publicationsSearch: publicationsSearchSlice,
       publicationsSelect: publicationsSelectSlice,
     },
     preloadedState: {
-      publicationsBrowser: {
-        ...publicationsBrowserInitialState,
+      publicationsSearch: {
+        ...publicationsSearchInitialState,
         filterSelections: {
-          ...publicationsBrowserInitialState.filterSelections,
+          ...publicationsSearchInitialState.filterSelections,
           createdBy: usernames,
         },
       },

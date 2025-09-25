@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
 
 export const initApp = createAsyncThunk(
-  "publicationsBrowser/initApp",
+  "publicationsSearch/initApp",
   async (args, { dispatch }) => {
     await dispatch(getPublications());
     await dispatch(getFilters());
@@ -10,9 +10,9 @@ export const initApp = createAsyncThunk(
 );
 
 export const getPublications = createAsyncThunk(
-  "publicationsBrowser/getPublications",
+  "publicationsSearch/getPublications",
   async (args, { getState }) => {
-    const state = getState().publicationsBrowser;
+    const state = getState().publicationsSearch;
     const params = {};
     const { createdBy, doi, authorName, journal, publicationType } =
       state.filterSelections;
@@ -36,7 +36,7 @@ export const getPublications = createAsyncThunk(
 );
 
 export const getFilters = createAsyncThunk(
-  "publicationsBrowser/getFilters",
+  "publicationsSearch/getFilters",
   async () => {
     const response = await fetch(
       config.routes.search_publications_filters_path(),
@@ -67,8 +67,8 @@ export const initialState = {
   usePagination: true,
 };
 
-export const publicationsBrowserSlice = createSlice({
-  name: "publicationsBrowser",
+export const publicationsSearchSlice = createSlice({
+  name: "publicationsSearch",
   initialState,
   reducers: {
     addCreatedByUsername: (state, { payload }) => {
@@ -135,15 +135,15 @@ export const {
   resetPublications,
   setUsePagination,
   updateFilterSelection,
-} = publicationsBrowserSlice.actions;
+} = publicationsSearchSlice.actions;
 
 export const selectFilterSelections = (state) =>
-  state.publicationsBrowser.filterSelections;
+  state.publicationsSearch.filterSelections;
 export const selectPublicationsLoaded = (state) =>
-  state.publicationsBrowser.publicationsLoaded;
+  state.publicationsSearch.publicationsLoaded;
 export const selectPublications = (state) =>
-  state.publicationsBrowser.publications;
+  state.publicationsSearch.publications;
 export const selectFilterOptions = (state) =>
-  state.publicationsBrowser.filterOptions;
-export const selectPage = (state) => state.publicationsBrowser.page;
-export default publicationsBrowserSlice.reducer;
+  state.publicationsSearch.filterOptions;
+export const selectPage = (state) => state.publicationsSearch.page;
+export default publicationsSearchSlice.reducer;
