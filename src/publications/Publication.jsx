@@ -6,7 +6,7 @@ import style from "./Publication.module.css";
 import InlineButton from "../shared/InlineButton";
 import PublicationCitation from "./PublicationCitation";
 
-export default function Publication({ publication }) {
+export default function Publication({ allowEdit = true, publication }) {
   const dispatch = useDispatch();
   const { projects, publication_type: pubType, tags } = publication;
   const grant_numbers = projects.map((project) => project.grant_number);
@@ -17,7 +17,7 @@ export default function Publication({ publication }) {
         <div className="card-body pt-2">
           <div className={style.citation}>
             <PublicationCitation publication={publication} />
-            {publication.can_edit && (
+            {allowEdit && publication.can_edit && (
               <InlineButton
                 onClick={() =>
                   dispatch(editPublication(publication.publication_id))

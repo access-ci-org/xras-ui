@@ -10,7 +10,7 @@ import {
 import InfiniteScroll from "../shared/InfiniteScroll.jsx";
 import Publication from "./Publication";
 
-export default function PublicationsList() {
+export default function PublicationsList({ allowEdit = true }) {
   const dispatch = useDispatch();
   const { current, last } = useSelector(selectPage);
   const publicationsLoaded = useSelector(selectPublicationsLoaded);
@@ -28,7 +28,11 @@ export default function PublicationsList() {
         loadMore={() => dispatch(getPublications())}
       >
         {publications.map((pub) => (
-          <Publication key={pub.publication_id} publication={pub} />
+          <Publication
+            allowEdit={allowEdit}
+            key={pub.publication_id}
+            publication={pub}
+          />
         ))}
       </InfiniteScroll>
     </>

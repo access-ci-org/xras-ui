@@ -5,8 +5,6 @@ import {
   getPublications,
 } from "./helpers/publicationsSearchSlice.js";
 
-import PublicationsAlerts from "./PublicationsAlerts.jsx";
-import PublicationEditModal from "./PublicationEditModal";
 import PublicationsList from "./PublicationsList.jsx";
 import Filters from "./Filters.jsx";
 
@@ -20,7 +18,6 @@ const PublicationsBrowser = () => {
 
   return (
     <>
-      <PublicationsAlerts />
       <div className="container-fluid">
         <div className="row">
           <div className="col-sm-3">
@@ -29,13 +26,12 @@ const PublicationsBrowser = () => {
           <div className="col-sm-9">
             <div className="row" id="publicationListRow">
               <div className="col">
-                <PublicationsList />
+                <PublicationsList allowEdit={false} />
               </div>
             </div>
           </div>
         </div>
       </div>
-      <PublicationEditModal />
     </>
   );
 };
