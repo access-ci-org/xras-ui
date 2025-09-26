@@ -4,6 +4,7 @@ import {
   selectPage,
   selectPublications,
   selectPublicationsLoaded,
+  selectUsePagination,
 } from "./helpers/publicationsSearchSlice.js";
 
 import InfiniteScroll from "../shared/InfiniteScroll.jsx";
@@ -13,6 +14,7 @@ export default function PublicationsList() {
   const dispatch = useDispatch();
   const { current, last } = useSelector(selectPage);
   const publicationsLoaded = useSelector(selectPublicationsLoaded);
+  const usePagination = useSelector(selectUsePagination);
 
   const publications = useSelector(selectPublications);
   if (publicationsLoaded && publications.length === 0)
@@ -22,7 +24,7 @@ export default function PublicationsList() {
     <>
       <InfiniteScroll
         isLoading={!publicationsLoaded}
-        hasMore={current < last}
+        hasMore={usePagination && current < last}
         loadMore={() => dispatch(getPublications())}
       >
         {publications.map((pub) => (

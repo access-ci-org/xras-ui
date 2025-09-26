@@ -1,22 +1,28 @@
 import { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   getFilters,
   getPublications,
+  setUsePagination,
 } from "./helpers/publicationsSearchSlice.js";
 
 import PublicationAddButton from "./PublicationAddButton.jsx";
 import PublicationEditModal from "./PublicationEditModal.jsx";
 import PublicationsList from "./PublicationsList";
 import PublicationsAlerts from "./PublicationsAlerts.jsx";
+import { getSaving } from "./helpers/publicationEditSlice.js";
 
 export default function MyPublications() {
   const dispatch = useDispatch();
+  const saving = useSelector(getSaving);
 
   useEffect(() => {
-    dispatch(getPublications());
-    dispatch(getFilters());
-  }, [dispatch]);
+    if (!saving) {
+      dispatch(setUsePagination(false));
+      dispatch(getPublications());
+      dispatch(getFilters());
+    }
+  }, [dispatch, saving]);
 
   return (
     <>

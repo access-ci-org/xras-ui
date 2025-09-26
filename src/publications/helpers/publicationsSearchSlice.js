@@ -138,4 +138,6 @@ export const selectPublications = (state) =>
 export const selectFilterOptions = (state) =>
   state.publicationsSearch.filterOptions;
 export const selectPage = (state) => state.publicationsSearch.page;
+export const selectUsePagination = (state) =>
+  state.publicationsSearch.usePagination;
 export default publicationsSearchSlice.reducer;
