@@ -21,9 +21,11 @@ export default function ProjectPublications({ grantNumber }) {
       <Provider store={storeRef.current}>
         <Publications grantNumber={grantNumber} />
       </Provider>
-      <a href={config.routes.publications_path()} className="btn btn-primary">
-        Add or Manage Publications
-      </a>
+      <div>
+        <a href={config.routes.publications_path()} className="btn btn-primary">
+          Add or Manage Publications
+        </a>
+      </div>
     </>
   );
 }

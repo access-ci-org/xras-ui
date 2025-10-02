@@ -27,7 +27,10 @@ export default function Publications({ grantNumber }) {
 
   return (
     <>
-      <PublicationsList grantNumber={grantNumber} />
+      <PublicationsList
+        grantNumber={grantNumber}
+        emptyMessage="No publications are associated with this project."
+      />
       <PublicationEditModal />
     </>
   );

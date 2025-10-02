@@ -10,7 +10,10 @@ import {
 import InfiniteScroll from "../shared/InfiniteScroll.jsx";
 import Publication from "./Publication";
 
-export default function PublicationsList({ allowEdit = true }) {
+export default function PublicationsList({
+  allowEdit = true,
+  emptyMessage = "No matching publications.",
+}) {
   const dispatch = useDispatch();
   const { current, last } = useSelector(selectPage);
   const publicationsLoaded = useSelector(selectPublicationsLoaded);
@@ -18,7 +21,7 @@ export default function PublicationsList({ allowEdit = true }) {
 
   const publications = useSelector(selectPublications);
   if (publicationsLoaded && publications.length === 0)
-    return <div>No matching publications.</div>;
+    return <p>{emptyMessage}</p>;
 
   return (
     <>
