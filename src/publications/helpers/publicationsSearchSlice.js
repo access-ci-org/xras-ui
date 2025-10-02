@@ -6,8 +6,14 @@ export const getPublications = createAsyncThunk(
   async (args, { getState }) => {
     const state = getState().publicationsSearch;
     const params = {};
-    const { createdBy, doi, authorName, journal, publicationType } =
-      state.filterSelections;
+    const {
+      authorName,
+      createdBy,
+      doi,
+      grantNumber,
+      journal,
+      publicationType,
+    } = state.filterSelections;
 
     if (doi) params.doi = doi;
     if (authorName) params.author_name = authorName;
@@ -15,6 +21,7 @@ export const getPublications = createAsyncThunk(
       params.journal = journal;
     if (publicationType) params.publication_type = publicationType;
     if (createdBy.length) params.created_by = createdBy;
+    if (grantNumber) params.grant_number = grantNumber;
 
     if (state.usePagination) params.page = state.page.current + 1;
     else params.per_page = 9999;
@@ -44,6 +51,7 @@ export const initialState = {
   filterSelections: {
     createdBy: [],
     doi: "",
+    grantNumber: "",
     journal: "",
     authorName: "",
     publicationType: "",
