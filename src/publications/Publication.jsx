@@ -6,13 +6,17 @@ import style from "./Publication.module.css";
 import InlineButton from "../shared/InlineButton";
 import PublicationCitation from "./PublicationCitation";
 
-export default function Publication({ allowEdit = true, publication }) {
+export default function Publication({
+  allowEdit = true,
+  last = false,
+  publication,
+}) {
   const dispatch = useDispatch();
   const { projects, publication_type: pubType, tags } = publication;
   const grant_numbers = projects.map((project) => project.grant_number);
 
   return (
-    <div className="col-12 mb-2 border-bottom">
+    <div className={`col-12 mb-2 ${last || "border-bottom"}`}>
       <div className="card" style={{ border: "unset" }}>
         <div className="card-body pt-2">
           <div className={style.citation}>

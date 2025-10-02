@@ -27,11 +27,12 @@ export default function PublicationsList({ allowEdit = true }) {
         hasMore={usePagination && current < last}
         loadMore={() => dispatch(getPublications())}
       >
-        {publications.map((pub) => (
+        {publications.map((pub, i) => (
           <Publication
             allowEdit={allowEdit}
             key={pub.publication_id}
             publication={pub}
+            last={i === publications.length - 1}
           />
         ))}
       </InfiniteScroll>
