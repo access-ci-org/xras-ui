@@ -7,7 +7,7 @@ const Publication = ({publication, index}) => {
 
   const fields = ["Publication Type", "Publication Year", "DOI", "Journal", "Volume/Issue", "Pages" ];
   const authors = publication.authors
-    .map((author) => `${author.last_name}, ${author.first_name.substr(0,1)}.`)
+    .map((author) => `${author.last_name}, ${author.first_name.substring(0,1)}.`)
     .join(', ')
   const grant_numbers = publication.projects
     .map((project) => project.grant_number)
@@ -21,8 +21,7 @@ const Publication = ({publication, index}) => {
     textIndent: "-50px",
     marginLeft: "50px"
   }
-
-  const pub_datas = publication.publication_datas
+  const pub_datas = publication.publication_datas ?? []
 
   const getFieldContent = (field) => {
     switch (field) {

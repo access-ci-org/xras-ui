@@ -5,18 +5,12 @@ import Accordion  from "react-bootstrap/Accordion";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from 'react-bootstrap/Tooltip';
 import { selectIsSingleEntry } from "./helpers/browserSlice";
+import Publication from "../publications-browser/Publication.jsx";
 
 const Project = ({ project }) => {
   const resources = project.resources;
   const [showAlert, setShowAlert] = useState(false);
   const singleEntry = useSelector( selectIsSingleEntry );
-
-  let accordionProps = {
-    flush: true,
-    className: "mt-3 mb-1",
-    alwaysOpen: true
-  }
-
 
   const formatNumber = (resource) => {
     let units = resource.units ? resource.units : resource.resourceUnits;
@@ -167,72 +161,102 @@ const Project = ({ project }) => {
       </div>
     </>
   )
-
-
+  const publications = project.publications ? project.publications.slice(0, 2) : [];
+  const publicationsList = (
+    <div>
+        {publications.map((p,i) =>
+        <div key={`publication_${i}`}>
+            <Publication publication={{...p, projects: [] }} index={i} />
+        </div>
+    )}
+    </div>
+  )
   const projectContent = () => {
     if (project.allocationType === "NAIRR Start-Up"){
       return resourcesRow;
     }
-
-    if(singleEntry){
-      return (
-        <>
-          {resourcesRow}
-          <div className="row mt-2 fw-bold">
-            <div className="col-3 border-bottom">
-              Abstract
+    return (<>
+        <h3>Abstract</h3>
+            <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{project.abstract}</div>
+        {/*<div className="" className="container">*/}
+        {/*    <div className="collapse" id={`abstract_${project.projectId}`}>*/}
+        {/*        <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{project.abstract}</div>*/}
+        {/*    </div>*/}
+        {/*</div>*/}
+        {/*<button*/}
+        {/*    className="btn btn-info"*/}
+        {/*    type="button"*/}
+        {/*    data-bs-toggle="collapse"*/}
+        {/*    data-bs-target={`#abstract_${project.projectId}`}*/}
+        {/*    aria-controls={`abstract_${project.projectId}`}*/}
+        {/*>*/}
+        {/*    Read More*/}
+        {/*</button>*/}
+        <div>
+            <div className="container-fluid">
+                <div className="row">
+                    <div className="col-md-6 left-panel flex-fill">
+                        <h3>Resources</h3>
+                        <div>{resourceList}</div>
+                    </div>
+                    {publications.length > 0 &&
+                        <div className="col-md-6 right-panel">
+                            <h3>Publications</h3>
+                            <div>{publicationsList}</div>
+                            <button className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#publicationsModal">
+                                Expand Publications
+                            </button>
+                            <div className="modal fade" id="publicationsModal" tabIndex="-1" role="dialog"
+                                 aria-labelledby="publicationsModalTitle" aria-hidden="true">
+                                <div className="modal-dialog" role="document">
+                                    <div className="modal-content">
+                                        <div className="modal-header">
+                                            <h5 className="modal-title" id="publicationsModalTitle">Project Publications</h5>
+                                        </div>
+                                        <div className="modal-body">
+                                            <div>
+                                                {project.publications.map((p,i) =>
+                                                    <div key={`publication_${i}`}>
+                                                        <Publication publication={{...p, projects: [] }} index={i} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="modal-footer">
+                                            <button type="button" className="btn btn-secondary"
+                                                    data-dismiss="modal">Close
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{ project.abstract }</div>
-            </div>
-          </div>
-        </>
-      )
-    }
-
-    return (
-      <Accordion {...accordionProps}>
-        <Accordion.Item eventKey="0">
-          <Accordion.Header>
-              Resources
-          </Accordion.Header>
-          <Accordion.Body>
-            { resourceList }
-          </Accordion.Body>
-        </Accordion.Item>
-        <Accordion.Item eventKey="1">
-          <Accordion.Header>
-            Abstract
-          </Accordion.Header>
-          <Accordion.Body>
-            <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{ project.abstract }</div>
-          </Accordion.Body>
-        </Accordion.Item>
-      </Accordion>
-    )
+        </div>
+    </>)
   }
 
-  return (
-    <div className="card mb-4">
-      <div className="card-header bg-primary text-white">
-          <div className="d-flex justify-content-between">
-            <div>
-              { requestTitle() }
+    return (
+        <div className="card mb-4">
+            <div className="card-header bg-primary text-white">
+                <div className="d-flex justify-content-between">
+                    <div>
+                        {requestTitle()}
+                    </div>
+                    <div>
+                        {requestNumberLink()}
+                    </div>
+                </div>
             </div>
-            <div>
-              { requestNumberLink() }
-            </div>
-          </div>
-      </div>
-      <div className="card-body">
-        <div className="row fw-bold border-bottom">
-          <div className="col">
-            <span className="mb-1 pb-0">Field of Science</span>
-          </div>
-          <div className="col">
-            <span className="mb-1 pb-0 tooltip-underline" title='A specific level of allocation; also referred to as "Opportunity"'>Project Type</span>
+            <div className="card-body">
+                <div className="row fw-bold border-bottom">
+                    <div className="col">
+                        <span className="mb-1 pb-0">Field of Science</span>
+                    </div>
+                    <div className="col">
+                        <span className="mb-1 pb-0 tooltip-underline" title='A specific level of allocation; also referred to as "Opportunity"'>Project Type</span>
           </div>
           <div className="col">
             <span className="mb-1 pb-0">Dates</span>
