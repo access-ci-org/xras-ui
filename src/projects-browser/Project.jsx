@@ -5,18 +5,17 @@ import Accordion  from "react-bootstrap/Accordion";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from 'react-bootstrap/Tooltip';
 import { selectIsSingleEntry } from "./helpers/browserSlice";
+import Publication from "./Publication.jsx";
+import Modal from "react-bootstrap/Modal";
 
 const Project = ({ project }) => {
   const resources = project.resources;
   const [showAlert, setShowAlert] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [expandAbstract, setExpandAbstract] = useState(false);
   const singleEntry = useSelector( selectIsSingleEntry );
-
-  let accordionProps = {
-    flush: true,
-    className: "mt-3 mb-1",
-    alwaysOpen: true
-  }
-
+  const canExpand = project.abstract.length >= 300;
+  const abstractPreview = canExpand ? `${project.abstract.substring(0, 300)}...` : project.abstract ;
 
   const formatNumber = (resource) => {
     let units = resource.units ? resource.units : resource.resourceUnits;
@@ -63,6 +62,7 @@ const Project = ({ project }) => {
       Link Copied!
     </Tooltip>
   )
+
   const requestNumberLink = () => {
     if(requestNumber()){
       const btnStyle = {
@@ -99,6 +99,7 @@ const Project = ({ project }) => {
       const newName = project.pi.split(",");
       return `${newName[1]} ${newName[0]}`
   }
+
   const coPIs = () =>  {
     if(!project.coPis || project.coPis.length <= 0) return "";
 
@@ -168,94 +169,125 @@ const Project = ({ project }) => {
     </>
   )
 
+  const publicationsModal = (
+      <Modal show={showModal} onHide={()=>setShowModal(false)} id={`publicationsModal_${project.projectId}`}>
+        <Modal.Header closeButton>
+            <Modal.Title>{project.requestTitle}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {project.publications.map((p, i) => (
+              <div key={`publication_${i}`}>
+                  <Publication publication={{ ...p, projects: [] }} index={i} />
+              </div>
+          ))}
+        </Modal.Body>
+        <Modal.Footer>
+            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" onClick={()=>setShowModal(false)}>Close</button>
+        </Modal.Footer>
+      </Modal>
+  );
 
   const projectContent = () => {
     if (project.allocationType === "NAIRR Start-Up"){
-      return resourcesRow;
+        return resourcesRow;
     }
-
-    if(singleEntry){
-      return (
-        <>
-          {resourcesRow}
-          <div className="row mt-2 fw-bold">
-            <div className="col-3 border-bottom">
-              Abstract
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{ project.abstract }</div>
-            </div>
-          </div>
-        </>
-      )
-    }
-
     return (
-      <Accordion {...accordionProps}>
-        <Accordion.Item eventKey="0">
-          <Accordion.Header>
-              Resources
-          </Accordion.Header>
-          <Accordion.Body>
-            { resourceList }
-          </Accordion.Body>
-        </Accordion.Item>
-        <Accordion.Item eventKey="1">
-          <Accordion.Header>
-            Abstract
-          </Accordion.Header>
-          <Accordion.Body>
-            <div style={{ whiteSpace: "pre-wrap", padding: "5px" }}>{ project.abstract }</div>
-          </Accordion.Body>
-        </Accordion.Item>
-      </Accordion>
+      <>
+        <div className="row fw-bold mt-2 border-bottom">
+            <span className="col mb-1 pb-0">Abstract</span>
+        </div>
+
+        <div style={{ whiteSpace: "pre-wrap", display: "inline"}}>
+            {expandAbstract ? project.abstract : abstractPreview }
+        </div>
+        {canExpand &&
+            <button
+                onClick={() => setExpandAbstract(!expandAbstract)}
+                style={{ display: "inline", border: "none", background: "none", cursor: "pointer", fontWeight: "bold" }}>
+                {expandAbstract ? 'Show Less' : 'Read More'}
+            </button>}
+        <div className="row mt-2">
+          <div className="col-lg-6 left-panel flex-fill">
+            <div className="row fw-bold border-bottom">
+              <div className="col">
+                <span className="mb-1 pb-0 fw-bold">Resources</span>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col">
+                {resourceList}
+              </div>
+            </div>
+          </div>
+          {project.publications.length > 0 &&
+          <div className="col-lg-6 right-panel">
+              <div className="row fw-bold border-bottom">
+                  <div className="col">
+                      <span className="mb-1 pb-0 fw-bold">Publications</span>
+                  </div>
+              </div>
+            <div className="mt-2 pb-0" key={`publication_${project.projectId}_${0}`}>
+              <Publication
+                  publication={{...project.publications[0], projects: []}}
+                  index={0}
+                  fontSize="16px"
+              />
+            </div>
+            {project.publications.length > 1 && (
+              <button className="btn btn-primary" onClick={()=>setShowModal(true)}>
+                  View More ({project.publications.length})
+              </button>
+            )}
+            {publicationsModal}
+          </div>
+          }
+        </div>
+      </>
     )
   }
 
   return (
-    <div className="card mb-4">
-      <div className="card-header bg-primary text-white">
-          <div className="d-flex justify-content-between">
-            <div>
-              { requestTitle() }
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white">
+            <div className="d-flex justify-content-between">
+                <div>
+                    {requestTitle()}
+                </div>
+                <div>
+                    {requestNumberLink()}
+                </div>
             </div>
-            <div>
-              { requestNumberLink() }
+        </div>
+        <div className="card-body">
+          <div className="row fw-bold border-bottom">
+            <div className="col">
+              <span className="mb-1 pb-0">Field of Science</span>
+            </div>
+            <div className="col">
+              <span className="mb-1 pb-0 tooltip-underline" title='A specific level of allocation; also referred to as "Opportunity"'>Project Type</span>
+            </div>
+            <div className="col">
+              <span className="mb-1 pb-0">Dates</span>
             </div>
           </div>
-      </div>
-      <div className="card-body">
-        <div className="row fw-bold border-bottom">
-          <div className="col">
-            <span className="mb-1 pb-0">Field of Science</span>
+
+          <div className="row">
+            <div className="col">
+              {project.fos}
+            </div>
+            <div className="col">
+              {project.allocationType}
+            </div>
+            <div className="col">
+              { projectDates() }
+            </div>
           </div>
-          <div className="col">
-            <span className="mb-1 pb-0 tooltip-underline" title='A specific level of allocation; also referred to as "Opportunity"'>Project Type</span>
-          </div>
-          <div className="col">
-            <span className="mb-1 pb-0">Dates</span>
-          </div>
+
+          { projectContent() }
+
         </div>
-
-        <div className="row">
-          <div className="col">
-            {project.fos}
-          </div>
-          <div className="col">
-            {project.allocationType}
-          </div>
-          <div className="col">
-            { projectDates() }
-          </div>
-        </div>
-
-        { projectContent() }
-
       </div>
-    </div>
-)
+  )
 };
 
 export default Project;
