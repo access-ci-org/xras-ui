@@ -1,8 +1,14 @@
-import { connect } from "react-redux";
-import { grantSearch } from "./helpers/thunks";
-import { setGrantNumber } from "./helpers/actions";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getGrantNumber,
+  grantSearch,
+  setGrantNumber,
+} from "./helpers/publicationEditSlice";
 
-const ProjectSearch = ({ grant_number, setGrantNumber, grantSearch }) => {
+export default function ProjectSearch() {
+  const dispatch = useDispatch();
+  const grantNumber = useSelector(getGrantNumber);
+
   return (
     <div className={"row"}>
       <div className={"col"}>
@@ -12,26 +18,18 @@ const ProjectSearch = ({ grant_number, setGrantNumber, grantSearch }) => {
           <input
             type={"text"}
             className={"form-control"}
-            value={grant_number}
-            onChange={(e) => setGrantNumber(e.target.value)}
+            value={grantNumber}
+            onChange={(e) => dispatch(setGrantNumber(e.target.value))}
             placeholder="Enter a grant number"
           />
-          <button className={"btn btn-primary"} onClick={() => grantSearch()}>
+          <button
+            className={"btn btn-primary"}
+            onClick={() => dispatch(grantSearch())}
+          >
             Find Project
           </button>
         </div>
       </div>
     </div>
   );
-};
-
-const mapDispatchToProps = (dispatch) => ({
-  setGrantNumber: (val) => dispatch(setGrantNumber(val)),
-  grantSearch: () => dispatch(grantSearch()),
-});
-
-const mapStateToProps = (state) => ({
-  grant_number: state.publications_store.grant_number,
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(ProjectSearch);
+}

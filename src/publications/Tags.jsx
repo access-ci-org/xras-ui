@@ -1,15 +1,20 @@
 import { useRef } from "react";
-import { updateSelectedTags } from "./helpers/actions";
-import { connect } from "react-redux";
-import Select from "react-select";
-import { getPublicationTags } from "./helpers/selectors";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getPublicationTags,
+  updateSelectedTags,
+} from "./helpers/publicationEditSlice";
 
-const Tags = ({ category, publication_tags, updateSelectedTags, index }) => {
+import Select from "react-select";
+
+export default function Tags({ category, index }) {
+  const dispatch = useDispatch();
+  const publicationTags = useSelector(getPublicationTags);
   const ref = useRef(null);
 
   const defaultSelected = () => {
-    const selected = publication_tags.filter(
-      (pt) => pt.label == category.label
+    const selected = publicationTags.filter(
+      (pt) => pt.label == category.label,
     )[0];
     if (selected) {
       return selected.options;
@@ -19,7 +24,7 @@ const Tags = ({ category, publication_tags, updateSelectedTags, index }) => {
   };
 
   const updateTags = (tags) => {
-    updateSelectedTags({ category: category.label, tags: tags });
+    dispatch(updateSelectedTags({ category: category.label, tags: tags }));
   };
 
   return (
@@ -44,14 +49,4 @@ const Tags = ({ category, publication_tags, updateSelectedTags, index }) => {
       </div>
     </>
   );
-};
-
-const mapDispatchToProps = (dispatch) => ({
-  updateSelectedTags: (data) => dispatch(updateSelectedTags(data)),
-});
-
-const mapStateToProps = (state) => ({
-  publication_tags: getPublicationTags(state),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(Tags);
+}

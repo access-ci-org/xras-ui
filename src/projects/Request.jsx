@@ -15,6 +15,7 @@ import Resources from "./Resources";
 import ResourcesModal from "./ResourcesModal";
 import UsageDetailModal from "./UsageDetailModal";
 import Users from "./Users";
+import ProjectPublications from "./ProjectPublications";
 
 export default function Request({ requestId, grantNumber }) {
   const { request } = useRequest(requestId, grantNumber);
@@ -114,6 +115,12 @@ export default function Request({ requestId, grantNumber }) {
           disabled={disabledTabs.includes("users")}
         >
           <Users grantNumber={grantNumber} />
+        </Tab>
+        <Tab eventKey="publications" title="Publications">
+          <ProjectPublications
+            grantNumber={grantNumber}
+            requestId={requestId}
+          />
         </Tab>
         <Tab eventKey="history" title="History">
           <History requestId={requestId} />

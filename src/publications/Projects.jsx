@@ -1,8 +1,10 @@
-import { connect } from "react-redux";
-import { getProjects } from "./helpers/selectors";
-import { toggleProject } from "./helpers/actions";
+import { useDispatch, useSelector } from "react-redux";
+import { getProjects, toggleRequest } from "./helpers/publicationEditSlice";
 
-const Projects = ({ projects, toggleProject }) => {
+export default function Projects() {
+  const dispatch = useDispatch();
+  const projects = useSelector(getProjects);
+
   const projectClass = (project) => {
     return `list-group-item list-group-item-action clickable ${
       project.selected ? "list-group-item-success" : ""
@@ -29,7 +31,7 @@ const Projects = ({ projects, toggleProject }) => {
             <div
               key={`project_${p.grant_number}`}
               className={projectClass(p)}
-              onClick={() => toggleProject(idx)}
+              onClick={() => dispatch(toggleRequest(idx))}
             >
               {p.grant_number}: {p.title}
             </div>
@@ -38,14 +40,4 @@ const Projects = ({ projects, toggleProject }) => {
       </div>
     </div>
   );
-};
-
-const mapStateToProps = (state) => ({
-  projects: getProjects(state),
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  toggleProject: (data) => dispatch(toggleProject(data)),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(Projects);
+}

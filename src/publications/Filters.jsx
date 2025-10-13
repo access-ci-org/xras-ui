@@ -1,13 +1,13 @@
-import {useSelector, useDispatch} from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import {
   selectFilterOptions,
   selectFilterSelections,
   updateFilterSelection,
   getPublications,
-  resetFilters
-} from "./helpers/publicationsSlice.js";
-import {setShowPagination, updatePageData} from "../projects-browser/helpers/browserSlice.js";
-import {cleanDOI} from "./Publication.jsx";
+  resetFilters,
+  resetPublications,
+} from "./helpers/publicationsSearchSlice.js";
+import { cleanDOI } from "./PublicationCitation.jsx";
 
 const Filters = () => {
   const dispatch = useDispatch();
@@ -15,13 +15,13 @@ const Filters = () => {
   const filterSelections = useSelector(selectFilterSelections);
 
   const handleSubmit = () => {
+    dispatch(resetPublications());
     window.scrollTo(0, 0);
-    dispatch(setShowPagination(false));
-    dispatch(updatePageData({ current_page: 1 }))
     dispatch(getPublications());
   };
 
   const handleReset = () => {
+    dispatch(resetPublications());
     dispatch(resetFilters());
     window.scrollTo(0, 0);
     dispatch(getPublications());
@@ -32,12 +32,16 @@ const Filters = () => {
   }
 
   const handleFilterChange = (e) => {
-    dispatch(updateFilterSelection({ name: e.target.name, value: e.target.value }));
+    dispatch(
+      updateFilterSelection({ name: e.target.name, value: e.target.value }),
+    );
   };
 
   const handleSelection = (e) => {
-    dispatch(updateFilterSelection({ name: e.target.name, value: e.target.value }));
-  }
+    dispatch(
+      updateFilterSelection({ name: e.target.name, value: e.target.value }),
+    );
+  };
 
   return (
     <div className="row sticky-top mb-2">
@@ -92,7 +96,7 @@ const Filters = () => {
           <input
             type="text"
             className="form-control"
-            value={cleanDOI(filterSelections.doi)}
+            value={cleanDOI(filterSelections.doi) || ""}
             name="doi"
             id="doiNumber"
             aria-labelledby="doi_number_label"
@@ -101,7 +105,7 @@ const Filters = () => {
         </div>
 
         <h5 id="publication_type_label" className="mb-1">
-            Publication Type
+          Publication Type
         </h5>
         <div className="mb-3">
           <select
@@ -125,15 +129,13 @@ const Filters = () => {
           <button className="btn btn-primary me-2" onClick={handleSubmit}>
             Submit
           </button>
-          <button
-            className="btn btn-secondary" onClick={handleReset}
-          >
+          <button className="btn btn-secondary" onClick={handleReset}>
             Reset
           </button>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Filters;

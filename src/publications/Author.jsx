@@ -1,5 +1,5 @@
 import { connect } from "react-redux";
-import { updateAuthor, deleteAuthor } from "./helpers/actions";
+import { updateAuthor, deleteAuthor } from "./helpers/publicationEditSlice";
 
 const Author = ({ author, authorKey, updateAuthor, deleteAuthor }) => {
   const updateField = (e) => {

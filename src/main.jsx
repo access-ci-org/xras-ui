@@ -15,9 +15,19 @@ import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
 import browserSlice from "./projects-browser/helpers/browserSlice";
 import { initialState as projectsBrowserInitialState } from "./projects-browser/helpers/initialState";
 
-import Publications from "./publications/Publications";
+import MyPublications from "./publications/MyPublications";
+import PublicationsBrowser from "./publications/PublicationsBrowser";
+import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsSelect from "./publications/PublicationsSelect";
-import { publications_store } from "./publications/helpers/reducers";
+import publicationsSearchSlice, {
+  initialState as publicationsSearchInitialState,
+} from "./publications/helpers/publicationsSearchSlice";
+import publicationEditSlice, {
+  initialState as publicationEditInitialState,
+} from "./publications/helpers/publicationEditSlice";
+import publicationsSelectSlice, {
+  initialState as publicationsSelectInitialState,
+} from "./publications/helpers/publicationsSelectSlice";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
 import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice";
@@ -25,20 +35,9 @@ import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
-import PublicationsBrowser from "./publications-browser/PublicationsBrowser";
-import publicationsSlice from "./publications-browser/helpers/publicationsSlice";
-import { initialState as publicationsBrowserInitialState } from "./publications-browser/helpers/initialState.js"
-import publication from "./publications/Publication.jsx";
-
-import Keywords from "./keywords/Keywords.jsx";
 export function shadowTarget(
   host,
-  {
-    bootstrapFonts = true,
-    bootstrapVariables = true,
-    access = false,
-    baseUrl = null,
-  } = {}
+  { bootstrapFonts = true, bootstrapVariables = true, baseUrl = null } = {},
 ) {
   const shadow = host.attachShadow({ mode: "open" });
   const bsOuter = document.createElement("div");
@@ -80,7 +79,8 @@ export function allocationsMap({ target }) {
 }
 
 export function resources({
-  availableResources, unavailableResources,
+  availableResources,
+  unavailableResources,
   canAdd,
   relativeUrlRoot,
   target,
@@ -91,7 +91,7 @@ export function resources({
       unavailableResources={unavailableResources}
       canAdd={canAdd}
       relativeUrlRoot={relativeUrlRoot}
-    />
+    />,
   );
 }
 
@@ -106,7 +106,7 @@ export function editResource({
       resourceId={resourceId}
       setExternalSubmit={setExternalSubmit}
       relativeUrlRoot={relativeUrlRoot}
-    />
+    />,
   );
 }
 
@@ -120,7 +120,7 @@ export function projects({ target, username, routes }) {
   ReactDOM.createRoot(target).render(
     <Provider store={projectsStore}>
       <Projects username={username} />
-    </Provider>
+    </Provider>,
   );
 }
 
@@ -139,56 +139,95 @@ export function projectsBrowser({ target, apiUrl }) {
   ReactDOM.createRoot(target).render(
     <Provider store={projectsBrowserStore}>
       <ProjectsBrowser />
-    </Provider>
+    </Provider>,
   );
 }
 
-export function publicationsBrowser({ target, apiUrl }) {
-
-  const publicationsBrowserStore = configureStore({
+export function publicationsBrowser({ target, routes, authenticityToken }) {
+  addRoutes(routes);
+  const publicationsSearchStore = configureStore({
     reducer: {
-      publicationsBrowser: publicationsSlice,
+      publicationsSearch: publicationsSearchSlice,
+      publicationEdit: publicationEditSlice,
     },
     preloadedState: {
-      publicationsBrowser: {
-        ...publicationsBrowserInitialState,
-        apiUrl
-      }
-    }
-  });
-
-  ReactDOM.createRoot(target).render(
-    <Provider store={publicationsBrowserStore}>
-      <PublicationsBrowser apiUrl={apiUrl} />
-    </Provider>
-  );
-}
-
-function publicationsStore() {
-  return configureStore({
-    reducer: {
-      publications_store,
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
     },
   });
-}
 
-export function publications({ target, routes }) {
-  addRoutes(routes);
   ReactDOM.createRoot(target).render(
-    <Provider store={publicationsStore()}>
-      <Publications />
-    </Provider>
+    <Provider store={publicationsSearchStore}>
+      <PublicationsBrowser />
+    </Provider>,
   );
 }
 
-export function publicationsSelect({ target, routes }) {
+export function publicationEdit({
+  publicationId,
+  target,
+  routes,
+  authenticityToken,
+}) {
+  const store = configureStore({
+    reducer: {
+      publicationEdit: publicationEditSlice,
+    },
+    preloadedState: {
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
+    },
+  });
   addRoutes(routes);
+
   ReactDOM.createRoot(target).render(
-    <Provider store={publicationsStore()}>
-      <PublicationsSelect
-        {...JSON.parse(target.dataset.publicationsSelectProps)}
-      />
-    </Provider>
+    <Provider store={store}>
+      <PublicationEdit publicationId={publicationId} />
+    </Provider>,
+  );
+}
+
+export function publicationsSelect({
+  authenticityToken,
+  routes,
+  selectedPublicationIds,
+  target,
+  usernames,
+}) {
+  const store = configureStore({
+    reducer: {
+      publicationEdit: publicationEditSlice,
+      publicationsSearch: publicationsSearchSlice,
+      publicationsSelect: publicationsSelectSlice,
+    },
+    preloadedState: {
+      publicationsSearch: {
+        ...publicationsSearchInitialState,
+        filterSelections: {
+          ...publicationsSearchInitialState.filterSelections,
+          createdBy: usernames,
+        },
+      },
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
+      publicationsSelect: {
+        ...publicationsSelectInitialState,
+        selected: selectedPublicationIds,
+      },
+    },
+  });
+  addRoutes(routes);
+
+  ReactDOM.createRoot(target).render(
+    <Provider store={store}>
+      <PublicationsSelect />
+    </Provider>,
   );
 }
 
@@ -210,7 +249,41 @@ export function onRampsResourceCatalog({
         onRamps={onRamps}
         baseUrl={baseUrl}
       />
-    </Provider>
+    </Provider>,
+  );
+}
+
+export function myPublications({
+  authenticityToken,
+  routes,
+  target,
+  username,
+}) {
+  addRoutes(routes);
+  const myPublicationsStore = configureStore({
+    reducer: {
+      publicationEdit: publicationEditSlice,
+      publicationsSearch: publicationsSearchSlice,
+    },
+    preloadedState: {
+      publicationsSearch: {
+        ...publicationsSearchInitialState,
+        filterSelections: {
+          ...publicationsSearchInitialState.filterSelections,
+          createdBy: [username],
+        },
+      },
+      publicationEdit: {
+        ...publicationEditInitialState,
+        authenticityToken: authenticityToken,
+      },
+    },
+  });
+
+  ReactDOM.createRoot(target).render(
+    <Provider store={myPublicationsStore}>
+      <MyPublications />
+    </Provider>,
   );
 }
 
@@ -238,7 +311,7 @@ export function resourceCatalog({
         allowedCategories={allowedCategories}
         allowedFilters={allowedFilters}
       />
-    </Provider>
+    </Provider>,
   );
 }
 

@@ -1,0 +1,19 @@
+.citation {
+    font-size: 1.125rem;
+    line-height: 1.875rem;
+    margin-left: 50px;
+    text-indent: -50px;
+}
+.tags {
+    list-style-type: none;
+    margin: 0 !important;
+    padding: 10px 0 0 50px;
+}
+.tags li {
+    display: inline-block;
+    margin: 0 1rem 0 0;
+    font-size: 1rem;
+}
+.tags i {
+    margin-right: 0.25rem;
+}

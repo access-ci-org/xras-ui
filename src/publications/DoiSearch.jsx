@@ -1,9 +1,13 @@
-import { connect } from "react-redux";
-import { getDoi } from "./helpers/selectors";
-import { updatePublication } from "./helpers/actions";
-import { doiLookup } from "./helpers/thunks";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  doiLookup,
+  getDoi,
+  updatePublication,
+} from "./helpers/publicationEditSlice";
 
-const DoiSearch = ({ doi, updatePublication, doiLookup }) => {
+export default function DoiSearch() {
+  const dispatch = useDispatch();
+  const doi = useSelector(getDoi);
   return (
     <div className={"row mb-3"}>
       <div className={"col"}>
@@ -19,13 +23,17 @@ const DoiSearch = ({ doi, updatePublication, doiLookup }) => {
             aria-label="DOI Input and Search box"
             aria-describedby="doi_button"
             value={doi}
-            onChange={(el) => updatePublication(el.target.value)}
+            onChange={(el) =>
+              dispatch(
+                updatePublication({ key: "doi", value: el.target.value }),
+              )
+            }
           />
           <button
             className="btn btn-primary"
             type="button"
             id="doi_button"
-            onClick={() => doiLookup()}
+            onClick={() => dispatch(doiLookup())}
           >
             Lookup Publication
           </button>
@@ -33,16 +41,4 @@ const DoiSearch = ({ doi, updatePublication, doiLookup }) => {
       </div>
     </div>
   );
-};
-
-const mapStateToProps = (state) => ({
-  doi: getDoi(state),
-});
-
-export const mapDispatchToProps = (dispatch) => ({
-  updatePublication: (doi) =>
-    dispatch(updatePublication({ key: "doi", value: doi })),
-  doiLookup: () => dispatch(doiLookup()),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(DoiSearch);
+}
