@@ -16,12 +16,10 @@ import gridStyle from "../shared/Grid.module.scss";
 import Select from "react-select";
 
 import Alert from "../shared/Alert";
-import DiscountBadge from "../shared/DiscountBadge";
 import Grid from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
 import InlineButton from "../shared/InlineButton";
 import ResourceName from "../shared/ResourceName";
-import ResourceDiscountsBanner from "../shared/ResourceDiscountsBanner";
 import ResourcesDiagram from "./ResourcesDiagram";
 import StatusBadge from "../shared/StatusBadge";
 import BlurInput from "../shared/BlurInput";
@@ -179,19 +177,43 @@ export default function Resources({ requestId, grantNumber }) {
 
   const resourceIds = resources.map((res) => res.resourceId);
   const availableResourcesMap = {};
-  const availableResourceOptions =
-    canExchange && exchangeEditable
-      ? request.allowedActions.Exchange.resources
-          .filter((res) => !resourceIds.includes(res.resourceId))
+  const groupedResourcesMap = {};
+  const availableResourceGroups = [];
+  if (canExchange && exchangeEditable) {
+    request.allowedActions.Exchange.resources
+      .filter((res) => !resourceIds.includes(res.resourceId))
+      .map((res) => {
+        availableResourcesMap[res.resourceId] = res;
+        const groupLabel = `${res.type} Resources (${res.unit})`;
+        groupedResourcesMap[groupLabel] = groupedResourcesMap[groupLabel] || [];
+        groupedResourcesMap[groupLabel].push(res);
+      });
+
+    for (const [label, options] of Object.entries(groupedResourcesMap)) {
+      availableResourceGroups.push({
+        label,
+        options: options
+          .sort((a, b) =>
+            a.exchangeRates.current.unitCost <
+              b.exchangeRates.current.unitCost ||
+            (a.exchangeRates.current.unitCost ==
+              b.exchangeRates.current.unitCost &&
+              a.name < b.name)
+              ? -1
+              : 1,
+          )
           .map((res) => {
-            availableResourcesMap[res.resourceId] = res;
             const parsed = parseResourceName(res.name);
             const label = parsed.short
               ? `${parsed.short} (${parsed.full.replace(/ \([^(]+\)/, "")})`
               : parsed.full;
             return { value: res.resourceId, label };
-          })
-      : [];
+          }),
+      });
+      availableResourceGroups.sort((a, b) => (a.label < b.label ? -1 : 1));
+    }
+  }
+
   const exchangeActionResourceIds = canExchange
     ? request.allowedActions.Exchange.resources.map((res) => res.resourceId)
     : [];
@@ -254,136 +276,150 @@ export default function Resources({ requestId, grantNumber }) {
     return desiredBalance;
   };
 
+  const formatUnitCost = (resource) =>
+    resource.isBoolean ? (
+      <>&mdash;</>
+    ) : (
+      <>
+        {icon(config.resourceTypeIcons[credit.icon])}
+        <span className="ms-2">
+          {formatExchangeRate(
+            resource.unit,
+            resource.exchangeRates.current.unitCost,
+            credit.name,
+          )}
+        </span>
+      </>
+    );
+
   // Grid columns
   const columns = [
     {
       key: "name",
       name: "Resource",
-      format: (name, row) => <ResourceName resource={row} />,
+      format: (name, row) => (
+        <>
+          <ResourceName resource={row} />
+          {(project.currentUser.resourceIds.includes(row.resourceId) ||
+            project.currentUser.resourceAccountInactiveIds.includes(
+              row.resourceId,
+            )) && (
+            <InlineButton
+              icon="table"
+              onClick={() => openUsageDetailModal(row.resourceRepositoryKey)}
+              target="_blank"
+              title={`${row.name} Usage Details`}
+            />
+          )}{" "}
+          <StatusBadge
+            status={row.isActive ? "Active" : row.isNew ? "New" : "Inactive"}
+          />
+        </>
+      ),
       width: Math.min(350, window.innerWidth * 0.3),
     },
     {
-      key: "isActive",
-      name: "Status",
-      format: (value, row) => (
-        <StatusBadge
-          status={value ? "Active" : row.isNew ? "New" : "Inactive"}
-        />
-      ),
-      width: 100,
-    },
-    {
       key: "unit",
-      name: "Unit",
-      width: 150,
-      format: (value, row) =>
-        row.isBoolean ? (
-          <>&mdash;</>
-        ) : (
-          [
-            <abbr
-              key="base"
-              title={formatExchangeRate(
-                value,
-                row.exchangeRates.base.unitCost,
-                credit.name,
-              )}
-            >
-              {value}
-            </abbr>,
-            <DiscountBadge
-              creditResource={credit}
-              key="discount"
-              resource={row}
-              short={true}
-            />,
-          ]
-        ),
-    },
-    {
-      key: "used",
-      name: "Usage",
-      class: "text-end",
-      format: (value, row) =>
-        row.isBoolean ? (
-          <>&mdash;</>
-        ) : (
-          <>
-            {formatNumber(value)}
-            {(project.currentUser.resourceIds.includes(row.resourceId) ||
-              project.currentUser.resourceAccountInactiveIds.includes(
-                row.resourceId,
-              )) && (
-              <InlineButton
-                icon="table"
-                onClick={() => openUsageDetailModal(row.resourceRepositoryKey)}
-                target="_blank"
-                title={`${row.name} Usage Details`}
-              />
-            )}
-          </>
-        ),
+      name: "Unit Cost",
+      width: 300,
+      format: (value, row) => formatUnitCost(row),
     },
   ];
 
   if (canExchange)
-    columns.push({
-      key: "requested",
-      name: "Balance",
-      class: "text-end",
-      rowClass: (row) =>
-        exchangeEditable && exchangeActionResourceIds.includes(row.resourceId)
-          ? gridStyle.input
-          : "",
-      format: (value, row) => {
-        const editable =
-          exchangeEditable &&
-          exchangeActionResourceIds.includes(row.resourceId);
-        return row.isBoolean ? (
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={value == 1}
-            disabled={!editable}
-            onChange={(e) =>
-              setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
-            }
-          />
-        ) : editable ? (
-          <BlurInput
-            classes="text-end w-100"
-            clean={(balanceString) => cleanBalance(balanceString, row)}
-            format={formatNumber}
-            label={`Balance for ${row.name}`}
-            setValue={(cleaned) => {
-              setResourceRequest(row.resourceId, cleaned + row.used);
-            }}
-            style={{ padding: "0.1rem 0.5rem" }}
-            value={getBalance(row)}
-          />
-        ) : (
-          formatNumber(getBalance(row))
-        );
+    columns.push(
+      {
+        key: "requested",
+        name: "Balance",
+        class: "text-end",
+        rowClass: (row) =>
+          exchangeEditable && exchangeActionResourceIds.includes(row.resourceId)
+            ? gridStyle.input
+            : "",
+        format: (value, row) => {
+          const editable =
+            exchangeEditable &&
+            exchangeActionResourceIds.includes(row.resourceId);
+          return row.isBoolean ? (
+            <span className="d-flex">
+              <span className="w-100">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={value == 1}
+                  disabled={!editable}
+                  onChange={(e) =>
+                    setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
+                  }
+                />
+              </span>
+              <span className="text-start ps-2" style={{ width: "8rem" }}>
+                Requested
+              </span>
+            </span>
+          ) : (
+            <span className="d-flex">
+              {editable ? (
+                <BlurInput
+                  classes="text-end w-100"
+                  clean={(balanceString) => cleanBalance(balanceString, row)}
+                  format={formatNumber}
+                  label={`Balance for ${row.name}`}
+                  setValue={(cleaned) => {
+                    setResourceRequest(row.resourceId, cleaned + row.used);
+                  }}
+                  style={{ padding: "0.1rem 0.5rem" }}
+                  value={getBalance(row)}
+                />
+              ) : (
+                <span>{formatNumber(getBalance(row))}</span>
+              )}
+              <span className="text-start ps-2" style={{ width: "8rem" }}>
+                {row.unit}
+              </span>
+            </span>
+          );
+        },
+        formatHeader: (name) => (
+          <>
+            {name}
+            {exchangeEditable ? (
+              <InfoTip
+                bg="secondary"
+                color="dark"
+                initial="myprojects.requestedAllocation"
+                placement="top-end"
+                visible={project.tab == "resources"}
+              >
+                You can increase or decrease the balance below to change your
+                allocation on a resource. Enter the total amount you would like
+                to have available once the exchange is complete.
+              </InfoTip>
+            ) : null}
+          </>
+        ),
       },
-      formatHeader: (name) => (
-        <>
-          {name}
-          {exchangeEditable ? (
-            <InfoTip
-              bg="secondary"
-              color="dark"
-              initial="myprojects.requestedAllocation"
-              placement="top-end"
-              visible={project.tab == "resources"}
+      {
+        key: "change",
+        name: "Credit Change",
+        format: (value, row) => {
+          const transfer = row.requested - row.allocated;
+          const cost = -1 * transfer * row.exchangeRates.current.unitCost;
+          return cost !== 0 ? (
+            <span
+              className={`badge bg-${
+                cost > 0 ? "primary" : "danger"
+              } rounded-pill`}
             >
-              You can increase or decrease the balance below to change your
-              allocation on a resource. Enter the total amount you would like to
-              have available once the exchange is complete.
-            </InfoTip>
-          ) : null}
-        </>
-      ),
-    });
+              {cost > 0 ? "+" : ""}
+              {formatNumber(cost, credit)} {credit.unit}
+            </span>
+          ) : (
+            <>&mdash;</>
+          );
+        },
+      },
+    );
 
   return (
     <div className="resources">
@@ -414,7 +450,7 @@ export default function Resources({ requestId, grantNumber }) {
           columns={columns}
           rows={rows}
           rowClasses={rowClasses}
-          classes={availableResourceOptions.length ? "mb-0" : ""}
+          classes={availableResourceGroups.length ? "mb-0" : ""}
           frozenColumns={2}
           minWidth="800px"
         />
@@ -423,13 +459,8 @@ export default function Resources({ requestId, grantNumber }) {
           This project does not have any resources.
         </div>
       )}
-      {availableResourceOptions.length ? (
+      {availableResourceGroups.length ? (
         <>
-          <ResourceDiscountsBanner
-            resources={
-              (canExchange && request.allowedActions.Exchange.resources) || []
-            }
-          />
           <div
             className="p-2"
             style={{
@@ -441,19 +472,26 @@ export default function Resources({ requestId, grantNumber }) {
           >
             <Select
               classNames={{ control: () => "react-select mb-1" }}
-              options={availableResourceOptions}
+              options={availableResourceGroups}
               onChange={(option) => addResource(option.value)}
               placeholder={resourceAddMessage}
               value={null}
               aria-label={resourceAddMessage}
-              formatOptionLabel={({ value, label }) => [
-                label,
-                <DiscountBadge
-                  creditResource={credit}
-                  key="discount"
-                  resource={availableResourcesMap[value]}
-                />,
-              ]}
+              formatOptionLabel={({ value, label }) => {
+                const resource = availableResourcesMap[value];
+                return (
+                  <span className="d-flex justify-content-between">
+                    <span>
+                      <ResourceName
+                        key={label}
+                        resource={resource}
+                        userGuide={false}
+                      />
+                    </span>
+                    <span>{formatUnitCost(resource)}</span>
+                  </span>
+                );
+              }}
             />
           </div>
           {!rows.length ? (
