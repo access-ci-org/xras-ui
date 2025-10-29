@@ -27,6 +27,7 @@ const config = {
     search_people_path: () => `${baseUrl}/search/people`,
     usage_detail_path: (grantNumber, resourceId) =>
       `/usage/${grantNumber}/${resourceId}`,
+    profile_dismiss_notice_path: () => "/profile/dismiss_notice",
   },
   roleIcons: {
     PI: "person-fill-check",
