@@ -26,6 +26,7 @@ export default function PublicationForm() {
   const tagCategories = useSelector(getTagCategories);
   const saveEnabled = useSelector(getSaveEnabled);
   const formValid = useSelector(getFormValid);
+  const selectedTags = useSelector((state) => state.publicationEdit.selected_tags);
 
   const updateTitle = (e) => {
     dispatch(setFormValid(e.target.value.trim() !== ""));
@@ -212,19 +213,63 @@ export default function PublicationForm() {
     </div>
   );
 
+  const reqIcon = <i className="bi text-danger"></i>;
+  const selectedTagsCount = Object.values(selectedTags).flat().length;
+  const normalize = (s = "") => s.toString().trim().toLowerCase();
+  const hasResourceTag = Object.entries(selectedTags).some(
+    ([label, tags]) => normalize(label).includes("resource") && !normalize(label).includes("provider") && Array.isArray(tags) && tags.length > 0,
+  );
+  const hasProviderTag = Object.entries(selectedTags).some(
+    ([label, tags]) => normalize(label).includes("provider") && Array.isArray(tags) && tags.length > 0,
+  );
+
   const tags = (
     <div className={"card mt-3"}>
       <div className={"card-header d-flex"}>
-        <h2>Tags</h2>
+        <h2>
+          Tags
+          {publication.related_to_resource !== false && reqIcon}
+        </h2>
         <InfoTip>
           Add related tags from the lists below. You may choose multiple tags
           per category.
         </InfoTip>
       </div>
       <div className={"card-body"}>
-        {tagCategories.map((tc, idx) => (
-          <Tags key={`tc_${idx}`} index={idx} category={tc} />
-        ))}
+        <div className={"form-check mb-3"}>
+          <input
+            className={"form-check-input"}
+            type={"checkbox"}
+            id={"related_to_resource"}
+            checked={publication.related_to_resource !== false}
+            onChange={(e) =>
+              dispatch(
+                updatePublication({
+                  key: "related_to_resource",
+                  value: e.target.checked,
+                }),
+              )
+            }
+          />
+          <label className={"form-check-label"} htmlFor={"related_to_resource"}>
+            This publication is related to a resource
+          </label>
+        </div>
+        {(function() {
+          const isDisabled = publication.related_to_resource === false;
+          return (
+            <>
+              {!isDisabled && !(hasResourceTag && hasProviderTag) && (
+                <div className="alert alert-danger mb-3">Please select at least one tag in both Resource and Resource Provider.</div>
+              )}
+              <fieldset disabled={isDisabled} style={isDisabled ? { opacity: 0.5 } : {}}>
+                {tagCategories.map((tc, idx) => (
+                  <Tags key={`tc_${idx}`} index={idx} category={tc} />
+                ))}
+              </fieldset>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
