@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
-import { validateForm, camelCaseToTitleCase } from "../FormValidation";
+import { invalidFormAlert, validateForm } from "../FormValidation";
 
 export const initialState = {
   authenticityToken: null,
@@ -190,38 +190,13 @@ export const getSaving = (state) => state.publicationEdit.saving;
 export const getFormValid = (state) => state.publicationEdit.form_valid;
 export const getGrantNumber = (state) => state.publicationEdit.grant_number;
 
-// Helpers for tag validation when related_to_resource is true
-const normalize = (s = "") => s.toString().trim().toLowerCase();
-const isResourceCategory = (label) => {
-  const n = normalize(label);
-  return n.includes("resource") && !n.includes("provider");
-};
-const isProviderCategory = (label) => {
-  const n = normalize(label);
-  return n.includes("provider");
-};
-const hasRequiredResourceTags = (selectedByCategory) => {
-  const hasResourceTag = Object.entries(selectedByCategory).some(
-    ([label, tags]) => isResourceCategory(label) && Array.isArray(tags) && tags.length > 0,
-  );
-  const hasProviderTag = Object.entries(selectedByCategory).some(
-    ([label, tags]) => isProviderCategory(label) && Array.isArray(tags) && tags.length > 0,
-  );
-  return hasResourceTag && hasProviderTag;
-};
-
 export const getSaveEnabled = (state) => {
-  const relatedToResource =
-    state.publicationEdit.publication.related_to_resource !== false;
-  const selectedByCategory = state.publicationEdit.selected_tags || {};
-  const tagsOk = !relatedToResource || hasRequiredResourceTags(selectedByCategory);
-
   return (
     !getSaving(state) &&
     getDataLoaded(state) &&
     getFormValid(state) &&
     getAuthorsExist(state) &&
-    tagsOk
+    state.publicationEdit.projects.filter((p) => p.selected).length > 0
   );
 };
 
@@ -323,38 +298,21 @@ export const savePublication = () => async (dispatch, getState) => {
       });
     }
 
-    const fieldsList = missingFields.map(camelCaseToTitleCase).join(", ");
-    const message = `Please provide the following information before submitting: ${fieldsList}`;
-    dispatch(updateErrors(message));
+    const errorAlert = invalidFormAlert(missingFields);
+    dispatch(updateErrors(errorAlert));
     return;
-  }
-
-  // Guard: when related_to_resource, require tags in Resource and Provider
-  const relatedToResourceGuard = publication.related_to_resource !== false;
-  if (relatedToResourceGuard) {
-    const selectedByCategory = store.selected_tags || {};
-    if (!hasRequiredResourceTags(selectedByCategory)) {
-      dispatch(
-        updateErrors(
-          "Please select at least one tag in both Resource and Resource Provider.",
-        ),
-      );
-      return;
-    }
   }
 
   const token =
     store.authenticityToken ||
     document.querySelector("meta[name=csrf-token]").content;
 
-  const relatedToResource = publication.related_to_resource !== false;
   const formData = {
     authenticity_token: token,
     publication: publication,
     authors: publication.authors.map((a) => ({ ...a, order: 0 })),
-    tags: relatedToResource ? tags : [], 
-    related_to_resource: relatedToResource,
-    projects: projects, 
+    tags: tags,
+    projects: projects,
   };
 
   let url, method;

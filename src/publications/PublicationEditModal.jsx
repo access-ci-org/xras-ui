@@ -6,12 +6,23 @@ import {
   getPublicationId,
   savePublication,
   setShowEditModal,
+  getSaveEnabled,
+  getPublication,
 } from "./helpers/publicationEditSlice";
 
 export default function PublicationEditModal() {
   const dispatch = useDispatch();
   const show = useSelector(getShowEditModal);
   const publicationId = useSelector(getPublicationId);
+  const saveEnabled = useSelector(getSaveEnabled);
+  const publication = useSelector(getPublication);
+
+  const selectedTags = useSelector(
+    (state) => state.publicationEdit.selected_tags || {},
+  );
+  const relatedToResource = publication?.related_to_resource !== false;
+  const selectedTagsCount = Object.values(selectedTags).flat().length;
+  const tagsOk = !relatedToResource || selectedTagsCount > 0;
 
   const handleModalHide = (save) => {
     if (save) dispatch(savePublication());
@@ -47,6 +58,7 @@ export default function PublicationEditModal() {
               type="button"
               className="btn btn-primary"
               onClick={() => handleModalHide(true)}
+              disabled={!(saveEnabled && tagsOk)}
             >
               Save Publication
             </button>
