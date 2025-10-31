@@ -8,9 +8,12 @@ export default function PublicationNoNewPublicationsButton() {
         <button
             type="button"
             className="btn btn-primary"
-            onClick={() => dispatch(dismissNotice())}
+            onClick={(e) => {
+                dispatch(dismissNotice());
+                e.currentTarget.blur(); // removes focus
+            }}
         >
-            I have no new publications to report
+            no new publications
         </button>
     );
 }
