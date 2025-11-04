@@ -9,7 +9,7 @@ export const initialState = {
   form_valid: false,
   grant_number: "",
   projects: [],
-  publication: {},
+  publication: { related_to_resource: true, authors: [], fields: [] },
   publicationId: null,
   publication_types: [],
   saving: false,
@@ -190,12 +190,24 @@ export const getSaving = (state) => state.publicationEdit.saving;
 export const getFormValid = (state) => state.publicationEdit.form_valid;
 export const getGrantNumber = (state) => state.publicationEdit.grant_number;
 
+export const getTagsValid = (state) => {
+  const relatedToResource =
+    state.publicationEdit.publication?.related_to_resource !== false;
+  if (!relatedToResource) return true;
+
+  const selectedTags = state.publicationEdit.selected_tags || {};
+  const hasResourceTag = (selectedTags["Resource"] || []).length > 0;
+  const hasProviderTag = (selectedTags["Resource Provider"] || []).length > 0;
+  return hasResourceTag && hasProviderTag;
+};
+
 export const getSaveEnabled = (state) => {
   return (
     !getSaving(state) &&
     getDataLoaded(state) &&
     getFormValid(state) &&
     getAuthorsExist(state) &&
+    getTagsValid(state) &&
     state.publicationEdit.projects.filter((p) => p.selected).length > 0
   );
 };

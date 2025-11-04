@@ -6,6 +6,7 @@ import {
   getPublication,
   getPubTypes,
   getSaveEnabled,
+  getTagsValid,
   getTagCategories,
   savePublication,
   setFormValid,
@@ -27,6 +28,7 @@ export default function PublicationForm() {
   const saveEnabled = useSelector(getSaveEnabled);
   const formValid = useSelector(getFormValid);
   const selectedTags = useSelector((state) => state.publicationEdit.selected_tags);
+  const tagsValid = useSelector(getTagsValid);
 
   const updateTitle = (e) => {
     dispatch(setFormValid(e.target.value.trim() !== ""));
@@ -213,15 +215,7 @@ export default function PublicationForm() {
     </div>
   );
 
-  const reqIcon = <i className="bi text-danger"></i>;
-  const selectedTagsCount = Object.values(selectedTags).flat().length;
-  const normalize = (s = "") => s.toString().trim().toLowerCase();
-  const hasResourceTag = Object.entries(selectedTags).some(
-    ([label, tags]) => normalize(label).includes("resource") && !normalize(label).includes("provider") && Array.isArray(tags) && tags.length > 0,
-  );
-  const hasProviderTag = Object.entries(selectedTags).some(
-    ([label, tags]) => normalize(label).includes("provider") && Array.isArray(tags) && tags.length > 0,
-  );
+  const reqIcon = <i className="bi bi-asterisk text-danger"></i>;
 
   const tags = (
     <div className={"card mt-3"}>
@@ -259,9 +253,9 @@ export default function PublicationForm() {
           const isDisabled = publication.related_to_resource === false;
           return (
             <>
-              {!isDisabled && !(hasResourceTag && hasProviderTag) && (
-                <div className="alert alert-danger mb-3">Please select at least one tag in both Resource and Resource Provider.</div>
-              )}
+                {!isDisabled && !tagsValid && (
+                  <div className="alert alert-danger mb-3">Please select at least one tag in both Resource and Resource Provider.</div>
+                )}
               <fieldset disabled={isDisabled} style={isDisabled ? { opacity: 0.5 } : {}}>
                 {tagCategories.map((tc, idx) => (
                   <Tags key={`tc_${idx}`} index={idx} category={tc} />
