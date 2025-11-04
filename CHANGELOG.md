@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.22.0](https://github.com/access-ci-org/xras-ui/compare/v0.21.0...v0.22.0) (2025-11-04)
+
+
+### Features
+
+* Add publication component to current project view ([3ff426a](https://github.com/access-ci-org/xras-ui/commit/3ff426a531c03322d1f85fd29114abbaab21b53c))
+
 ## [0.21.0](https://github.com/access-ci-org/xras-ui/compare/v0.21.0-beta2...v0.21.0) (2025-10-13)
 
 
