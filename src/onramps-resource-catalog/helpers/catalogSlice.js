@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   catalogs: {},
@@ -13,8 +13,19 @@ const initialState = {
     "NSF Innovative Testbeds": 2,
     "Other NSF-funded Resources": 3,
     "Services and Support": 4
-  }
+  },
+  selectedCategory: "CPU",
+  selectedFilters: [],
 };
+
+export const initApp = createAsyncThunk(
+  "resourceCatalog/initApp",
+  async (params, { dispatch }) => {
+    dispatch( setResourcesLoaded(false) );
+    dispatch( getRampsResources() );
+    dispatch( setResourcesLoaded(true) );
+  }
+);
 
 export const getResources = createAsyncThunk(
   "resourceCatalog/getResources",
@@ -56,32 +67,33 @@ export const getResources = createAsyncThunk(
   }
 );
 
+export const getRampsResources = createAsyncThunk(
+  "resourceCatalog/getRampsResources",
+  async (params, { dispatch }) => {
+    const dataUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
+    const resourcesUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-allocated/";
+    const featuresUrl = "https://operations-api.access-ci.org/wh2/cider/v1/features/";
+
+    const data = await fetch(dataUrl);
+    const dataJson = await data.json();
+
+    const resources = await fetch(resourcesUrl);
+    const resourcesJson = await resources.json();
+
+    const features = await fetch(featuresUrl);
+    const featuresJson = await features.json();
+
+    dispatch( handleRamps({ params, metadata: dataJson.results, rampsResources: resourcesJson.results, features: featuresJson.results }) );
+
+  }
+);
+
 export const catalogFilter = createAsyncThunk("resourceCatalog/getResources",
   async (params, { dispatch }) => {
     dispatch( toggleCatalog(params) );
     dispatch( toggleFilter() );
   }
 )
-
-const activeFilters = (filters) => {
-  const selected = [];
-  const categories = filters.filter(
-    (f) => f.features.filter((feat) => feat.selected).length > 0
-  );
-
-  filters.forEach((c) => {
-    c.features.forEach((f) => {
-      if (f.selected) selected.push(f.featureId);
-    });
-  });
-
-  return categories.map((c) => {
-    return {
-      ...c,
-      features: c.features.filter((feat) => feat.selected),
-    };
-  });
-};
 
 const mergeData = (apiResources) => {
   const catalogs = {};
@@ -129,7 +141,7 @@ const useFilter = (allowed, excluded, item) => {
   if (allowed && allowed.length > 0) {
     return allowed.find((el) => el == item);
   } else if (excluded && excluded.length > 0) {
-    return !excluded.find((el) => el == item);
+    return !excluded.includes(item);
   }
 
   return true;
@@ -208,12 +220,19 @@ const formatResourceFeatures = (catalog, resource, categories) => {
 
 }
 
+const isRejectedAction = (action) => {
+	return action.type.endsWith('rejected');
+}
+
 export const catalogSlice = createSlice({
   name: "resourceCatalog",
   initialState,
   reducers: {
     handleResponse: (state, { payload }) => {
       const apiResources = payload.data;
+      const groups = payload.groups;
+      const onRamps = payload.rampsResources;
+
       const { resources, catalogs, categories } = mergeData(apiResources);
 
       state.catalogs = catalogs;
@@ -237,6 +256,19 @@ export const catalogSlice = createSlice({
         a.categoryName.localeCompare(b.categoryName)
       );
       state.resources = resources
+      .map((resource) => {
+        if(!groups) return resource;
+        const org = groups.organizations.find((o) => o.organization_name == resource.organization);
+        resource.logo = org?.organization_favicon_url || null;
+
+        if(org) {
+          const group = groups.active_groups.find((ag) => ag.rollup_organization_ids.includes(org.organization_id));
+          const relatedResources = groups.resources
+            .filter((r) => group.rollup_info_resourceids.includes(r.info_resourceid))
+        }
+
+        return resource;
+      })
       .sort((a, b) =>
         a.resourceName.localeCompare(b.resourceName)
       )
@@ -247,15 +279,150 @@ export const catalogSlice = createSlice({
       state.filteredResources = [...state.resources];
       state.resourcesLoaded = true;
     },
-    resetFilters: (state) => {
-      state.filters.forEach((c) => {
-        c.features.forEach((f) => (f.selected = false));
+    handleRamps: (state, { payload }) => {
+      const { features, metadata, rampsResources } = payload;
+      const featureCategories = {};
+      const formattedFeatures = {};
+      const groups = metadata.active_groups;
+      const resourceTypes = {
+        "Innovative / Novel Compute": "Innovative",
+        "CPU Compute": "CPU",
+        "GPU Compute": "GPU",
+        "Commercial Cloud": "Cloud",
+        "Cloud": "Cloud",
+        "Storage": "Storage"
+      }
+
+      features
+      .filter((feat) => {
+        return !["Resource Category", "**DELETED** ACCESS Integration Roadmap", "Resource Status", "Allocations"].includes(feat.feature_category_name);
+      })
+      .forEach((feat) => {
+        featureCategories[feat.feature_category_id] = {
+          categoryId: feat.feature_category_id,
+          categoryName: feat.feature_category_name,
+          categoryDescription: feat.feature_category_description,
+          features: feat.features.map((f) => f.id),
+          categoryIsFilter: feat?.other_attributes?.is_allocations_filter || false
+        };
+
+        feat.features.forEach((ff) => {
+          formattedFeatures[ff.id] = {
+            featureId: ff.id,
+            name: ff.name,
+            categoryId: ff.feature_category_id,
+            isFilter: ff.is_allocations_filter,
+          }
+        })
       });
 
+      const formattedResources = rampsResources.map((r) => {
+        const organization = metadata.organizations.find((o) => o.organization_name == r.organization_name);
+        const originalResourceType = r.features.find((f) => f.feature_category == "Resource Type");
+        const resourceType = resourceTypes[originalResourceType?.name] || "other";
+        const rfc = {}; //resourceFeatureCategories
+        const resourceGroup = groups.find((g) => g.rollup_info_resourceids.includes(r.info_resourceid))
+        let relatedResources = [];
+
+        if(resourceGroup){
+          relatedResources = resourceGroup.rollup_info_resourceids
+            .filter((id) => id != r.info_resourceid)
+            .map((id) => {
+              return rampsResources.find((rr) => rr.info_resourceid == id)
+            }).map((r) => {
+              return {
+                info_resourceid: r.info_resourceid,
+                cider_resource_id: r.cider_resource_id,
+                resourceName: r.short_name,
+                displayResourceName: r.resource_descriptive_name,
+              }
+            })
+        }
+
+        const filters = [];
+        r.features.forEach((f) => {
+
+          filters.push(f.id);
+
+          const ff = formattedFeatures[f.id];
+          if(ff) {
+            const category = featureCategories[ff.categoryId];
+            if(!rfc[ff.categoryId]) rfc[ff.categoryId] = {...category, features: []}
+
+            rfc[ff.categoryId].features.push(ff);
+          }
+        })
+
+        let resource = {
+          cider_resource_id: r.cider_resource_id,
+          info_resourceid: r.info_resourceid,
+          resourceId: r.cider_resource_id,
+          resourceName: r.short_name,
+          displayResourceName: r.resource_descriptive_name,
+          resourceDescription: r.resource_description,
+          recommendedUse: r.recommended_use,
+          icon: organization?.organization_favicon_url || null,
+          resourceType: originalResourceType?.name,
+          resourceCategory: resourceType,
+          organization: r.organization_name,
+          featureCategories: Object.values(rfc),
+          relatedResources,
+          groupId: resourceGroup?.info_groupid,
+          filters
+        }
+
+        return resource;
+      });
+
+      const sources = [{
+        apiUrl: 'https://allocations.access-ci.org/resources.json',
+        catalogLabel: "ACCESS",
+        allowedCategories: [],
+        allowedFilters: [],
+        allowedResources: [],
+        excludedCategories: ["Resource Category", "**DELETED** ACCESS Integration Roadmap", "Resource Status"],
+        excludedFilters: ["Resource Status"],
+        excludedResources: ["ACCESS Credits"],
+        data: formattedResources
+      }];
+
+      const { resources, catalogs, categories } = mergeData(sources);
+
+      for (const categoryId in categories) {
+        const category = categories[categoryId];
+        const features = [];
+        //if(category.categoryName == "Resource Type") continue;
+
+        for (const featureId in category.features) {
+          features.push(category.features[featureId]);
+        }
+
+        state.filters.push({
+          ...category,
+          features: features.sort((a, b) => a.name > b.name),
+        });
+      }
+
+      state.filters = state.filters.sort((a, b) =>
+        a.categoryName.localeCompare(b.categoryName)
+      );
+
+      state.resources = resources
+        .sort((a, b) =>
+          a.resourceName.localeCompare(b.resourceName)
+        )
+
       state.filteredResources = [...state.resources];
+      state.resourcesLoaded = true;
+    },
+    resetFilters: (state) => {
+      state.selectedFilters = [];
     },
     setResourcesLoaded: (state, { payload }) => {
       state.resourcesLoaded = payload;
+    },
+    setSelectedCategory: (state, { payload }) => {
+      state.selectedCategory = payload;
     },
     toggleCatalog: (state, { payload }) => {
       const { catalog, selected } = payload;
@@ -263,84 +430,54 @@ export const catalogSlice = createSlice({
       state.catalogs[catalog.catalogLabel].selected = selected;
     },
     toggleFilter: (state, { payload }) => {
-      if(payload){
-        const filter = payload;
-
-        const stateFilterCategory = state.filters.find(
-          (f) => f.categoryId == filter.categoryId
-        );
-
-        const stateFilter = stateFilterCategory.features.find(
-          (f) => f.featureId == filter.featureId
-        );
-
-        stateFilter.selected = !stateFilter.selected;
-      }
-
-      const active = activeFilters(state.filters);
-      let filteredResources = [];
-      let selected = [];
-
-      if (active.length > 0) {
-        const sets = active.map((c) => c.features.map((f) => f.featureId));
-
-        state.resources.forEach((r) => {
-          let checksPassed = 0;
-          sets.forEach((set) => {
-            let passed = false;
-            r.featureIds.forEach((id) => {
-              if (set.indexOf(id) >= 0) passed = true;
-            });
-            if (passed) checksPassed += 1;
-          });
-          if (checksPassed >= sets.length) {
-            selected.push(r);
-          }
-        });
-
+      if(state.selectedFilters.includes(payload)){
+        state.selectedFilters = state.selectedFilters.filter((f) => f != payload);
       } else {
-        selected = state.resources;
+        state.selectedFilters.push(payload);
       }
-
-      const catalogs = Object.keys(state.catalogs).map(k => state.catalogs[k]);
-      const selectedCatalogs = catalogs.filter((c) => c.selected);
-      if(selectedCatalogs.length > 0 && selectedCatalogs.length < catalogs.length){
-        const resourceIds = selectedCatalogs.map((c) => c.resourceIds).flat();
-        selected = selected.filter((r) => {
-          return resourceIds.indexOf(r.resourceId) >= 0;
-        })
-      }
-      state.filteredResources = selected;
+      return;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getResources.pending, (state) => {})
-      .addCase(getResources.fulfilled, (state, action) => {})
-      .addCase(getResources.rejected, (state, data) => {
-        state.hasErrors = true;
-        console.log(data.error);
-      });
+      .addMatcher(isRejectedAction, (state, action) => {
+        console.log(action);
+      })
   },
 });
 
 export const {
+  handleRamps,
   handleResponse,
   processData,
   resetFilters,
   setResourcesLoaded,
+  setSelectedCategory,
   toggleCatalog,
   toggleFilter
 } = catalogSlice.actions;
 
-export const selectActiveFilters = (state) => {
-  return activeFilters(state.resourceCatalog.filters);
-};
+export const selectAllResources = (state) => state.resourceCatalog.resources;
 export const selectCatalogs = (state) => state.resourceCatalog.catalogs;
 export const selectFilters = (state) => state.resourceCatalog.filters;
 export const selectHasErrors = (state) => state.resourceCatalog.hasErrors;
 export const selectOnRamps = (state) => state.resourceCatalog.onRamps;
 export const selectResourcesLoaded = (state) => state.resourceCatalog.resourcesLoaded;
-export const selectResources = (state) => state.resourceCatalog.filteredResources;
+export const selectSelectedCategory = (state) => state.resourceCatalog.selectedCategory;
+export const selectSelectedFilters = (state) => state.resourceCatalog.selectedFilters;
+
+export const selectResources = createSelector(
+	[selectAllResources, selectSelectedFilters, selectSelectedCategory],
+	(resources, filters, selectedCategory) => {
+    const filtered = resources.filter((r) => r.resourceCategory == selectedCategory);
+
+    if(filters.length == 0) return resources;
+
+    return resources.filter((resource) => {
+      return filters.some(filter => resource.filters.includes(filter));
+    })
+
+  }
+);
 
 export default catalogSlice.reducer;

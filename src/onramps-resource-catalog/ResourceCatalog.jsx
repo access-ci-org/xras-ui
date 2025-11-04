@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getResources,
+  initApp,
   selectCatalogs,
   selectHasErrors,
   selectResourcesLoaded,
@@ -15,7 +15,8 @@ import styles from "./ResourceCatalog.module.scss";
 const ResourceCatalog = ({
   catalogSources = [],
   onRamps = false,
-  baseUrl
+  baseUrl,
+  onRampsApi = 'https://allocations.access-ci.org/resources.json'
 }) => {
   const dispatch = useDispatch();
   const resourcesLoaded = useSelector(selectResourcesLoaded);
@@ -26,9 +27,10 @@ const ResourceCatalog = ({
 
   useEffect(() => {
     dispatch(
-      getResources({
+      initApp({
         catalogSources,
-        onRamps
+        onRamps,
+        onRampsApi
       })
     );
   }, []);

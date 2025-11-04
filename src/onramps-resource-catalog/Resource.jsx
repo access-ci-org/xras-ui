@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styles from "./ResourceCatalog.module.scss";
+import Features from "./Features";
 
 const Resource = ({ resource }) => {
 
@@ -23,25 +24,28 @@ const Resource = ({ resource }) => {
 
   const renderResourceType = () => {
     return (
-      <span className="float-end">
+      <span className="float-end" style={{ color: "#fff" }}>
         {resource.features.map((f) => featureIcon(f))}
         {resource.resourceType}
       </span>
     )
   }
 
-  const renderFeatures = (features) => {
-    if (features.length == 0) {
-      return "";
-    }
-
+  const renderFeatures = () => {
     return (
       <>
-        {features.map((f, i) => {
-          return (<span className='badge text-bg-secondary me-2' key={`feature_${resource.resourceId}_${i}`}>{f}</span>);
-        })}
+        <div className="row">
+          <div className="col fw-bold">
+            Features
+          </div>
+        </div>
+        <div className='row mb-2'>
+          <div className='col'>
+            <Features features={resource.features} id={resource.resourceId} />
+          </div>
+        </div>
       </>
-    );
+    )
   };
 
   const renderDescription = () => {
@@ -110,29 +114,101 @@ const Resource = ({ resource }) => {
     return styles.cardBg;
   }
 
+  const renderHeader = () => {
+
+    const headerStyle = {
+      background: "linear-gradient(90deg,rgba(255, 255, 255, 1) 0%, rgba(26, 91, 110, 1) 50%)",
+      display: "flex",
+      justifyContent: "space-between"
+    }
+
+    return (
+      <div className={`card-header`} style={headerStyle}>
+        <span style={{ fontWeight: "bold" }}>
+          { renderLogo() }
+          { resource.resourceName }
+        </span>
+      </div>
+    )
+  }
+
+  const renderRelatedResources = () => {
+    if(resource.relatedResources.length == 0) return "";
+
+    return (
+      <>
+        <div className="row">
+          <div className="col fw-bold">
+            Related Resources
+          </div>
+        </div>
+        <div className="row">
+          <div className="col">
+            <ul className="list-group">
+              {resource.relatedResources.map((rr) => (
+                <a
+                  key={`rr_${resource.resourceId}_${rr.cider_resource_id}`}
+                  className="list-group-item list-group-item-action"
+                  href={`https://allocations.access-ci.org/resources/${resource.groupId}`}
+                  target="_blank"
+                >
+                  { rr.displayResourceName }
+                </a>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  const renderLogo = () => {
+    if(!resource.icon) return
+
+    const logoClass = {
+      width: "24px",
+      height: "24px",
+      borderRadius: "50%",
+      backgroundColor: "white",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden"
+    }
+
+    return (
+      <img style={{ width: "20px", marginRight: "5px" }} src={`${resource.icon}`} />
+    )
+  }
+
   return (
     <>
       <div className="row">
         <div className="col">
           <div className="card mb-3">
-            <div className={`card-header ${headerBg()}`}>
-              <span className={``}>
-                {resource.resourceName}
-              </span>
-              { renderResourceType() }
-            </div>
+            { renderHeader() }
             <div className="card-body">
-              <div className='row mb-3'>
-                <div className='col'>
-                  {renderFeatures(resource.features)}
+              <div className="row">
+                <div className="col-12 col-md-8">
+                  { renderUse() }
+                  {/* { renderDescription() } */}
+                  { renderFeatures() }
+                </div>
+                <div className="col-12 col-md-4">
+                  { renderRelatedResources() }
                 </div>
               </div>
-              { renderUse() }
-              { renderDescription() }
+
             </div>
             <div className='card-footer'>
-              <a target='_blank' href={resource.userGuideUrl} className='btn btn-info me-2 fw-bold'>System Info <i className='bi bi-box-arrow-up-right'></i></a>
-
+              <a
+                target='_blank'
+                href={`https://allocations.access-ci.org/resources/${resource.groupId}`}
+                className='fw-bold' style={{ color: "#000" }}
+              >
+                Learn more about {resource.displayResourceName}
+                <i className='bi bi-box-arrow-up-right ms-2'></i>
+              </a>
             </div>
           </div>
         </div>

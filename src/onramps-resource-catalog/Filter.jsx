@@ -1,11 +1,13 @@
 import { useDispatch } from "react-redux";
 import { toggleFilter } from "./helpers/catalogSlice";
 
-const Filter = ({ filter }) => {
+const Filter = ({ filter, selectedFilters }) => {
   const dispatch = useDispatch();
   const handleChange = () => {
-    dispatch(toggleFilter(filter));
+    dispatch(toggleFilter(filter.featureId));
   };
+
+  const selected = selectedFilters.includes(filter.featureId);
 
   return (
     <div className="row">
@@ -22,7 +24,7 @@ const Filter = ({ filter }) => {
             type="checkbox"
             value={filter.featureId}
             id={`filter_${filter.featureId}`}
-            checked={filter.selected}
+            checked={selected}
             onChange={handleChange}
           />
         </div>
