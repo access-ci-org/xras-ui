@@ -15,7 +15,8 @@ import styles from "./ResourceCatalog.module.scss";
 const ResourceCatalog = ({
   catalogSources = [],
   onRamps = false,
-  baseUrl
+  baseUrl,
+  onRampsApi = 'https://allocations.access-ci.org/resources.json'
 }) => {
   const dispatch = useDispatch();
   const resourcesLoaded = useSelector(selectResourcesLoaded);
@@ -28,7 +29,8 @@ const ResourceCatalog = ({
     dispatch(
       getResources({
         catalogSources,
-        onRamps
+        onRamps,
+        onRampsApi
       })
     );
   }, []);

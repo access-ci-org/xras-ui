@@ -20,26 +20,19 @@ export const getResources = createAsyncThunk(
   "resourceCatalog/getResources",
   async (params, { dispatch }) => {
     dispatch( setResourcesLoaded(false) );
-    let sources = [];
+    const operationsUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
+    let sources = params.catalogSources || [];
 
-    if(params.catalogSources) {
-      sources = params.catalogSources;
-    } else {
-      sources.push({ ...params, catalogLabel: 'Default'})
-    }
-
-    if(params.onRamps){
-      sources.push({
-        apiUrl: 'https://allocations.access-ci.org/resources.json',
-        catalogLabel: "ACCESS",
-        allowedCategories: [],
-        allowedFilters: [],
-        allowedResources: [],
-        excludedCategories: ["Resource Category"],
-        excludedFilters: [],
-        excludedResources: ["ACCESS Credits"],
-      });
-    }
+    sources.push({
+      apiUrl: params.onRampsApi,
+      catalogLabel: "ACCESS",
+      allowedCategories: [],
+      allowedFilters: [],
+      allowedResources: [],
+      excludedCategories: ["Resource Category"],
+      excludedFilters: [],
+      excludedResources: ["ACCESS Credits"],
+    });
 
     const apiData = await Promise.all(sources.map( async (src) => {
       const response = await fetch(src.apiUrl);
@@ -50,7 +43,10 @@ export const getResources = createAsyncThunk(
       }
     }));
 
-    dispatch( handleResponse({ data: apiData, params }) );
+    const resourceMetadata = await fetch(operationsUrl);
+    const mdJson = await resourceMetadata.json();
+
+    dispatch( handleResponse({ data: apiData, params, metadata: mdJson.results }) );
     dispatch( setResourcesLoaded(true) );
 
   }
@@ -214,6 +210,8 @@ export const catalogSlice = createSlice({
   reducers: {
     handleResponse: (state, { payload }) => {
       const apiResources = payload.data;
+      const metadata = payload.metadata;
+
       const { resources, catalogs, categories } = mergeData(apiResources);
 
       state.catalogs = catalogs;
@@ -237,6 +235,12 @@ export const catalogSlice = createSlice({
         a.categoryName.localeCompare(b.categoryName)
       );
       state.resources = resources
+      .map((resource) => {
+        if(!metadata) return resource;
+        const md = metadata.organizations.find((o) => o.organization_name == resource.organization);
+        resource.logo = md?.organization_favicon_url || null;
+        return resource;
+      })
       .sort((a, b) =>
         a.resourceName.localeCompare(b.resourceName)
       )

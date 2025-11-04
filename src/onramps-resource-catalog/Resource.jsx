@@ -110,6 +110,12 @@ const Resource = ({ resource }) => {
     return styles.cardBg;
   }
 
+  const renderLogo = () => {
+    if(!resource.logo) return
+
+    return <img className="me-2" style={{ width: "20px" }} src={`${resource.logo}`} />
+  }
+
   return (
     <>
       <div className="row">
@@ -117,6 +123,7 @@ const Resource = ({ resource }) => {
           <div className="card mb-3">
             <div className={`card-header ${headerBg()}`}>
               <span className={``}>
+                { renderLogo() }
                 {resource.resourceName}
               </span>
               { renderResourceType() }

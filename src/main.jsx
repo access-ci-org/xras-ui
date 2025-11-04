@@ -236,6 +236,7 @@ export function onRampsResourceCatalog({
   catalogSources,
   onRamps,
   baseUrl,
+  onRampsApi,
 }) {
   const store = configureStore({
     reducer: {
@@ -248,6 +249,7 @@ export function onRampsResourceCatalog({
         catalogSources={catalogSources}
         onRamps={onRamps}
         baseUrl={baseUrl}
+        onRampsApi={onRampsApi}
       />
     </Provider>,
   );
