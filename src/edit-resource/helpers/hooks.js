@@ -35,6 +35,12 @@ export const useResourceData = (resourceId, relativeUrlRoot) => {
     dispatch(setLoading(true));
     try {
       const data = await fetchResourceData(resourceId, relativeUrlRoot);
+
+      //if there's no actual exchange rate limit, initialize to the suggested value
+      if (data.resource_details.auto_approve_exchange_limit === null) {
+        data.resource_details.auto_approve_exchange_limit = data.resource_details.suggested_exchange_limit;
+      }
+
       dispatch(setResourceData(data));
     } catch (error) {
       console.error("Failed to fetch resource data:", error);
@@ -421,6 +427,8 @@ export const useResourceSubmit = (
         },
         comment: type.comment || "",
       })),
+      auto_approve_exchanges: resourceDetails.auto_approve_exchanges,
+      auto_approve_exchange_limit: resourceDetails.auto_approve_exchange_limit,
       exchange_rates: {
         base_rate: resourceDetails.exchange_rates?.base_rate,
         discount_rates: resourceDetails.exchange_rates?.discount_rates?.map(
