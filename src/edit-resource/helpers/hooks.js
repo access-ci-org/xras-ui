@@ -422,6 +422,8 @@ export const useResourceSubmit = (
         },
         comment: type.comment || "",
       })),
+      auto_approve_exchanges: resourceDetails.auto_approve_exchanges,
+      auto_approve_exchange_limit: resourceDetails.auto_approve_exchange_limit,
       exchange_rates: {
         base_rate: resourceDetails.exchange_rates?.base_rate,
         discount_rates: resourceDetails.exchange_rates?.discount_rates?.map(
