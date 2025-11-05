@@ -151,6 +151,9 @@ export default function EditResource({
           rows={exchangeRateRows}
           onAddDiscountRate={handleAddDiscountRate}
           dateErrors={dateErrors}
+          resourceDetails={resourceDetails}
+          unitTypesOptions={unitTypesOptions}
+          dispatch={dispatch}
         />
       )}
       <AdvancedSettingsSection
