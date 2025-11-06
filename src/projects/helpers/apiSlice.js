@@ -327,6 +327,7 @@ const makeResource = ({
   displayResourceName,
   endDate,
   exchangeRate,
+  minimumExchange,
   organizationId,
   organizationFaviconUrl,
   organizationName,
@@ -365,6 +366,7 @@ const makeResource = ({
     isFake: false,
     isUnderReview: false,
     isNew: false,
+    minimumExchange: minimumExchange,
     name: displayResourceName.trim(),
     questions: (attributeSets || [])
       .filter(({ isActive }) => isActive)

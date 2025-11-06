@@ -413,6 +413,7 @@ export const useResourceSubmit = (
       description: resourceDetails.description,
       resource_type_id: resourceDetails.resource_type_id,
       unit_type_id: resourceDetails.unit_type_id,
+      min_exchange: resourceDetails.min_exchange,
       dollar_value: resourceDetails.dollar_value,
       allocation_types: resourceDetails.allocation_types.map((type) => ({
         allocation_type_id: type.allocation_type_id,

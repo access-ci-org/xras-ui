@@ -100,6 +100,20 @@ export default function Resources({ requestId, grantNumber }) {
   }
   const hasUnmetDeps = unmetDeps.length > 0;
 
+  const getBalance = (row) => row.requested - row.used;
+  const belowMinimum = (row) => row.isNew && (0 < row.requested) && (row.requested < row.minimumExchange);
+  const belowMinimums = [];
+  for (let res of resources) {
+    if (!res.isCredit && belowMinimum(res)) {
+      belowMinimums.push(
+	<span key={res.resourceId}>
+	  The minimum initial request for <ResourceName resource={res} userGuide={false} /> is { res.minimumExchange } {res.unit}. <br />
+	</span>,
+      );
+    }
+  }
+  const anyBelowMinimum = belowMinimums.length > 0;
+
   let alert;
   if (saved)
     alert = (
@@ -162,6 +176,12 @@ export default function Resources({ requestId, grantNumber }) {
     alert = (
       <Alert color="warning">
         {unmetDeps} Please adjust your balance values.
+      </Alert>
+    );
+  else if (anyBelowMinimum)
+    alert = (
+      <Alert color="warning">
+	{belowMinimums}
       </Alert>
     );
 
@@ -241,8 +261,6 @@ export default function Resources({ requestId, grantNumber }) {
   const resourceAddMessage = `Add ${
     rows.length ? "another" : "a"
   } resource to your exchange...`;
-
-  const getBalance = (row) => row.requested - row.used;
 
   const cleanBalance = (balanceString, row) => {
     const allocatedBalance = row.allocated - row.used;
@@ -423,7 +441,6 @@ export default function Resources({ requestId, grantNumber }) {
 
   return (
     <div className="resources">
-      {alert}
       {resources.length ? <ResourcesDiagram requestId={requestId} /> : null}
       {credit && (canExchange || canRenew || canSupplement) ? (
         <h2 className="mb-1 mt-2 d-flex justify-content-between">
@@ -444,6 +461,7 @@ export default function Resources({ requestId, grantNumber }) {
           ) : null}
         </h2>
       ) : null}
+      {alert}
 
       {rows.length ? (
         <Grid
@@ -545,7 +563,7 @@ export default function Resources({ requestId, grantNumber }) {
               ref={submitButton}
               type="button"
               className="btn btn-secondary"
-              disabled={saving || !hasRequested || !hasReason || hasUnmetDeps}
+              disabled={saving || !hasRequested || !hasReason || hasUnmetDeps || anyBelowMinimum}
               onClick={toggleResourcesModal}
             >
               {saving ? "Submitting..." : "Submit for Approval"}
