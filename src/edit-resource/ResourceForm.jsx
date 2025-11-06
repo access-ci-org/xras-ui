@@ -39,6 +39,16 @@ export const ResourceForm = React.memo(function ResourceForm({
         }
         inputClassName="span8"
       />
+
+      <TextInput
+        label="Minimum exchange amount"
+        value={resourceDetails.xyzzy}
+        onChange={(e) =>
+          dispatch(updateResourceField("xyzzy", e.target.value))
+        }
+        inputClassName="span8"
+      />
+
       {showResourceId && (
         <TextInput
           label="Resource Repository Key"
