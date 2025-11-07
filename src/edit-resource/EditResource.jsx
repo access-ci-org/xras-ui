@@ -119,7 +119,7 @@ export default function EditResource({
         </Alert>
       )}
       <div>
-        <h2>Resource Propeties</h2>
+        <h2>Resource Properties</h2>
         <div
           style={{
             marginBottom: "0.75rem",
