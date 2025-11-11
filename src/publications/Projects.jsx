@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { getProjects, toggleRequest } from "./helpers/publicationEditSlice";
+import { getProjects, toggleProject } from "./helpers/publicationEditSlice";
 
 export default function Projects() {
   const dispatch = useDispatch();
@@ -31,7 +31,7 @@ export default function Projects() {
             <div
               key={`project_${p.grant_number}`}
               className={projectClass(p)}
-              onClick={() => dispatch(toggleRequest(idx))}
+              onClick={() => dispatch(toggleProject(idx))}
             >
               {p.grant_number}: {p.title}
             </div>

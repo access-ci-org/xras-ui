@@ -215,55 +215,22 @@ export default function PublicationForm() {
     </div>
   );
 
-  const reqIcon = <i className="bi bi-asterisk text-danger"></i>;
-
   const tags = (
     <div className={"card mt-3"}>
       <div className={"card-header d-flex"}>
-        <h2>
-          Tags
-          {publication.related_to_resource !== false && reqIcon}
-        </h2>
+        <h2>Tags</h2>
         <InfoTip>
           Add related tags from the lists below. You may choose multiple tags
-          per category.
+          per category. Tags are filtered based on resources associated with your selected projects.
         </InfoTip>
       </div>
       <div className={"card-body"}>
-        <div className={"form-check mb-3"}>
-          <input
-            className={"form-check-input"}
-            type={"checkbox"}
-            id={"related_to_resource"}
-            checked={publication.related_to_resource !== false}
-            onChange={(e) =>
-              dispatch(
-                updatePublication({
-                  key: "related_to_resource",
-                  value: e.target.checked,
-                }),
-              )
-            }
-          />
-          <label className={"form-check-label"} htmlFor={"related_to_resource"}>
-            This publication is related to a resource
-          </label>
-        </div>
-        {(function() {
-          const isDisabled = publication.related_to_resource === false;
-          return (
-            <>
-                {!isDisabled && !tagsValid && (
-                  <div className="alert alert-danger mb-3">Please select at least one tag in both Resource and Resource Provider.</div>
-                )}
-              <fieldset disabled={isDisabled} style={isDisabled ? { opacity: 0.5 } : {}}>
-                {tagCategories.map((tc, idx) => (
-                  <Tags key={`tc_${idx}`} index={idx} category={tc} />
-                ))}
-              </fieldset>
-            </>
-          );
-        })()}
+        {!tagsValid && (
+          <div className="alert alert-danger mb-3">Please select at least one Resource tag, or select "None". Resource Provider tags are automatically selected based on your resource choices.</div>
+        )}
+        {tagCategories.map((tc, idx) => (
+          <Tags key={`tc_${idx}`} index={idx} category={tc} />
+        ))}
       </div>
     </div>
   );
@@ -288,8 +255,8 @@ export default function PublicationForm() {
     <>
       {publicationInformation}
       {authors}
-      {tags}
       {projects}
+      {tags}
     </>
   );
 }
