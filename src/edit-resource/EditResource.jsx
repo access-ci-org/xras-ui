@@ -6,6 +6,7 @@ import { ResourceForm } from "./ResourceForm";
 import { AllocationGridHeader, AllocationGrid } from "./AllocationTypesGrid";
 import { AddNewModal } from "./AddNewModal";
 import { ExchangeRates } from "./ExchangeRates";
+import { ExchangeAutoApproval } from "./ExchangeAutoApproval";
 import Alert from "../shared/Alert";
 import { AdvancedSettingsSection } from "./AdvancedSettingsSection";
 import {
@@ -146,15 +147,19 @@ export default function EditResource({
         />
       </div>
       {usesExchangeRates && (
+        <>
         <ExchangeRates
           columns={exchangeRateColumns}
           rows={exchangeRateRows}
           onAddDiscountRate={handleAddDiscountRate}
           dateErrors={dateErrors}
+        />
+        <ExchangeAutoApproval
           resourceDetails={resourceDetails}
           unitTypesOptions={unitTypesOptions}
           dispatch={dispatch}
         />
+        </>
       )}
       <AdvancedSettingsSection
         headerText={<h2>Allocation Types</h2>}
