@@ -16,11 +16,19 @@ const initialState = {
   }
 };
 
+export const initApp = createAsyncThunk(
+  "resourceCatalog/initApp",
+  async (params, { dispatch }) => {
+    dispatch( setResourcesLoaded(false) );
+    dispatch( getRampsResources() );
+    dispatch( setResourcesLoaded(true) );
+  }
+);
+
 export const getResources = createAsyncThunk(
   "resourceCatalog/getResources",
   async (params, { dispatch }) => {
     dispatch( setResourcesLoaded(false) );
-    const operationsUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
     let sources = params.catalogSources || [];
 
     sources.push({
@@ -43,11 +51,31 @@ export const getResources = createAsyncThunk(
       }
     }));
 
-    const resourceMetadata = await fetch(operationsUrl);
-    const mdJson = await resourceMetadata.json();
+    const groups = await fetch(opsGroupsUrl);
+    const groupJson = await groups.json();
 
-    dispatch( handleResponse({ data: apiData, params, metadata: mdJson.results }) );
+    const onRampsResources = await fetch(groupJson);
+    const rampsJson = await onRampsResources.json();
+
+    dispatch( handleResponse({ data: apiData, params, groups: groupJson.results, onRamps: rampsJson.results }) );
     dispatch( setResourcesLoaded(true) );
+
+  }
+);
+
+export const getRampsResources = createAsyncThunk(
+  "resourceCatalog/getRampsResources",
+  async (params, { dispatch }) => {
+    const dataUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
+    const resourcesUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-allocated/";
+
+    const data = await fetch(dataUrl);
+    const dataJson = await data.json();
+
+    const resources = await fetch(resourcesUrl);
+    const resourcesJson = await resources.json();
+
+    dispatch( handleRamps({ params, metadata: dataJson.results, resources: resourcesJson.results }) );
 
   }
 );
@@ -210,7 +238,8 @@ export const catalogSlice = createSlice({
   reducers: {
     handleResponse: (state, { payload }) => {
       const apiResources = payload.data;
-      const metadata = payload.metadata;
+      const groups = payload.groups;
+      const onRamps = payload.rampsResources;
 
       const { resources, catalogs, categories } = mergeData(apiResources);
 
@@ -236,9 +265,64 @@ export const catalogSlice = createSlice({
       );
       state.resources = resources
       .map((resource) => {
-        if(!metadata) return resource;
-        const md = metadata.organizations.find((o) => o.organization_name == resource.organization);
-        resource.logo = md?.organization_favicon_url || null;
+        if(!groups) return resource;
+        const org = groups.organizations.find((o) => o.organization_name == resource.organization);
+        resource.logo = org?.organization_favicon_url || null;
+
+        if(org) {
+          const group = groups.active_groups.find((ag) => ag.rollup_organization_ids.includes(org.organization_id));
+          const relatedResources = groups.resources
+            .filter((r) => group.rollup_info_resourceids.includes(r.info_resourceid))
+          console.log(relatedResources);
+        }
+
+        return resource;
+      })
+      .sort((a, b) =>
+        a.resourceName.localeCompare(b.resourceName)
+      )
+      .sort((a, b) =>
+        state.resourceSorting[a.sortCategory] > state.resourceSorting[b.sortCategory]
+      )
+
+      state.filteredResources = [...state.resources];
+      state.resourcesLoaded = true;
+    },
+    handleRamps: (state, { payload }) => {
+      const apiResources = payload.data;
+      const { metadata, resources } = payload;
+
+
+      for (const categoryId in categories) {
+        const category = categories[categoryId];
+        const features = [];
+
+        for (const featureId in category.features) {
+          features.push(category.features[featureId]);
+        }
+
+        state.filters.push({
+          ...category,
+          features: features.sort((a, b) => a.name > b.name),
+        });
+      }
+
+      state.filters = state.filters.sort((a, b) =>
+        a.categoryName.localeCompare(b.categoryName)
+      );
+      state.resources = resources
+      .map((resource) => {
+        if(!groups) return resource;
+        const org = groups.organizations.find((o) => o.organization_name == resource.organization);
+        resource.logo = org?.organization_favicon_url || null;
+
+        if(org) {
+          const group = groups.active_groups.find((ag) => ag.rollup_organization_ids.includes(org.organization_id));
+          const relatedResources = groups.resources
+            .filter((r) => group.rollup_info_resourceids.includes(r.info_resourceid))
+          console.log(relatedResources);
+        }
+
         return resource;
       })
       .sort((a, b) =>
@@ -329,6 +413,7 @@ export const catalogSlice = createSlice({
 });
 
 export const {
+  handleRamps,
   handleResponse,
   processData,
   resetFilters,

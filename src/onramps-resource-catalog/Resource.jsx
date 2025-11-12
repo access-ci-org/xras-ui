@@ -23,7 +23,7 @@ const Resource = ({ resource }) => {
 
   const renderResourceType = () => {
     return (
-      <span className="float-end">
+      <span className="float-end" style={{ color: "#fff" }}>
         {resource.features.map((f) => featureIcon(f))}
         {resource.resourceType}
       </span>
@@ -110,10 +110,42 @@ const Resource = ({ resource }) => {
     return styles.cardBg;
   }
 
+  const renderHeader = () => {
+
+    const headerStyle = {
+      background: "linear-gradient(90deg,rgba(255, 255, 255, 1) 0%, rgba(26, 91, 110, 1) 50%)",
+      display: "flex",
+      justifyContent: "space-between"
+    }
+
+    return (
+      <div className={`card-header`} style={headerStyle}>
+        <span style={{ fontWeight: "bold" }}>
+          { renderLogo() }
+          { resource.resourceName }
+        </span>
+        { renderResourceType() }
+      </div>
+    )
+  }
+
   const renderLogo = () => {
     if(!resource.logo) return
 
-    return <img className="me-2" style={{ width: "20px" }} src={`${resource.logo}`} />
+    const logoClass = {
+      width: "24px",
+      height: "24px",
+      borderRadius: "50%",
+      backgroundColor: "white",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden"
+    }
+
+    return (
+      <img style={{ width: "20px", marginRight: "5px" }} src={`${resource.logo}`} />
+    )
   }
 
   return (
@@ -121,13 +153,7 @@ const Resource = ({ resource }) => {
       <div className="row">
         <div className="col">
           <div className="card mb-3">
-            <div className={`card-header ${headerBg()}`}>
-              <span className={``}>
-                { renderLogo() }
-                {resource.resourceName}
-              </span>
-              { renderResourceType() }
-            </div>
+            { renderHeader() }
             <div className="card-body">
               <div className='row mb-3'>
                 <div className='col'>

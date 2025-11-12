@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getResources,
+  initApp,
   selectCatalogs,
   selectHasErrors,
   selectResourcesLoaded,
@@ -27,7 +27,7 @@ const ResourceCatalog = ({
 
   useEffect(() => {
     dispatch(
-      getResources({
+      initApp({
         catalogSources,
         onRamps,
         onRampsApi
