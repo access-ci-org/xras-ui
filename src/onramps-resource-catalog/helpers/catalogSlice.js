@@ -29,18 +29,26 @@ export const getResources = createAsyncThunk(
   "resourceCatalog/getResources",
   async (params, { dispatch }) => {
     dispatch( setResourcesLoaded(false) );
-    let sources = params.catalogSources || [];
+    let sources = [];
 
-    sources.push({
-      apiUrl: params.onRampsApi,
-      catalogLabel: "ACCESS",
-      allowedCategories: [],
-      allowedFilters: [],
-      allowedResources: [],
-      excludedCategories: ["Resource Category"],
-      excludedFilters: [],
-      excludedResources: ["ACCESS Credits"],
-    });
+    if(params.catalogSources) {
+      sources = params.catalogSources;
+    } else {
+      sources.push({ ...params, catalogLabel: 'Default'})
+    }
+
+    if(params.onRamps){
+      sources.push({
+        apiUrl: 'https://allocations.access-ci.org/resources.json',
+        catalogLabel: "ACCESS",
+        allowedCategories: [],
+        allowedFilters: [],
+        allowedResources: [],
+        excludedCategories: ["Resource Category"],
+        excludedFilters: [],
+        excludedResources: ["ACCESS Credits"],
+      });
+    }
 
     const apiData = await Promise.all(sources.map( async (src) => {
       const response = await fetch(src.apiUrl);
@@ -51,13 +59,7 @@ export const getResources = createAsyncThunk(
       }
     }));
 
-    const groups = await fetch(opsGroupsUrl);
-    const groupJson = await groups.json();
-
-    const onRampsResources = await fetch(groupJson);
-    const rampsJson = await onRampsResources.json();
-
-    dispatch( handleResponse({ data: apiData, params, groups: groupJson.results, onRamps: rampsJson.results }) );
+    dispatch( handleResponse({ data: apiData, params }) );
     dispatch( setResourcesLoaded(true) );
 
   }
@@ -68,6 +70,7 @@ export const getRampsResources = createAsyncThunk(
   async (params, { dispatch }) => {
     const dataUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
     const resourcesUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-allocated/";
+    const featuresUrl = "https://operations-api.access-ci.org/wh2/cider/v1/features/";
 
     const data = await fetch(dataUrl);
     const dataJson = await data.json();
@@ -75,7 +78,10 @@ export const getRampsResources = createAsyncThunk(
     const resources = await fetch(resourcesUrl);
     const resourcesJson = await resources.json();
 
-    dispatch( handleRamps({ params, metadata: dataJson.results, resources: resourcesJson.results }) );
+    const features = await fetch(featuresUrl);
+    const featuresJson = await features.json();
+
+    dispatch( handleRamps({ params, metadata: dataJson.results, resources: resourcesJson.results, features: featuresJson.results }) );
 
   }
 );
@@ -232,6 +238,10 @@ const formatResourceFeatures = (catalog, resource, categories) => {
 
 }
 
+const isRejectedAction = (action) => {
+	return action.type.endsWith('rejected');
+}
+
 export const catalogSlice = createSlice({
   name: "resourceCatalog",
   initialState,
@@ -289,9 +299,93 @@ export const catalogSlice = createSlice({
       state.resourcesLoaded = true;
     },
     handleRamps: (state, { payload }) => {
-      const apiResources = payload.data;
-      const { metadata, resources } = payload;
+      const { features, metadata } = payload;
+      const rampsResources = payload.resources;
+      const featureCategories = {};
+      const formattedFeatures = {};
+      const groups = metadata.active_groups;
 
+      features.forEach((feat) => {
+        featureCategories[feat.feature_category_id] = {
+          categoryId: feat.feature_category_id,
+          categoryName: feat.feature_category_name,
+          categoryDescription: feat.feature_category_description,
+          features: feat.features.map((f) => f.id),
+          categoryIsFilter: feat?.other_attributes?.is_allocations_filter || false
+        };
+
+        feat.features.forEach((ff) => {
+          formattedFeatures[ff.id] = {
+            featureId: ff.id,
+            name: ff.name,
+            categoryId: ff.feature_category_id,
+            isFilter: ff.is_allocations_filter,
+          }
+        })
+      });
+
+      const formattedResources = rampsResources.map((r) => {
+        const organization = metadata.organizations.find((o) => o.organization_name == r.organization_name);
+        const resourceType = r.features.find((f) => f.feature_category == "Resource Type");
+        const rfc = {}; //resourceFeatureCategories
+        const resourceGroup = groups.find((g) => g.rollup_info_resourceids.includes(r.info_resourceid))
+        let relatedResources = [];
+
+        if(resourceGroup){
+          relatedResources = resourceGroup.rollup_info_resourceids
+            .filter((id) => id != r.info_resourceid)
+            .map((id) => {
+              return rampsResources.find((rr) => rr.info_resourceid == id)
+            }).map((r) => {
+              return {
+                info_resourceid: r.info_resourceid,
+                cider_resource_id: r.cider_resource_id,
+                resourceName: r.short_name,
+                displayResourceName: r.resource_descriptive_name,
+              }
+            })
+        }
+
+        r.features.forEach((f) => {
+          const ff = formattedFeatures[f.id];
+          const category = featureCategories[ff.categoryId];
+          if(!rfc[ff.categoryId]) rfc[ff.categoryId] = {...category, features: []}
+
+          rfc[ff.categoryId].features.push(ff);
+        })
+
+        let resource = {
+          cider_resource_id: r.cider_resource_id,
+          info_resourceid: r.info_resourceid,
+          resourceId: r.cider_resource_id,
+          resourceName: r.short_name,
+          displayResourceName: r.resource_descriptive_name,
+          resourceDescription: r.resource_description,
+          recommendedUse: r.recommended_use,
+          icon: organization?.organization_favicon_url || null,
+          resourceType: resourceType?.name,
+          organization: r.organization_name,
+          featureCategories: Object.values(rfc),
+          relatedResources,
+          groupId: resourceGroup.info_groupid
+        }
+
+        return resource;
+      });
+
+      const sources = [{
+        apiUrl: 'https://allocations.access-ci.org/resources.json',
+        catalogLabel: "ACCESS",
+        allowedCategories: [],
+        allowedFilters: [],
+        allowedResources: [],
+        excludedCategories: ["Resource Category"],
+        excludedFilters: [],
+        excludedResources: ["ACCESS Credits"],
+        data: formattedResources
+      }];
+
+      const { resources, catalogs, categories } = mergeData(sources);
 
       for (const categoryId in categories) {
         const category = categories[categoryId];
@@ -310,27 +404,11 @@ export const catalogSlice = createSlice({
       state.filters = state.filters.sort((a, b) =>
         a.categoryName.localeCompare(b.categoryName)
       );
+
       state.resources = resources
-      .map((resource) => {
-        if(!groups) return resource;
-        const org = groups.organizations.find((o) => o.organization_name == resource.organization);
-        resource.logo = org?.organization_favicon_url || null;
-
-        if(org) {
-          const group = groups.active_groups.find((ag) => ag.rollup_organization_ids.includes(org.organization_id));
-          const relatedResources = groups.resources
-            .filter((r) => group.rollup_info_resourceids.includes(r.info_resourceid))
-          console.log(relatedResources);
-        }
-
-        return resource;
-      })
-      .sort((a, b) =>
-        a.resourceName.localeCompare(b.resourceName)
-      )
-      .sort((a, b) =>
-        state.resourceSorting[a.sortCategory] > state.resourceSorting[b.sortCategory]
-      )
+        .sort((a, b) =>
+          a.resourceName.localeCompare(b.resourceName)
+        )
 
       state.filteredResources = [...state.resources];
       state.resourcesLoaded = true;
@@ -403,12 +481,9 @@ export const catalogSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getResources.pending, (state) => {})
-      .addCase(getResources.fulfilled, (state, action) => {})
-      .addCase(getResources.rejected, (state, data) => {
-        state.hasErrors = true;
-        console.log(data.error);
-      });
+      .addMatcher(isRejectedAction, (state, action) => {
+        console.log(action);
+      })
   },
 });
 
