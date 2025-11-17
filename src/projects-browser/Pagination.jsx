@@ -37,6 +37,14 @@ const Pagination = () => {
     return false;
   };
 
+  const nextPage = () => {
+    handleGetPage(parseInt(pageData.current_page) + 1)
+  }
+
+  const prevPage = () => {
+    handleGetPage(parseInt(pageData.current_page) - 1)
+  }
+
   const buildPaginator = () => {
     const pages = [];
 
@@ -151,7 +159,7 @@ const Pagination = () => {
             <button
               className={`page-link`}
               style={{ width: "50px", textAlign: "center" }}
-              onClick={() => handleGetPage(pageData.current_page - 1)}
+              onClick={prevPage}
               disabled={pageData.current_page == 1}
               aria-label="Previous Page Button"
             >
@@ -174,7 +182,7 @@ const Pagination = () => {
             <button
               className={`page-link`}
               style={linkStyle}
-              onClick={() => handleGetPage(pageData.current_page + 1)}
+              onClick={nextPage}
               disabled={pageData.current_page == pageData.last_page}
               aria-label="Next Page Button"
             >

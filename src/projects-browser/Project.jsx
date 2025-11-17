@@ -175,7 +175,7 @@ const Project = ({ project }) => {
             <Modal.Title>{project.requestTitle}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {project.publications.map((p, i) => (
+          {project?.publications?.map((p, i) => (
               <div key={`publication_${i}`}>
                   <Publication publication={{ ...p, projects: [] }} index={i} />
               </div>
@@ -219,7 +219,7 @@ const Project = ({ project }) => {
               </div>
             </div>
           </div>
-          {project.publications.length > 0 &&
+          {project?.publications?.length > 0 &&
           <div className="col-lg-6 right-panel">
               <div className="row fw-bold border-bottom">
                   <div className="col">
@@ -233,7 +233,7 @@ const Project = ({ project }) => {
                   fontSize="16px"
               />
             </div>
-            {project.publications.length > 1 && (
+            {project?.publications?.length > 1 && (
               <button className="btn btn-primary" onClick={()=>setShowModal(true)}>
                   View More ({project.publications.length})
               </button>

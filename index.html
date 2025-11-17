@@ -12,13 +12,16 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     />
-    <script type="module">
-      import { resourceCatalog } from "https://esm.sh/@xras/ui@nairr_resources_v1/dist/xras-ui.js";
-      resourceCatalog({
-        allowedCategories: ["AI Capabilities", "Resource Type", "Resource Category", "NAIRR Pilot Opportunity"],
-        apiUrl: "https://submit-nairr.xras.org/resources.json",
-        target: document.getElementById("resource-catalog-react")
-      });
-    </script>
+    <div id="projects_browser_app"></div>
+
+<script type="module">
+  import { projectsBrowser } from "./src/main.jsx";
+  projectsBrowser(
+    {
+      target: document.getElementById("projects_browser_app"),
+      apiUrl: "https://submit-nairr.xras.org/current-projects.json",
+    },
+  );
+</script>
   </body>
 </html>
