@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.25.1](https://github.com/access-ci-org/xras-ui/compare/v0.25.0...v0.25.1) (2025-11-17)
+
+
+### Bug Fixes
+
+* use Node LTS version (currently 24) ([cf4ecd2](https://github.com/access-ci-org/xras-ui/commit/cf4ecd21221bebac6a334d890e4bdd8506ee4604))
+
 ## [0.25.0](https://github.com/access-ci-org/xras-ui/compare/v0.24.0...v0.25.0) (2025-11-17)
 
 
