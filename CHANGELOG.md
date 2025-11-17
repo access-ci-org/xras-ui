@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.25.0](https://github.com/access-ci-org/xras-ui/compare/v0.24.0...v0.25.0) (2025-11-17)
+
+
+### Features
+
+* Restore package-lock.json ([3a04b08](https://github.com/access-ci-org/xras-ui/commit/3a04b082424ff6ff3cf16852b2716249f06d4998))
+
 ## [0.24.0](https://github.com/access-ci-org/xras-ui/compare/v0.23.0...v0.24.0) (2025-11-17)
 
 
