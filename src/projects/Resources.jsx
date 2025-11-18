@@ -220,13 +220,21 @@ export default function Resources({ requestId, grantNumber }) {
 
   let credit;
 
+  const getBalance = (row) => row.requested - row.used;
+  const getAbsDiff = (row) => Math.abs((row.requested - row.allocated) * row.exchangeRates.current.unitCost)
+  const belowMinimum = (row) => (getAbsDiff(row) > 0) && (getAbsDiff(row) < row.minimumExchange); // Don't check row.isNew.
+
   // Grid rows
   const rows = [];
   const rowClasses = [];
+  let anyBelowMinimum = false;
   for (let res of resources) {
     if (res.isCredit) {
       credit = res;
     } else {
+      if (belowMinimum(res)) {
+        anyBelowMinimum = true;
+      }
       rows.push(res);
       rowClasses.push(
         exchangeEditable && (res.isNew || res.allocated != res.requested)
@@ -241,8 +249,6 @@ export default function Resources({ requestId, grantNumber }) {
   const resourceAddMessage = `Add ${
     rows.length ? "another" : "a"
   } resource to your exchange...`;
-
-  const getBalance = (row) => row.requested - row.used;
 
   const cleanBalance = (balanceString, row) => {
     const allocatedBalance = row.allocated - row.used;
@@ -377,6 +383,11 @@ export default function Resources({ requestId, grantNumber }) {
               <span className="text-start ps-2" style={{ width: "8rem" }}>
                 {row.unit}
               </span>
+              { belowMinimum(row) ?
+                <span className="badge bg-danger">
+                  Minimum: <br /> { row.minimumExchange } credits
+                </span> : null
+              }
             </span>
           );
         },
@@ -545,7 +556,7 @@ export default function Resources({ requestId, grantNumber }) {
               ref={submitButton}
               type="button"
               className="btn btn-secondary"
-              disabled={saving || !hasRequested || !hasReason || hasUnmetDeps}
+              disabled={saving || !hasRequested || !hasReason || hasUnmetDeps || anyBelowMinimum}
               onClick={toggleResourcesModal}
             >
               {saving ? "Submitting..." : "Submit for Approval"}
