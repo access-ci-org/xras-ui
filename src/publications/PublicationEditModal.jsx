@@ -6,12 +6,14 @@ import {
   getPublicationId,
   savePublication,
   setShowEditModal,
+  getSaveEnabled,
 } from "./helpers/publicationEditSlice";
 
 export default function PublicationEditModal() {
   const dispatch = useDispatch();
   const show = useSelector(getShowEditModal);
   const publicationId = useSelector(getPublicationId);
+  const saveEnabled = useSelector(getSaveEnabled);
 
   const handleModalHide = (save) => {
     if (save) dispatch(savePublication());
@@ -47,6 +49,7 @@ export default function PublicationEditModal() {
               type="button"
               className="btn btn-primary"
               onClick={() => handleModalHide(true)}
+              disabled={!saveEnabled}
             >
               Save Publication
             </button>

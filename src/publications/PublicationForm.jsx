@@ -6,6 +6,7 @@ import {
   getPublication,
   getPubTypes,
   getSaveEnabled,
+  getTagsValid,
   getTagCategories,
   savePublication,
   setFormValid,
@@ -26,6 +27,8 @@ export default function PublicationForm() {
   const tagCategories = useSelector(getTagCategories);
   const saveEnabled = useSelector(getSaveEnabled);
   const formValid = useSelector(getFormValid);
+  const selectedTags = useSelector((state) => state.publicationEdit.selected_tags);
+  const tagsValid = useSelector(getTagsValid);
 
   const updateTitle = (e) => {
     dispatch(setFormValid(e.target.value.trim() !== ""));
@@ -218,10 +221,13 @@ export default function PublicationForm() {
         <h2>Tags</h2>
         <InfoTip>
           Add related tags from the lists below. You may choose multiple tags
-          per category.
+          per category. Tags are filtered based on resources associated with your selected projects.
         </InfoTip>
       </div>
       <div className={"card-body"}>
+        {!tagsValid && (
+          <div className="alert alert-danger mb-3">Please select at least one Resource tag, or select "None". Resource Provider tags are automatically selected based on your resource choices.</div>
+        )}
         {tagCategories.map((tc, idx) => (
           <Tags key={`tc_${idx}`} index={idx} category={tc} />
         ))}
@@ -249,8 +255,8 @@ export default function PublicationForm() {
     <>
       {publicationInformation}
       {authors}
-      {tags}
       {projects}
+      {tags}
     </>
   );
 }

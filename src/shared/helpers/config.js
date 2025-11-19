@@ -27,6 +27,18 @@ const config = {
     search_people_path: () => `${baseUrl}/search/people`,
     usage_detail_path: (grantNumber, resourceId) =>
       `/usage/${grantNumber}/${resourceId}`,
+    // Publication routes
+    publications_path: () => "/publications",
+    publication_path: (id) => `/publications/${id}`,
+    edit_publication_path: (id) => `/publications/${id}/edit`,
+    publications_lookup_path: ({ doi }) => `/publications/lookup?doi=${encodeURIComponent(doi)}`,
+    publications_find_project_path: ({ grant_number }) => `/publications/find_project?grant_number=${encodeURIComponent(grant_number)}`,
+    publications_organization_mappings_path: () => "/publications/organization_mappings",
+    publications_find_resource_path: ({ resource_name }) => `/publications/find_resource?resource_name=${encodeURIComponent(resource_name)}`,
+    search_publications_path: (params) => {
+      const queryString = new URLSearchParams(params).toString();
+      return `/search/publications${queryString ? `?${queryString}` : ''}`;
+    },
   },
   roleIcons: {
     PI: "person-fill-check",
