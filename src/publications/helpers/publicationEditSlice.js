@@ -1,6 +1,60 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSelector, createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
 import { invalidFormAlert, validateForm } from "../FormValidation";
+
+const RESOURCE_CATEGORY = "Resource";
+
+const normalizeResource = (resource = {}) => {
+  const label = resource.label || resource.value || resource.resource_name || "";
+  const value = resource.value || resource.label || resource.resource_name || "";
+
+  if (!value) return null;
+
+  return {
+    resource_id: resource.resource_id || resource.resourceId || resource.id,
+    label,
+    value,
+    organization_id: resource.organization_id,
+    organization_abbrev: resource.organization_abbrev,
+    organization_name: resource.organization_name,
+  };
+};
+
+const normalizeProject = (project = {}) => ({
+  ...project,
+  resources: Array.isArray(project.resources)
+    ? project.resources.map(normalizeResource).filter(Boolean)
+    : [],
+});
+
+const normalizeProjects = (projects = []) => projects.map(normalizeProject);
+
+const getAvailableResourceValues = (projects) => {
+  const values = new Set();
+
+  projects
+    .filter((project) => project.selected)
+    .forEach((project) => {
+      (project.resources || []).forEach((resource) => {
+        if (resource?.value) values.add(resource.value);
+      });
+    });
+
+  return values;
+};
+
+const pruneSelectedResources = (state) => {
+  const available = getAvailableResourceValues(state.projects);
+  const current = state.selected_tags[RESOURCE_CATEGORY] || [];
+
+  state.selected_tags[RESOURCE_CATEGORY] = current.filter((value) =>
+    available.has(value),
+  );
+
+  if (state.selected_tags[RESOURCE_CATEGORY].length > 0) {
+    state.resource_none_selected = false;
+  }
+};
 
 export const initialState = {
   authenticityToken: null,
@@ -17,6 +71,7 @@ export const initialState = {
   show_saved: false,
   showEditModal: false,
   tag_categories: [],
+  resource_none_selected: false,
 };
 
 const publicationEditSlice = createSlice({
@@ -37,7 +92,8 @@ const publicationEditSlice = createSlice({
       });
     },
     addProject: (state, { payload }) => {
-      state.projects.push(payload);
+      state.projects.push(normalizeProject(payload));
+      pruneSelectedResources(state);
     },
     changePublicationType: (state, { payload }) => {
       let newFields = state.publication_types.find(
@@ -67,10 +123,12 @@ const publicationEditSlice = createSlice({
       });
       state.publication_types = payload.publication_types;
       state.tag_categories = payload.tag_categories;
-      state.projects = payload.publication.projects;
+      state.projects = normalizeProjects(payload.publication.projects || []);
       payload.publication.tags.forEach(
         (t) => (state.selected_tags[t.label] = t.options.map((o) => o.value)),
       );
+      pruneSelectedResources(state);
+      state.resource_none_selected = false;
       state.data_loaded = true;
     },
     deleteAuthor: (state, { payload }) => {
@@ -112,6 +170,7 @@ const publicationEditSlice = createSlice({
     },
     toggleRequest: (state, { payload }) => {
       state.projects[payload].selected = !state.projects[payload].selected;
+      pruneSelectedResources(state);
     },
     toggleTag: (state, { payload }) => {
       let tagCategory = state.tag_categories.find(
@@ -141,7 +200,22 @@ const publicationEditSlice = createSlice({
       state.saving = payload;
     },
     updateSelectedTags: (state, { payload }) => {
-      state.selected_tags[payload.category] = payload.tags.map((t) => t.value);
+      const { category, tags = [], values } = payload;
+      const resolvedValues =
+        values ??
+        tags.map((tag) => (typeof tag === "string" ? tag : tag.value));
+
+      state.selected_tags[category] = resolvedValues;
+
+      if (category === RESOURCE_CATEGORY) {
+        state.resource_none_selected = false;
+      }
+    },
+    setResourceNoneSelected: (state, { payload }) => {
+      state.resource_none_selected = payload;
+      if (payload) {
+        state.selected_tags[RESOURCE_CATEGORY] = [];
+      }
     },
     updateShowSaved: (state, { payload }) => {
       state.show_saved = payload;
@@ -171,6 +245,7 @@ export const {
   updateSaving,
   updateSelectedTags,
   updateShowSaved,
+  setResourceNoneSelected,
 } = publicationEditSlice.actions;
 
 export const getPublication = (state) => state.publicationEdit.publication;
@@ -179,6 +254,69 @@ export const getPubTypes = (state) => state.publicationEdit.publication_types;
 export const getAuthors = (state) => state.publicationEdit.publication.authors;
 export const getTagCategories = (state) => state.publicationEdit.tag_categories;
 export const getProjects = (state) => state.publicationEdit.projects;
+const getSelectedTagsState = (state) => state.publicationEdit.selected_tags;
+
+export const getSelectedProjects = createSelector(
+  [getProjects],
+  (projects) => projects.filter((project) => project.selected),
+);
+
+export const getSelectedTagsByCategory = getSelectedTagsState;
+
+export const getResourceNoneSelected = (state) =>
+  state.publicationEdit.resource_none_selected;
+
+export const getSelectedResourceTags = createSelector(
+  [getSelectedTagsState],
+  (selectedTags) => selectedTags[RESOURCE_CATEGORY] || [],
+);
+
+export const getAvailableResources = createSelector(
+  [getSelectedProjects],
+  (selectedProjects) => {
+    const seen = new Set();
+    const resources = [];
+
+    selectedProjects.forEach((project) => {
+      (project.resources || []).forEach((resource) => {
+        if (!resource?.value || seen.has(resource.value)) return;
+        seen.add(resource.value);
+        resources.push(resource);
+      });
+    });
+
+    return resources;
+  },
+);
+
+export const getProvidersForSelectedProjects = createSelector(
+  [getSelectedProjects],
+  (selectedProjects) => {
+    const seen = new Set();
+    const providers = [];
+
+    selectedProjects.forEach((project) => {
+      (project.resources || []).forEach((resource) => {
+        const abbreviation = resource?.organization_abbrev;
+        const name = resource?.organization_name;
+        if (!abbreviation && !name) return;
+        const key = abbreviation || name;
+        if (seen.has(key)) return;
+        seen.add(key);
+        providers.push({ abbreviation, name });
+      });
+    });
+
+    return providers;
+  },
+);
+
+export const getResourceSelectionSatisfied = createSelector(
+  [getSelectedResourceTags, getResourceNoneSelected],
+  (selectedResourceTags, resourceNoneSelected) =>
+    selectedResourceTags.length > 0 || resourceNoneSelected,
+);
+export const RESOURCE_TAG_CATEGORY = RESOURCE_CATEGORY;
 export const getPublicationTags = (state) =>
   state.publicationEdit.publication.tags;
 export const getErrors = (state) => state.publicationEdit.errors;
@@ -196,7 +334,8 @@ export const getSaveEnabled = (state) => {
     getDataLoaded(state) &&
     getFormValid(state) &&
     getAuthorsExist(state) &&
-    state.publicationEdit.projects.filter((p) => p.selected).length > 0
+    state.publicationEdit.projects.filter((p) => p.selected).length > 0 &&
+    getResourceSelectionSatisfied(state)
   );
 };
 
