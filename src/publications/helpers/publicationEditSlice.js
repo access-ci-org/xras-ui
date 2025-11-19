@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSelector, createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
 import { invalidFormAlert, validateForm } from "../FormValidation";
 
@@ -13,10 +13,10 @@ export const initialState = {
   publicationId: null,
   publication_types: [],
   saving: false,
-  selected_tags: {},
+  selected_resources: [],
   show_saved: false,
   showEditModal: false,
-  tag_categories: [],
+  resources_none_selected: false,
 };
 
 const publicationEditSlice = createSlice({
@@ -66,11 +66,14 @@ const publicationEditSlice = createSlice({
         if (!a.affiliation) a.affiliation = "";
       });
       state.publication_types = payload.publication_types;
-      state.tag_categories = payload.tag_categories;
-      state.projects = payload.publication.projects;
-      payload.publication.tags.forEach(
-        (t) => (state.selected_tags[t.label] = t.options.map((o) => o.value)),
-      );
+      state.projects = payload.publication.projects || [];
+      
+      state.selected_resources = (payload.publication.publication_resources || [])
+        .map((pubResource) => pubResource.acct_resource_id)
+        .filter(Boolean)
+        .map((id) => Number(id)); // Ensure all IDs are numbers for consistent comparison
+      
+      state.resources_none_selected = payload.publication.access_staff_publication || false;
       state.data_loaded = true;
     },
     deleteAuthor: (state, { payload }) => {
@@ -113,15 +116,6 @@ const publicationEditSlice = createSlice({
     toggleRequest: (state, { payload }) => {
       state.projects[payload].selected = !state.projects[payload].selected;
     },
-    toggleTag: (state, { payload }) => {
-      let tagCategory = state.tag_categories.find(
-        (tc) =>
-          tc.publication_tags_category_id ==
-          payload.publication_tags_category_id,
-      );
-      tagCategory.tags[payload.idx].selected =
-        !tagCategory.tags[payload.idx].selected;
-    },
     updateAuthor: (state, { payload }) => {
       state.publication.authors[payload.idx][payload.key] = payload.value;
     },
@@ -140,8 +134,17 @@ const publicationEditSlice = createSlice({
     updateSaving: (state, { payload }) => {
       state.saving = payload;
     },
-    updateSelectedTags: (state, { payload }) => {
-      state.selected_tags[payload.category] = payload.tags.map((t) => t.value);
+    updateSelectedResources: (state, { payload }) => {
+      state.selected_resources = payload;
+      if (payload.length > 0) {
+        state.resources_none_selected = false;
+      }
+    },
+    setResourcesNoneSelected: (state, { payload }) => {
+      state.resources_none_selected = payload;
+      if (payload) {
+        state.selected_resources = [];
+      }
     },
     updateShowSaved: (state, { payload }) => {
       state.show_saved = payload;
@@ -163,22 +166,55 @@ export const {
   setShowEditModal,
   resetState,
   toggleRequest,
-  toggleTag,
   updateAuthor,
   updateErrors,
   updateField,
   updatePublication,
   updateSaving,
-  updateSelectedTags,
+  updateSelectedResources,
   updateShowSaved,
+  setResourcesNoneSelected,
 } = publicationEditSlice.actions;
 
 export const getPublication = (state) => state.publicationEdit.publication;
 export const getDoi = (state) => state.publicationEdit.publication.doi;
 export const getPubTypes = (state) => state.publicationEdit.publication_types;
 export const getAuthors = (state) => state.publicationEdit.publication.authors;
-export const getTagCategories = (state) => state.publicationEdit.tag_categories;
 export const getProjects = (state) => state.publicationEdit.projects;
+
+export const getSelectedProjects = createSelector(
+  [getProjects],
+  (projects) => projects.filter((project) => project.selected),
+);
+
+export const getAvailableResources = createSelector(
+  [getSelectedProjects],
+  (selectedProjects) => {
+    const seen = new Set();
+    const resources = [];
+
+    selectedProjects.forEach((project) => {
+      (project.resources || []).forEach((resource) => {
+        if (!resource?.resource_id || seen.has(resource.resource_id)) return;
+        seen.add(resource.resource_id);
+        resources.push(resource);
+      });
+    });
+
+    return resources;
+  },
+);
+
+export const getSelectedResources = (state) => state.publicationEdit.selected_resources;
+
+export const getResourcesNoneSelected = (state) =>
+  state.publicationEdit.resources_none_selected;
+
+export const getResourcesSelectionSatisfied = createSelector(
+  [getSelectedResources, getResourcesNoneSelected],
+  (selectedResources, resourcesNoneSelected) =>
+    selectedResources.length > 0 || resourcesNoneSelected,
+);
 export const getPublicationTags = (state) =>
   state.publicationEdit.publication.tags;
 export const getErrors = (state) => state.publicationEdit.errors;
@@ -196,7 +232,8 @@ export const getSaveEnabled = (state) => {
     getDataLoaded(state) &&
     getFormValid(state) &&
     getAuthorsExist(state) &&
-    state.publicationEdit.projects.filter((p) => p.selected).length > 0
+    state.publicationEdit.projects.filter((p) => p.selected).length > 0 &&
+    getResourcesSelectionSatisfied(state)
   );
 };
 
@@ -280,9 +317,6 @@ export const getData = (publicationId) => async (dispatch) => {
 export const savePublication = () => async (dispatch, getState) => {
   const store = getState().publicationEdit;
   const projects = store.projects.filter((p) => p.selected);
-  const tags = Object.keys(store.selected_tags)
-    .map((key) => store.selected_tags[key])
-    .flat();
   const publication = { ...store.publication };
   const errors = store.errors;
   const { formValid, missingFields } = validateForm(
@@ -309,10 +343,16 @@ export const savePublication = () => async (dispatch, getState) => {
 
   const formData = {
     authenticity_token: token,
-    publication: publication,
+    publication: {
+      ...publication,
+      access_staff_publication: store.resources_none_selected,
+    },
     authors: publication.authors.map((a) => ({ ...a, order: 0 })),
-    tags: tags,
+    tags: [],
     projects: projects,
+    resources: store.selected_resources.map((resource_id) => ({
+      resource_id: resource_id,
+    })),
   };
 
   let url, method;
