@@ -220,9 +220,11 @@ export default function Resources({ requestId, grantNumber }) {
 
   let credit;
 
+  // isNew means that row.allocated == 0, so the subtraction and abs() aren't needed.
+  // But isNew might go away after the team reviews a demo of this.
   const getBalance = (row) => row.requested - row.used;
-  const getAbsDiff = (row) => Math.abs((row.requested - row.allocated) * row.exchangeRates.current.unitCost)
-  const belowMinimum = (row) => (getAbsDiff(row) > 0) && (getAbsDiff(row) < row.minimumExchange); // Don't check row.isNew.
+  const getAbsDiff = (row) => Math.abs(row.requested - row.allocated)
+  const belowMinimum = (row) => row.isNew && (getAbsDiff(row) > 0) && (getAbsDiff(row) < row.minimumExchange);
 
   // Grid rows
   const rows = [];
@@ -385,7 +387,7 @@ export default function Resources({ requestId, grantNumber }) {
               </span>
               { belowMinimum(row) ?
                 <span className="badge bg-danger">
-                  Minimum: <br /> { row.minimumExchange } credits
+                  Minimum: { row.minimumExchange }
                 </span> : null
               }
             </span>
