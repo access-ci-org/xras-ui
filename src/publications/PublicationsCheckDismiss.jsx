@@ -1,7 +1,7 @@
 import {dismissNotice} from "../projects/helpers/apiSlice.js";
 import {useDispatch} from "react-redux";
 
-export default function PublicationNoNewPublicationsButton() {
+export default function PublicationsCheckDismiss({ grantNumber }) {
     const dispatch = useDispatch();
 
     return (
@@ -9,11 +9,11 @@ export default function PublicationNoNewPublicationsButton() {
             type="button"
             className="btn btn-primary"
             onClick={(e) => {
-                dispatch(dismissNotice());
+                dispatch(dismissNotice(grantNumber));
                 e.currentTarget.blur(); // removes focus
             }}
         >
-            no new publications
+            DISMISS PUBLICATIONS CHECK NOTICE FOR A YEAR
         </button>
     );
 }

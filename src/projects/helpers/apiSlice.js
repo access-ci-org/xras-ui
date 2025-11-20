@@ -722,16 +722,19 @@ export const saveUsers = createAsyncThunk(
 
 export const dismissNotice = createAsyncThunk(
     "publications/dismissNotice",
-    async (_, { rejectWithValue }) => {
-      try {
-        const res = await fetch(config.routes.profile_dismiss_notice_path(), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": document.querySelector("meta[name=csrf-token]").content,
-          },
-          body: JSON.stringify({ acknowledged: true }),
-        });
+    async (grantNumber, { rejectWithValue }) => {
+        try {
+            const res = await fetch(config.routes.profile_dismiss_notice_path(), {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": document.querySelector("meta[name=csrf-token]").content,
+                },
+                body: JSON.stringify({
+                    acknowledged: true,
+                    grant_number: grantNumber,  // Pass grant_number in the request body
+                }),
+            });
 
         const data = await res.json();
 

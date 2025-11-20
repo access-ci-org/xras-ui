@@ -47,6 +47,7 @@ export const getFilters = createAsyncThunk(
 
 export const initialState = {
   publications: [],
+  publication_updates_notice_check_dismissible_button_show: false,
   publicationsLoaded: false,
   filterSelections: {
     createdBy: [],
@@ -117,6 +118,9 @@ export const publicationsSearchSlice = createSlice({
         } else {
           state.publications = action.payload.publications || [];
         }
+
+        state.publication_updates_notice_check_dismissible_button_show =
+            action.payload.publication_updates_notice_check_dismissible_button_show || false;
       })
       .addCase(getPublications.rejected, (state, action) => {
         state.publicationsLoaded = true;
@@ -149,3 +153,7 @@ export const selectPage = (state) => state.publicationsSearch.page;
 export const selectUsePagination = (state) =>
   state.publicationsSearch.usePagination;
 export default publicationsSearchSlice.reducer;
+
+export const selectPublicationUpdatesNoticeCheckDismissibleButtonShow = (state) =>
+    state.publicationsSearch.publication_updates_notice_check_dismissible_button_show;
+
