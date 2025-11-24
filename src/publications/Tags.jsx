@@ -33,6 +33,12 @@ export default function Tags({ category, index }) {
     );
 
     return availableResources
+      .filter((resource) => {
+        // Never show Access Credits
+        const option = optionMap.get(resource.value);
+        const label = option?.label || resource.label || resource.value;
+        return label.toLowerCase() !== "access credits";
+      })
       .map((resource) => {
         const option = optionMap.get(resource.value);
         return {
@@ -44,6 +50,30 @@ export default function Tags({ category, index }) {
       })
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [availableResources, category.options, isResourceCategory]);
+
+  const groupedResources = useMemo(() => {
+    if (!isResourceCategory) return {};
+
+    const groups = {};
+    resourceOptions.forEach((resource) => {
+      const providerKey = resource.providerAbbrev || "Other";
+      if (!groups[providerKey]) {
+        groups[providerKey] = {
+          providerAbbrev: resource.providerAbbrev,
+          providerName: resource.providerName,
+          resources: [],
+        };
+      }
+      groups[providerKey].resources.push(resource);
+    });
+
+    return Object.keys(groups)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = groups[key];
+        return acc;
+      }, {});
+  }, [resourceOptions, isResourceCategory]);
 
   if (isResourceProviderCategory) {
     return null;
@@ -99,23 +129,22 @@ export default function Tags({ category, index }) {
         onChange={(e) => handleResourceToggle(option.value, e.target.checked)}
       />
       <label
-        className="form-check-label d-flex flex-column"
+        className="form-check-label"
         htmlFor={`resource_${index}_${optionIndex}`}
       >
-        <span>{option.label}</span>
-        {option.providerAbbrev && (
-          <span className="text-muted small">
-            Provider: {option.providerAbbrev}
-            {option.providerName ? ` – ${option.providerName}` : ""}
-          </span>
-        )}
+        {option.label}
       </label>
     </div>
   );
 
   return (
     <div className="mb-4">
-      <div className="fw-bold mb-2">{category.label}</div>
+      <div className="fw-bold mb-2">
+        {category.label}
+        {isResourceCategory && (
+          <i className="bi bi-asterisk text-danger"></i>
+        )}
+      </div>
 
       {!isResourceCategory &&
         category.options.map((option, optionIndex) =>
@@ -124,14 +153,31 @@ export default function Tags({ category, index }) {
 
       {isResourceCategory && (
         <>
-          {resourceOptions.length > 0 ? (
-            resourceOptions.map((option, optionIndex) =>
-              renderResourceOption(option, optionIndex),
-            )
-          ) : (
-            <div className="text-muted small">
-              Select a project above to see available resources.
+          <div className="text-muted small mb-2">
+            Select a project above to see available resources.
+          </div>
+
+          {!resourceNoneSelected && selectedResourceTags.length === 0 && (
+            <div className="alert alert-danger">
+              Select at least one resource or choose &quot;This is an ACCESS staff publication&quot;.
             </div>
+          )}
+
+          {resourceOptions.length > 0 && (
+            <>
+              {Object.entries(groupedResources).map(([providerKey, group]) => (
+                <div key={`provider_${providerKey}`} className="mb-3">
+                  <div className="fw-semibold text-muted mb-2" style={{ fontSize: '0.95em' }}>
+                    {group.providerName || providerKey}
+                  </div>
+                  <div className="ms-3">
+                    {group.resources.map((option, optionIndex) =>
+                      renderResourceOption(option, optionIndex),
+                    )}
+                  </div>
+                </div>
+              ))}
+            </>
           )}
 
           <div className="form-check mt-2">
@@ -143,16 +189,9 @@ export default function Tags({ category, index }) {
               onChange={(e) => handleNoneToggle(e.target.checked)}
             />
             <label className="form-check-label" htmlFor={`resource_none_${index}`}>
-              None
+              This is an ACCESS staff publication
             </label>
           </div>
-
-          {!resourceNoneSelected && selectedResourceTags.length === 0 && (
-            <div className="text-danger small mt-2">
-              Select at least one resource or choose None.
-            </div>
-          )}
-
         </>
       )}
     </div>
