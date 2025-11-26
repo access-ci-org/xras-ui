@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.26.0](https://github.com/access-ci-org/xras-ui/compare/v0.25.1...v0.26.0) (2025-11-26)
+
+
+### Features
+
+* **resources:** minimum exchange amounts ([dff537d](https://github.com/access-ci-org/xras-ui/commit/dff537d317331e4f9c07cf1eb59c7a0e81969128))
+
 ## [0.25.1](https://github.com/access-ci-org/xras-ui/compare/v0.25.0...v0.25.1) (2025-11-17)
 
 
