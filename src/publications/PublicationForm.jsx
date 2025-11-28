@@ -26,6 +26,9 @@ export default function PublicationForm() {
   const tagCategories = useSelector(getTagCategories);
   const saveEnabled = useSelector(getSaveEnabled);
   const formValid = useSelector(getFormValid);
+  const tagCategoriesWithoutProviders = tagCategories.filter(
+    (category) => category.label?.toLowerCase() !== "resource provider",
+  );
 
   const updateTitle = (e) => {
     dispatch(setFormValid(e.target.value.trim() !== ""));
@@ -222,7 +225,7 @@ export default function PublicationForm() {
         </InfoTip>
       </div>
       <div className={"card-body"}>
-        {tagCategories.map((tc, idx) => (
+        {tagCategoriesWithoutProviders.map((tc, idx) => (
           <Tags key={`tc_${idx}`} index={idx} category={tc} />
         ))}
       </div>
@@ -249,8 +252,8 @@ export default function PublicationForm() {
     <>
       {publicationInformation}
       {authors}
-      {tags}
       {projects}
+      {tags}
     </>
   );
 }
