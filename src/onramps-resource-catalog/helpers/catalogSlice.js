@@ -159,7 +159,7 @@ const useFilter = (allowed, excluded, item) => {
   if (allowed && allowed.length > 0) {
     return allowed.find((el) => el == item);
   } else if (excluded && excluded.length > 0) {
-    return !excluded.find((el) => el == item);
+    return !excluded.includes(item);
   }
 
   return true;
@@ -327,6 +327,7 @@ export const catalogSlice = createSlice({
       const formattedResources = rampsResources.map((r) => {
         const organization = metadata.organizations.find((o) => o.organization_name == r.organization_name);
         const resourceType = r.features.find((f) => f.feature_category == "Resource Type");
+        console.log(resourceType.name);
         const rfc = {}; //resourceFeatureCategories
         const resourceGroup = groups.find((g) => g.rollup_info_resourceids.includes(r.info_resourceid))
         let relatedResources = [];
@@ -367,7 +368,7 @@ export const catalogSlice = createSlice({
           organization: r.organization_name,
           featureCategories: Object.values(rfc),
           relatedResources,
-          groupId: resourceGroup.info_groupid
+          groupId: resourceGroup?.info_groupid
         }
 
         return resource;
@@ -379,8 +380,8 @@ export const catalogSlice = createSlice({
         allowedCategories: [],
         allowedFilters: [],
         allowedResources: [],
-        excludedCategories: ["Resource Category"],
-        excludedFilters: [],
+        excludedCategories: ["Resource Category", "**DELETED** ACCESS Integration Roadmap", "Resource Status"],
+        excludedFilters: ["Resource Status"],
         excludedResources: ["ACCESS Credits"],
         data: formattedResources
       }];

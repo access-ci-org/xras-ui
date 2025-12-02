@@ -27,12 +27,31 @@ const FilterBar = () => {
       <div className={`row mb-2`}>
         <div className="col pt-2 pb-2">
           <div className="p-1 pb-0 border-bottom bg-white shadow">
-            <button className="btn btn-outline-primary mb-1 mt-1" type="button" onClick={toggleMenu}>
-              <i className="bi bi-filter"></i> Filters
-            </button>
-            <div className={`${styles.filtersHidden} pe-2 ps-2`} id="filtersList" ref={menuRef}>
-              <Filters onReset={toggleMenu} />
+            <div className="d-flex justify-content-between">
+              <ul class="nav nav-underline">
+                <li class="nav-item">
+                  <a class="nav-link active" aria-current="page" href="#">Active</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#">Link</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#">Link</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link disabled" aria-disabled="true">Disabled</a>
+                </li>
+              </ul>
+              <div style={{ textAlign: "right" }}>
+                <button className="btn btn-outline-primary mb-1 mt-1" type="button" onClick={toggleMenu}>
+                  <i className="bi bi-filter"></i> Filters
+                </button>
+                <div className={`${styles.filtersHidden} pe-2 ps-2`} id="filtersList" ref={menuRef}>
+                  <Filters onReset={toggleMenu} />
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
       </div>

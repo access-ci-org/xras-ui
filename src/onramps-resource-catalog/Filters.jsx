@@ -14,7 +14,7 @@ const Filters = ({ onReset }) => {
   const catalogFilters = Object.keys(catalogs).map((c) => catalogs[c]);
 
   return (
-    <>
+    <div style={{ textAlign: "left" }}>
       {/* {catalogFilters.length > 0 ? <CatalogList catalogs={catalogFilters} /> : ''} */}
       {filters.map((f) => (
         <FilterCategory category={f} key={f.categoryId} />
@@ -33,7 +33,7 @@ const Filters = ({ onReset }) => {
       >
         Close Menu
       </button>
-    </>
+    </div>
   );
 };
 
