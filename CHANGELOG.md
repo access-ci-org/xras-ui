@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.26.1](https://github.com/access-ci-org/xras-ui/compare/v0.26.0...v0.26.1) (2025-12-04)
+
+
+### Bug Fixes
+
+* ramps-908, init min-exchange label ([75681fe](https://github.com/access-ci-org/xras-ui/commit/75681fee4e88c822772238fc18b07a014c33227a))
+
 ## [0.26.0](https://github.com/access-ci-org/xras-ui/compare/v0.25.1...v0.26.0) (2025-11-26)
 
 
