@@ -91,7 +91,7 @@ export const ResourceForm = React.memo(function ResourceForm({
         className="span8"
       />
       <TextInput
-        label={`Minimum exchange amount, in ${unitTypesOptions.find((option) => option.value.toString() === resourceDetails.unit_type_id)?.label}`}
+        label={`Minimum exchange amount, in ${unitTypesOptions.find((option) => option.value.toString() === resourceDetails.unit_type_id.toString())?.label}`}
         value={resourceDetails.min_exchange}
         onChange={(e) =>
           dispatch(updateResourceField("min_exchange", e.target.value))
