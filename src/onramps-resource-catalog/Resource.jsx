@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styles from "./ResourceCatalog.module.scss";
+import Features from "./Features";
 
 const Resource = ({ resource }) => {
 
@@ -30,20 +31,21 @@ const Resource = ({ resource }) => {
     )
   }
 
-  const renderFeatures = (features) => {
-    return "";
-
-    if (features.length == 0) {
-      return "";
-    }
-
+  const renderFeatures = () => {
     return (
       <>
-        {features.map((f, i) => {
-          return (<span className='badge text-bg-secondary me-2' key={`feature_${resource.resourceId}_${i}`}>{f}</span>);
-        })}
+        <div className="row">
+          <div className="col fw-bold">
+            Features
+          </div>
+        </div>
+        <div className='row mb-2'>
+          <div className='col'>
+            <Features features={resource.features} id={resource.resourceId} />
+          </div>
+        </div>
       </>
-    );
+    )
   };
 
   const renderDescription = () => {
@@ -186,17 +188,13 @@ const Resource = ({ resource }) => {
           <div className="card mb-3">
             { renderHeader() }
             <div className="card-body">
-              <div className='row'>
-                <div className='col'>
-                  {renderFeatures(resource.features)}
-                </div>
-              </div>
               <div className="row">
-                <div className="col-sm-8">
+                <div className="col-12 col-md-8">
                   { renderUse() }
-                  { renderDescription() }
+                  {/* { renderDescription() } */}
+                  { renderFeatures() }
                 </div>
-                <div className="col">
+                <div className="col-12 col-md-4">
                   { renderRelatedResources() }
                 </div>
               </div>

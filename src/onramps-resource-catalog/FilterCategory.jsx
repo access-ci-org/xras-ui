@@ -1,6 +1,6 @@
 import Filter from "./Filter";
 
-const FilterCategory = ({ category }) => {
+const FilterCategory = ({ category, selectedFilters }) => {
   return (
     <div className="row">
       <div className="col">
@@ -10,7 +10,7 @@ const FilterCategory = ({ category }) => {
           </abbr>
         </div>
         {category.features.map((f) => (
-          <Filter filter={f} key={f.featureId} />
+          <Filter filter={f} key={f.featureId} selectedFilters={selectedFilters} />
         ))}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   catalogs: {},
@@ -13,7 +13,9 @@ const initialState = {
     "NSF Innovative Testbeds": 2,
     "Other NSF-funded Resources": 3,
     "Services and Support": 4
-  }
+  },
+  selectedCategory: "CPU",
+  selectedFilters: [],
 };
 
 export const initApp = createAsyncThunk(
@@ -81,7 +83,7 @@ export const getRampsResources = createAsyncThunk(
     const features = await fetch(featuresUrl);
     const featuresJson = await features.json();
 
-    dispatch( handleRamps({ params, metadata: dataJson.results, resources: resourcesJson.results, features: featuresJson.results }) );
+    dispatch( handleRamps({ params, metadata: dataJson.results, rampsResources: resourcesJson.results, features: featuresJson.results }) );
 
   }
 );
@@ -92,26 +94,6 @@ export const catalogFilter = createAsyncThunk("resourceCatalog/getResources",
     dispatch( toggleFilter() );
   }
 )
-
-const activeFilters = (filters) => {
-  const selected = [];
-  const categories = filters.filter(
-    (f) => f.features.filter((feat) => feat.selected).length > 0
-  );
-
-  filters.forEach((c) => {
-    c.features.forEach((f) => {
-      if (f.selected) selected.push(f.featureId);
-    });
-  });
-
-  return categories.map((c) => {
-    return {
-      ...c,
-      features: c.features.filter((feat) => feat.selected),
-    };
-  });
-};
 
 const mergeData = (apiResources) => {
   const catalogs = {};
@@ -283,7 +265,6 @@ export const catalogSlice = createSlice({
           const group = groups.active_groups.find((ag) => ag.rollup_organization_ids.includes(org.organization_id));
           const relatedResources = groups.resources
             .filter((r) => group.rollup_info_resourceids.includes(r.info_resourceid))
-          console.log(relatedResources);
         }
 
         return resource;
@@ -299,13 +280,24 @@ export const catalogSlice = createSlice({
       state.resourcesLoaded = true;
     },
     handleRamps: (state, { payload }) => {
-      const { features, metadata } = payload;
-      const rampsResources = payload.resources;
+      const { features, metadata, rampsResources } = payload;
       const featureCategories = {};
       const formattedFeatures = {};
       const groups = metadata.active_groups;
+      const resourceTypes = {
+        "Innovative / Novel Compute": "Innovative",
+        "CPU Compute": "CPU",
+        "GPU Compute": "GPU",
+        "Commercial Cloud": "Cloud",
+        "Cloud": "Cloud",
+        "Storage": "Storage"
+      }
 
-      features.forEach((feat) => {
+      features
+      .filter((feat) => {
+        return !["Resource Category", "**DELETED** ACCESS Integration Roadmap", "Resource Status", "Allocations"].includes(feat.feature_category_name);
+      })
+      .forEach((feat) => {
         featureCategories[feat.feature_category_id] = {
           categoryId: feat.feature_category_id,
           categoryName: feat.feature_category_name,
@@ -326,8 +318,8 @@ export const catalogSlice = createSlice({
 
       const formattedResources = rampsResources.map((r) => {
         const organization = metadata.organizations.find((o) => o.organization_name == r.organization_name);
-        const resourceType = r.features.find((f) => f.feature_category == "Resource Type");
-        console.log(resourceType.name);
+        const originalResourceType = r.features.find((f) => f.feature_category == "Resource Type");
+        const resourceType = resourceTypes[originalResourceType?.name] || "other";
         const rfc = {}; //resourceFeatureCategories
         const resourceGroup = groups.find((g) => g.rollup_info_resourceids.includes(r.info_resourceid))
         let relatedResources = [];
@@ -347,12 +339,18 @@ export const catalogSlice = createSlice({
             })
         }
 
+        const filters = [];
         r.features.forEach((f) => {
-          const ff = formattedFeatures[f.id];
-          const category = featureCategories[ff.categoryId];
-          if(!rfc[ff.categoryId]) rfc[ff.categoryId] = {...category, features: []}
 
-          rfc[ff.categoryId].features.push(ff);
+          filters.push(f.id);
+
+          const ff = formattedFeatures[f.id];
+          if(ff) {
+            const category = featureCategories[ff.categoryId];
+            if(!rfc[ff.categoryId]) rfc[ff.categoryId] = {...category, features: []}
+
+            rfc[ff.categoryId].features.push(ff);
+          }
         })
 
         let resource = {
@@ -364,11 +362,13 @@ export const catalogSlice = createSlice({
           resourceDescription: r.resource_description,
           recommendedUse: r.recommended_use,
           icon: organization?.organization_favicon_url || null,
-          resourceType: resourceType?.name,
+          resourceType: originalResourceType?.name,
+          resourceCategory: resourceType,
           organization: r.organization_name,
           featureCategories: Object.values(rfc),
           relatedResources,
-          groupId: resourceGroup?.info_groupid
+          groupId: resourceGroup?.info_groupid,
+          filters
         }
 
         return resource;
@@ -391,6 +391,7 @@ export const catalogSlice = createSlice({
       for (const categoryId in categories) {
         const category = categories[categoryId];
         const features = [];
+        //if(category.categoryName == "Resource Type") continue;
 
         for (const featureId in category.features) {
           features.push(category.features[featureId]);
@@ -415,14 +416,13 @@ export const catalogSlice = createSlice({
       state.resourcesLoaded = true;
     },
     resetFilters: (state) => {
-      state.filters.forEach((c) => {
-        c.features.forEach((f) => (f.selected = false));
-      });
-
-      state.filteredResources = [...state.resources];
+      state.selectedFilters = [];
     },
     setResourcesLoaded: (state, { payload }) => {
       state.resourcesLoaded = payload;
+    },
+    setSelectedCategory: (state, { payload }) => {
+      state.selectedCategory = payload;
     },
     toggleCatalog: (state, { payload }) => {
       const { catalog, selected } = payload;
@@ -430,54 +430,12 @@ export const catalogSlice = createSlice({
       state.catalogs[catalog.catalogLabel].selected = selected;
     },
     toggleFilter: (state, { payload }) => {
-      if(payload){
-        const filter = payload;
-
-        const stateFilterCategory = state.filters.find(
-          (f) => f.categoryId == filter.categoryId
-        );
-
-        const stateFilter = stateFilterCategory.features.find(
-          (f) => f.featureId == filter.featureId
-        );
-
-        stateFilter.selected = !stateFilter.selected;
-      }
-
-      const active = activeFilters(state.filters);
-      let filteredResources = [];
-      let selected = [];
-
-      if (active.length > 0) {
-        const sets = active.map((c) => c.features.map((f) => f.featureId));
-
-        state.resources.forEach((r) => {
-          let checksPassed = 0;
-          sets.forEach((set) => {
-            let passed = false;
-            r.featureIds.forEach((id) => {
-              if (set.indexOf(id) >= 0) passed = true;
-            });
-            if (passed) checksPassed += 1;
-          });
-          if (checksPassed >= sets.length) {
-            selected.push(r);
-          }
-        });
-
+      if(state.selectedFilters.includes(payload)){
+        state.selectedFilters = state.selectedFilters.filter((f) => f != payload);
       } else {
-        selected = state.resources;
+        state.selectedFilters.push(payload);
       }
-
-      const catalogs = Object.keys(state.catalogs).map(k => state.catalogs[k]);
-      const selectedCatalogs = catalogs.filter((c) => c.selected);
-      if(selectedCatalogs.length > 0 && selectedCatalogs.length < catalogs.length){
-        const resourceIds = selectedCatalogs.map((c) => c.resourceIds).flat();
-        selected = selected.filter((r) => {
-          return resourceIds.indexOf(r.resourceId) >= 0;
-        })
-      }
-      state.filteredResources = selected;
+      return;
     },
   },
   extraReducers: (builder) => {
@@ -494,18 +452,32 @@ export const {
   processData,
   resetFilters,
   setResourcesLoaded,
+  setSelectedCategory,
   toggleCatalog,
   toggleFilter
 } = catalogSlice.actions;
 
-export const selectActiveFilters = (state) => {
-  return activeFilters(state.resourceCatalog.filters);
-};
+export const selectAllResources = (state) => state.resourceCatalog.resources;
 export const selectCatalogs = (state) => state.resourceCatalog.catalogs;
 export const selectFilters = (state) => state.resourceCatalog.filters;
 export const selectHasErrors = (state) => state.resourceCatalog.hasErrors;
 export const selectOnRamps = (state) => state.resourceCatalog.onRamps;
 export const selectResourcesLoaded = (state) => state.resourceCatalog.resourcesLoaded;
-export const selectResources = (state) => state.resourceCatalog.filteredResources;
+export const selectSelectedCategory = (state) => state.resourceCatalog.selectedCategory;
+export const selectSelectedFilters = (state) => state.resourceCatalog.selectedFilters;
+
+export const selectResources = createSelector(
+	[selectAllResources, selectSelectedFilters, selectSelectedCategory],
+	(resources, filters, selectedCategory) => {
+    const filtered = resources.filter((r) => r.resourceCategory == selectedCategory);
+
+    if(filters.length == 0) return resources;
+
+    return resources.filter((resource) => {
+      return filters.some(filter => resource.filters.includes(filter));
+    })
+
+  }
+);
 
 export default catalogSlice.reducer;
