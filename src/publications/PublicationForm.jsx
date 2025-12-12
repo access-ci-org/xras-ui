@@ -6,7 +6,6 @@ import {
   getPublication,
   getPubTypes,
   getSaveEnabled,
-  getTagCategories,
   savePublication,
   setFormValid,
   updateField,
@@ -15,7 +14,6 @@ import {
 
 import Authors from "./Authors";
 import InfoTip from "../shared/InfoTip";
-import Tags from "./Tags";
 import Projects from "./Projects";
 import ProjectSearch from "./ProjectSearch";
 
@@ -23,12 +21,8 @@ export default function PublicationForm() {
   const dispatch = useDispatch();
   const publication = useSelector(getPublication);
   const publicationTypes = useSelector(getPubTypes);
-  const tagCategories = useSelector(getTagCategories);
   const saveEnabled = useSelector(getSaveEnabled);
   const formValid = useSelector(getFormValid);
-  const tagCategoriesWithoutProviders = tagCategories.filter(
-    (category) => category.label?.toLowerCase() !== "resource provider",
-  );
 
   const updateTitle = (e) => {
     dispatch(setFormValid(e.target.value.trim() !== ""));
@@ -215,23 +209,6 @@ export default function PublicationForm() {
     </div>
   );
 
-  const tags = (
-    <div className={"card mt-3"}>
-      <div className={"card-header d-flex"}>
-        <h2>Tags</h2>
-        <InfoTip>
-          Add related tags from the lists below. You may choose multiple tags
-          per category.
-        </InfoTip>
-      </div>
-      <div className={"card-body"}>
-        {tagCategoriesWithoutProviders.map((tc, idx) => (
-          <Tags key={`tc_${idx}`} index={idx} category={tc} />
-        ))}
-      </div>
-    </div>
-  );
-
   const projects = (
     <div className={"card mt-3"}>
       <div className={"card-header d-flex"}>
@@ -253,7 +230,6 @@ export default function PublicationForm() {
       {publicationInformation}
       {authors}
       {projects}
-      {tags}
     </>
   );
 }

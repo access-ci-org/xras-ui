@@ -1,14 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
-import {
-  getProjects,
-  toggleRequest,
-  getProvidersForSelectedProjects,
-} from "./helpers/publicationEditSlice";
+import { getProjects, toggleRequest } from "./helpers/publicationEditSlice";
 
 export default function Projects() {
   const dispatch = useDispatch();
   const projects = useSelector(getProjects);
-  const providers = useSelector(getProvidersForSelectedProjects);
 
   const projectClass = (project) => {
     return `list-group-item list-group-item-action clickable ${

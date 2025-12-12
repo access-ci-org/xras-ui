@@ -70,7 +70,6 @@ export const initialState = {
   selected_tags: {},
   show_saved: false,
   showEditModal: false,
-  tag_categories: [],
   resource_none_selected: false,
 };
 
@@ -122,7 +121,6 @@ const publicationEditSlice = createSlice({
         if (!a.affiliation) a.affiliation = "";
       });
       state.publication_types = payload.publication_types;
-      state.tag_categories = payload.tag_categories;
       state.projects = normalizeProjects(payload.publication.projects || []);
       payload.publication.tags.forEach(
         (t) => (state.selected_tags[t.label] = t.options.map((o) => o.value)),
@@ -171,15 +169,6 @@ const publicationEditSlice = createSlice({
     toggleRequest: (state, { payload }) => {
       state.projects[payload].selected = !state.projects[payload].selected;
       pruneSelectedResources(state);
-    },
-    toggleTag: (state, { payload }) => {
-      let tagCategory = state.tag_categories.find(
-        (tc) =>
-          tc.publication_tags_category_id ==
-          payload.publication_tags_category_id,
-      );
-      tagCategory.tags[payload.idx].selected =
-        !tagCategory.tags[payload.idx].selected;
     },
     updateAuthor: (state, { payload }) => {
       state.publication.authors[payload.idx][payload.key] = payload.value;
@@ -237,7 +226,6 @@ export const {
   setShowEditModal,
   resetState,
   toggleRequest,
-  toggleTag,
   updateAuthor,
   updateErrors,
   updateField,
@@ -252,7 +240,6 @@ export const getPublication = (state) => state.publicationEdit.publication;
 export const getDoi = (state) => state.publicationEdit.publication.doi;
 export const getPubTypes = (state) => state.publicationEdit.publication_types;
 export const getAuthors = (state) => state.publicationEdit.publication.authors;
-export const getTagCategories = (state) => state.publicationEdit.tag_categories;
 export const getProjects = (state) => state.publicationEdit.projects;
 const getSelectedTagsState = (state) => state.publicationEdit.selected_tags;
 
@@ -286,28 +273,6 @@ export const getAvailableResources = createSelector(
     });
 
     return resources;
-  },
-);
-
-export const getProvidersForSelectedProjects = createSelector(
-  [getSelectedProjects],
-  (selectedProjects) => {
-    const seen = new Set();
-    const providers = [];
-
-    selectedProjects.forEach((project) => {
-      (project.resources || []).forEach((resource) => {
-        const abbreviation = resource?.organization_abbrev;
-        const name = resource?.organization_name;
-        if (!abbreviation && !name) return;
-        const key = abbreviation || name;
-        if (seen.has(key)) return;
-        seen.add(key);
-        providers.push({ abbreviation, name });
-      });
-    });
-
-    return providers;
   },
 );
 
