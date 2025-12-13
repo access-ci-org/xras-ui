@@ -16,6 +16,7 @@ import Authors from "./Authors";
 import InfoTip from "../shared/InfoTip";
 import Projects from "./Projects";
 import ProjectSearch from "./ProjectSearch";
+import Resources from "./Resources";
 
 export default function PublicationForm() {
   const dispatch = useDispatch();
@@ -225,11 +226,27 @@ export default function PublicationForm() {
     </div>
   );
 
+  const resources = (
+    <div className={"card mt-3"}>
+      <div className={"card-header d-flex"}>
+        <h2>Resources</h2>
+        <InfoTip>
+          Select the resources that were used in this publication. Resources
+          are shown from the projects you selected above.
+        </InfoTip>
+      </div>
+      <div className={"card-body"}>
+        <Resources />
+      </div>
+    </div>
+  );
+
   return (
     <>
       {publicationInformation}
       {authors}
       {projects}
+      {resources}
     </>
   );
 }

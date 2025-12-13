@@ -12,7 +12,7 @@ export default function Publication({
   publication,
 }) {
   const dispatch = useDispatch();
-  const { projects, publication_type: pubType } = publication;
+  const { projects, publication_type: pubType, resources = [] } = publication;
   const grant_numbers = projects.map((project) => project.grant_number);
 
   return (
@@ -50,6 +50,15 @@ export default function Publication({
                 </a>
               </li>
             ))}
+            {resources.map((resource) => {
+              const { full, short } = parseResourceName(resource);
+              return (
+                <li key={resource}>
+                  <i className="bi bi-server"></i>{" "}
+                  {short ? <abbr title={full}>{short}</abbr> : full}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
