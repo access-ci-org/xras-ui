@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
+import {dismissNotice} from "../../projects/helpers/apiSlice.js";
 
 export const getPublications = createAsyncThunk(
   "publicationsSearch/getPublications",
@@ -128,7 +129,14 @@ export const publicationsSearchSlice = createSlice({
       })
       .addCase(getFilters.fulfilled, (state, action) => {
         state.filterOptions = action.payload;
+      })
+      .addCase(dismissNotice.fulfilled, (state) => {
+          state.publication_updates_notice_check_dismissible_button_show = false;
+      })
+      .addCase(dismissNotice.rejected, (state, action) => {
+          state.error = action.payload?.error || "Error dismissing notice";
       });
+
   },
 });
 
