@@ -13,7 +13,7 @@ export default function PublicationsCheckDismiss({ grantNumber }) {
                 e.currentTarget.blur(); // removes focus
             }}
         >
-            DISMISS PUBLICATIONS CHECK NOTICE FOR A YEAR
+            I Have No NEW PUBLICATIONS
         </button>
     );
 }
