@@ -6,7 +6,15 @@ export const cleanDOI = (doi) => {
 const Publication = ({publication, index, fontSize="18px"}) => {
 
   const fields = ["Publication Type", "Publication Year", "DOI", "Journal", "Volume/Issue", "Pages" ];
-  const authors = publication.authors
+  const rawAuthors = publication.authors || []
+  const hasAuthorOrder = rawAuthors.some(
+    (a) => a.order !== undefined && a.order !== null,
+  )
+  const orderedAuthors = hasAuthorOrder
+    ? [...rawAuthors].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    : rawAuthors
+
+  const authors = orderedAuthors
     .map((author) => `${author.last_name}, ${author.first_name.substring(0,1)}.`)
     .join(', ')
   const grant_numbers = publication.projects

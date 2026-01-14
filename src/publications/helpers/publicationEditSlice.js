@@ -310,7 +310,10 @@ export const savePublication = () => async (dispatch, getState) => {
   const formData = {
     authenticity_token: token,
     publication: publication,
-    authors: publication.authors.map((a) => ({ ...a, order: 0 })),
+    authors: publication.authors.map((a, index) => ({
+      ...a,
+      order: a.order ?? index,
+    })),
     tags: tags,
     projects: projects,
   };
