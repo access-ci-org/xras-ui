@@ -722,6 +722,34 @@ export const saveUsers = createAsyncThunk(
   },
 );
 
+export const dismissNotice = createAsyncThunk(
+    "publications/dismissNotice",
+    async (_, { rejectWithValue }) => {
+        try {
+            const res = await fetch(config.routes.publications_dismiss_notice_path(), {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": document.querySelector("meta[name=csrf-token]").content,
+                },
+                body: JSON.stringify({
+                    acknowledged: true,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                return rejectWithValue(data);
+            }
+
+            return data;
+        } catch (err) {
+            return rejectWithValue({ error: err.message });
+        }
+    }
+);
+
 export const apiSlice = createSlice({
   name: "api",
   initialState: {
