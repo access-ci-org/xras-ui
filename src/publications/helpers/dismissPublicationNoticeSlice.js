@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import {dismissNotice} from "../../projects/helpers/apiSlice.js";
 
 const initialState = {
-    showUpdatePublications: window.initialState?.showUpdatePublications ?? true,
+    showUpdatePublications: false,
 };
 
 const dismissPublicationNoticeSlice = createSlice({
