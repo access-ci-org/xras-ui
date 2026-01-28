@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.28.0](https://github.com/access-ci-org/xras-ui/compare/v0.27.0...v0.28.0) (2026-01-28)
+
+
+### Features
+
+* On-Ramps Resource Catalog v2 ([da6a35f](https://github.com/access-ci-org/xras-ui/commit/da6a35fe6d06a3c80a5b08e7f6aa4811cbe8eac2))
+
 ## [0.27.0](https://github.com/access-ci-org/xras-ui/compare/v0.26.1...v0.27.0) (2026-01-22)
 
 
