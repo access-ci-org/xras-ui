@@ -16,7 +16,7 @@ export default function PublicationDismissPublicationsNotice() {
                 e.currentTarget.blur(); // removes focus
             }}
         >
-            I Have No NEW PUBLICATIONS
+            I HAVE NO NEW PUBLICATIONS
         </button>
     );
 }
