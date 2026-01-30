@@ -26,8 +26,8 @@ export default function PublicationsGrid({
 }) {
   const dispatch = useDispatch();
   const saving = useSelector(getSaving);
-  const selected = useSelector(getSelected);
-  const publications = useSelector(selectPublications);
+  const selected = useSelector(getSelected) || [];
+  const publications = useSelector(selectPublications) || [];
 
   // Fetch a new list of publications when a publication is added or edited.
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function PublicationsGrid({
     columns.splice(0, 0, {
       key: "publication_id",
       format: (value) => {
-        const isSelected = selected.includes(value);
+        const isSelected = selected?.includes(value) || false;
         return (
           <input
             type="checkbox"
@@ -79,12 +79,12 @@ export default function PublicationsGrid({
       },
       formatHeader: () => (
         <MultiStateCheckbox
-          selectedLength={selected.length}
-          totalLength={publications.length}
+          selectedLength={selected?.length || 0}
+          totalLength={publications?.length || 0}
           onChange={(checked) =>
             dispatch(
               setSelected(
-                checked ? publications.map((pub) => pub.publication_id) : [],
+                checked ? (publications || []).map((pub) => pub.publication_id) : [],
               ),
             )
           }
