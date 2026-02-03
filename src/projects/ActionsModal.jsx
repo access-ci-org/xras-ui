@@ -2,6 +2,7 @@ import React from "react";
 import { useProject, useRequest } from "./helpers/hooks";
 import { getResourceUsagePercent } from "../shared/helpers/utils";
 import config from "../shared/helpers/config";
+import { getUpgrade } from "./helpers/upgrades";
 
 import Dropdown from "react-bootstrap/Dropdown";
 import Modal from "react-bootstrap/Modal";
@@ -38,57 +39,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
 
   const actions = [];
-
-  // Retrieve % of used resource
-  let usedPercent = getResourceUsagePercent(request);
-
-  // Calculate number of days until the allocation end date
-  const endDate = new Date(request.endDate);
-  const currentDate = new Date();
-  const daysUntilEndDate = Math.max(0, Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24)));
-
-  // Determine if upgrade action should be shown
-  // TODO: Update threshold logic once the information is available
-  let nextTier;
-  let nextTierId;
-  let upgradeAction;
-  let upgradeAllowed;
-  const renewalAllowed = "Renewal" in request.allowedActions;
-  const supplementAllowed = "Supplement" in request.allowedActions;
-  const upgradeEligible = !(renewalAllowed) && !(supplementAllowed);
-
-  if (upgradeEligible) {
-    const nextTierMap = { Explore: "Discover", Discover: "Accelerate", Accelerate: null };
-    nextTier = nextTierMap[request.allocationType] || null;
-
-    if (nextTier) {
-      nextTierId = renewalActions.find(action => action.opportunityName.includes(nextTier)).opportunityId;
-      const upgradable = ["Explore", "Discover", "Accelerate"];
-
-      if (upgradable.includes(request.allocationType)) {
-        if (daysUntilEndDate > 30) {
-          const thresholds = { "Explore": .90, "Discover": .75, "Accelerate": .75 };
-          const threshold = thresholds[request.allocationType];
-          upgradeAllowed = usedPercent > threshold;
-        }
-      }
-    }
-  }
-
-  if (upgradeAllowed) {
-    upgradeAction =  {
-      id: "upgrade",
-      action: `${config.routes.renew_request_path(requestId)}?opportunity_id=${nextTierId}`,
-      method: "post",
-      isEnabled: true,
-      button: "Request an Upgrade",
-      enabled: (
-          <p>
-            Upgrade your {request.allocationType} project to {nextTier} by submitting an upgrade request.
-          </p>
-      )
-    };
-  }
+  const upgrade = getUpgrade(request, renewalActions);
 
   actions.push({
     id: "extension",
@@ -123,38 +74,54 @@ export default function ActionsModal({ requestId, grantNumber }) {
     ),
   });
 
-  actions.push({
-    id: "supplement",
-    action: `${newActionPath}?action_type=Supplement`,
-    isEnabled: "Supplement" in request.allowedActions,
-    button: "Request a Supplement",
-    enabled: request.usesCredits ? (
-      <p>
-        Need more credits to complete your project? Great news! Your{" "}
-        {request.allocationType} project is eligible for a supplement of{" "}
-        {
+  if (upgrade.isEnabled) {
+    actions.push({
+      id: "upgrade",
+      action: config.routes.renew_request_path(requestId, {opportunity_id: upgrade.opportunityId}),
+      method: "post",
+      isEnabled: true,
+      button: "Request an upgrade",
+      enabled:
+        <p>
+          Running low on credits well before your project's end date?
+          You could be ready for the next level.
+          Upgrade your {request.allocationType} allocation to {upgrade.allocationType}!
+        </p>
+    });
+  } else {
+    actions.push({
+      id: "supplement",
+      action: `${newActionPath}?action_type=Supplement`,
+      isEnabled: "Supplement" in request.allowedActions,
+      button: "Request a Supplement",
+      enabled: request.usesCredits ? (
+        <p>
+          Need more credits to complete your project? Great news! Your{" "}
+          {request.allocationType} project is eligible for a supplement of{" "}
           {
-            Explore: "200,000",
-            Discover: "750,000",
-            Accelerate: "1,500,000",
-          }[request.allocationType]
-        }{" "}
-        additional ACCESS credits.
-      </p>
-    ) : (
-      <p>
-        Need more units to complete your research? Great news! Your{" "}
-        {request.allocationType} project is eligible for a supplement of
-        additional units.
-      </p>
-    ),
-    disabled: (
-      <p>
-        Your project is not currently eligible for a supplement of additional{" "}
-        {request.usesCredits ? "ACCESS Credits" : "units"}.
-      </p>
-    ),
-  });
+            {
+              Explore: "200,000",
+              Discover: "750,000",
+              Accelerate: "1,500,000",
+            }[request.allocationType]
+          }{" "}
+          additional ACCESS credits.
+        </p>
+      ) : (
+        <p>
+          Need more units to complete your research? Great news! Your{" "}
+          {request.allocationType} project is eligible for a supplement of
+          additional units.
+        </p>
+      ),
+      disabled: (
+        <p>
+          Your project is not currently eligible for a supplement of additional{" "}
+          {request.usesCredits ? "ACCESS Credits" : "units"}.
+        </p>
+      ),
+    });
+  }
 
   actions.push({
     id: "renewal",
@@ -165,7 +132,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
       }`,
       "post",
     ]),
-    isEnabled: renewalAllowed,
+    isEnabled: upgrade.isRenewalEnabled,
     button: "Request a Renewal",
     enabled: (
       <p>
@@ -222,10 +189,6 @@ export default function ActionsModal({ requestId, grantNumber }) {
       </p>
     ),
   });
-
-  if (upgradeAllowed) {
-      actions.push(upgradeAction);
-  }
 
   const rows = actions.map(
     ({ id, action, isEnabled, button, enabled, disabled, method }) => (
