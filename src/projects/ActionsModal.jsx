@@ -228,7 +228,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
   }
 
   const rows = actions.map(
-    ({ id, action, isEnabled, button, enabled, disabled }) => (
+    ({ id, action, isEnabled, button, enabled, disabled, method }) => (
       <div className="row" key={id}>
         <div className="col-sm-4 mb-2 d-grid">
           {Array.isArray(action) && action.length && isEnabled ? (
@@ -239,13 +239,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
                   <Dropdown.Item
                     key={href}
                     href={href}
-                    onClick={(e) => {
-                      if (method !== "get") {
-                        e.preventDefault();
-                        e.target.dataset.method = method;
-                        if ($ && $.rails) $.rails.handleMethod($(e.target));
-                      }
-                    }}
+                    data-method={method}
                   >
                     {name}
                   </Dropdown.Item>
@@ -258,6 +252,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
                 isEnabled ? "" : "disabled"
               }`}
               href={isEnabled ? action : ""}
+              data-method={method}
             >
               <span>{button}</span>
             </a>
