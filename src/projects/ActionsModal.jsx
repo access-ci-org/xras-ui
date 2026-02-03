@@ -198,6 +198,9 @@ export default function ActionsModal({ requestId, grantNumber }) {
     ),
   });
 
+  actions.sort((a, b) => (a.isEnabled < b.isEnabled ? 1 : -1));
+
+  // Put the help option at the bottom.
   actions.push({
     id: "help",
     action: [
@@ -223,8 +226,6 @@ export default function ActionsModal({ requestId, grantNumber }) {
   if (upgradeAllowed) {
       actions.push(upgradeAction);
   }
-
-  actions.sort((a, b) => (a.isEnabled < b.isEnabled ? 1 : -1));
 
   const rows = actions.map(
     ({ id, action, isEnabled, button, enabled, disabled }) => (
