@@ -759,6 +759,7 @@ export const apiSlice = createSlice({
     projects: {},
     requests: {},
     username: null,
+    showUpdatePublications: false,
   },
   reducers: {
     addResource: (state, action) => {
@@ -1049,9 +1050,16 @@ export const apiSlice = createSlice({
       .addCase(saveUsers.rejected, (state, action) => {
         const project = getProject(state, action);
         project.usersStatus = statuses.error;
+      })
+      .addCase(dismissNotice.fulfilled, (state, action) => {
+        if (action.payload?.success) {
+        state.showUpdatePublications = false;
+        }
       });
   },
 });
+
+export const selectShowUpdatePublications = (state) => state.api.showUpdatePublications;
 
 export const selectError = (state) => state.api.error;
 export const selectProjectsList = (state) => state.api.projectsList;

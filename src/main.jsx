@@ -35,7 +35,7 @@ import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
-import dismissPublicationNoticeReducer from "./publications/helpers/dismissPublicationNoticeSlice";
+import apiReducer from "./projects/helpers/apiSlice";
 
 export function shadowTarget(
   host,
@@ -265,11 +265,15 @@ export function myPublications({
   addRoutes(routes);
   const myPublicationsStore = configureStore({
     reducer: {
+      api: apiReducer,
       publicationEdit: publicationEditSlice,
       publicationsSearch: publicationsSearchSlice,
-      dismissPublicationNotice: dismissPublicationNoticeReducer,
     },
     preloadedState: {
+      api: {
+          showUpdatePublications,
+          username,
+      },
       publicationsSearch: {
         ...publicationsSearchInitialState,
         filterSelections: {

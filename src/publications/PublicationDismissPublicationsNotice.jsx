@@ -1,11 +1,12 @@
 import {useDispatch, useSelector} from "react-redux";
-import {dismissNotice} from "../projects/helpers/apiSlice.js";
+import {
+    dismissNotice,
+    selectShowUpdatePublications,
+} from "../projects/helpers/apiSlice";
 
 export default function PublicationDismissPublicationsNotice() {
     const dispatch = useDispatch();
-    const showUpdatePublications = useSelector(
-        (state) => state.dismissPublicationNotice.showUpdatePublications
-    );
+    const showUpdatePublications = useSelector(selectShowUpdatePublications);
     if (!showUpdatePublications) return null;
     return (
         <button
