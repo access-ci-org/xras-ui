@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.29.0](https://github.com/access-ci-org/xras-ui/compare/v0.28.0...v0.29.0) (2026-02-05)
+
+
+### Features
+
+* Ramps 814 one button dismiss all publication updates ([296a6ba](https://github.com/access-ci-org/xras-ui/commit/296a6baa0104056f9a9cf8a19de20650427bb8c6))
+
 ## [0.28.0](https://github.com/access-ci-org/xras-ui/compare/v0.27.0...v0.28.0) (2026-01-28)
 
 
