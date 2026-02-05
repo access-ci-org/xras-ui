@@ -1,6 +1,8 @@
 import React from "react";
 import { useProject, useRequest } from "./helpers/hooks";
+import { getResourceUsagePercent } from "../shared/helpers/utils";
 import config from "../shared/helpers/config";
+import { getUpgrade } from "./helpers/upgrades";
 
 import Dropdown from "react-bootstrap/Dropdown";
 import Modal from "react-bootstrap/Modal";
@@ -36,40 +38,58 @@ export default function ActionsModal({ requestId, grantNumber }) {
   // Explore, Discover, Accelerate.
   renewalActions.sort((a, b) => (a.opportunityId < b.opportunityId ? -1 : 1));
 
-  const actions = [
-    {
-      id: "extension",
-      action: `${newActionPath}?action_type=Extension`,
-      isEnabled: "Extension" in request.allowedActions,
-      button: "Request an Extension",
-      enabled: request.usesCredits ? (
+  const actions = [];
+  const upgrade = getUpgrade(request, renewalActions);
+
+  actions.push({
+    id: "extension",
+    action: `${newActionPath}?action_type=Extension`,
+    isEnabled: "Extension" in request.allowedActions,
+    button: "Request an Extension",
+    enabled: request.usesCredits ? (
+      <p>
+        Need more time to use your current credits and allocations? You can
+        extend your project's end date up to six months past your funding end
+        date, or up to 12 months at a time for projects not supported by a
+        funding award.
+      </p>
+    ) : (
+      <p>
+        Need more time to use your current allocations? A one-time extension
+        can extend your project end date by up to six months.
+      </p>
+    ),
+    disabled: (
+      <p>
+        Your project is not currently eligible for an extension of its end
+        date.
+        {request.usesCredits ? (
+          <>
+            {" "}
+            Extensions can be requested starting 90 days before your project's
+            current end date.
+          </>
+        ) : null}
+      </p>
+    ),
+  });
+
+  if (upgrade.isEnabled) {
+    actions.push({
+      id: "upgrade",
+      action: config.routes.renew_request_path(requestId, {opportunity_id: upgrade.opportunityId}),
+      method: "post",
+      isEnabled: true,
+      button: "Request an upgrade",
+      enabled:
         <p>
-          Need more time to use your current credits and allocations? You can
-          extend your project's end date up to six months past your funding end
-          date, or up to 12 months at a time for projects not supported by a
-          funding award.
+          Running low on credits well before your project's end date?
+          You could be ready for the next level.
+          Upgrade your {request.allocationType} allocation to {upgrade.allocationType}!
         </p>
-      ) : (
-        <p>
-          Need more time to use your current allocations? A one-time extension
-          can extend your project end date by up to six months.
-        </p>
-      ),
-      disabled: (
-        <p>
-          Your project is not currently eligible for an extension of its end
-          date.
-          {request.usesCredits ? (
-            <>
-              {" "}
-              Extensions can be requested starting 90 days before your project's
-              current end date.
-            </>
-          ) : null}
-        </p>
-      ),
-    },
-    {
+    });
+  } else {
+    actions.push({
       id: "supplement",
       action: `${newActionPath}?action_type=Supplement`,
       isEnabled: "Supplement" in request.allowedActions,
@@ -100,78 +120,81 @@ export default function ActionsModal({ requestId, grantNumber }) {
           {request.usesCredits ? "ACCESS Credits" : "units"}.
         </p>
       ),
-    },
-    {
-      id: "renewal",
-      action: renewalActions.map((action) => [
-        action.opportunityName,
-        `${config.routes.renew_request_path(requestId)}?opportunity_id=${
-          action.opportunityId
-        }`,
-        "post",
-      ]),
-      isEnabled: "Renewal" in request.allowedActions,
-      button: "Request a Renewal",
-      enabled: (
-        <p>
-          Your {request.allocationType} project can be renewed! The requirements
-          for renewing your project depend on the{" "}
-          <a href={config.routes.project_types_path()} target="_blank">
-            new project type you select
-          </a>
-          .
-        </p>
-      ),
-      disabled: (
-        <p>
-          Your project is not currently eligible for renewal.
-          {request.usesCredits && (
-            <>
-              {" "}
-              Renewals are available starting 30 days before the project's
-              current end date.
-            </>
-          )}
-          {request.isMaximize && (
-            <>
-              {" "}
-              You can submit a renewal request to the Maximize ACCESS
-              opportunity closest to your project&apos;s current end date.
-            </>
-          )}
-        </p>
-      ),
-    },
-    {
-      id: "help",
-      action: [
-        ["Learn How to Manage Allocations", config.routes.how_to_path(), "get"],
-        [
-          "Open a Help Ticket",
-          "https://support.access-ci.org/open-a-ticket",
-          "get",
-        ],
-      ],
-      isEnabled: true,
-      button: "Request Help",
-      enabled: (
-        <p>
-          Need to change something else about your project or expecting another
-          option? Submit a help ticket that includes{" "}
-          <em>grant number {project.grantNumber}</em> and a detailed description
-          of the problem.
-        </p>
-      ),
-    },
-  ];
+    });
+  }
+
+  actions.push({
+    id: "renewal",
+    action: renewalActions.map((action) => [
+      action.opportunityName,
+      `${config.routes.renew_request_path(requestId)}?opportunity_id=${
+        action.opportunityId
+      }`,
+      "post",
+    ]),
+    isEnabled: upgrade.isRenewalEnabled,
+    button: "Request a Renewal",
+    enabled: (
+      <p>
+        Your {request.allocationType} project can be renewed! The requirements
+        for renewing your project depend on the{" "}
+        <a href={config.routes.project_types_path()} target="_blank">
+          new project type you select
+        </a>
+        .
+      </p>
+    ),
+    disabled: (
+      <p>
+        Your project is not currently eligible for renewal.
+        {request.usesCredits && (
+          <>
+            {" "}
+            Renewals are available starting 30 days before the project's
+            current end date.
+          </>
+        )}
+        {request.isMaximize && (
+          <>
+            {" "}
+            You can submit a renewal request to the Maximize ACCESS
+            opportunity closest to your project&apos;s current end date.
+          </>
+        )}
+      </p>
+    ),
+  });
 
   actions.sort((a, b) => (a.isEnabled < b.isEnabled ? 1 : -1));
 
+  // Put the help option at the bottom.
+  actions.push({
+    id: "help",
+    action: [
+      ["Learn How to Manage Allocations", config.routes.how_to_path(), "get"],
+      [
+        "Open a Help Ticket",
+        "https://support.access-ci.org/open-a-ticket",
+        "get",
+      ],
+    ],
+    isEnabled: true,
+    button: "Request Help",
+    enabled: (
+      <p>
+        Need to change something else about your project or expecting another
+        option? Submit a help ticket that includes{" "}
+        <em>grant number {project.grantNumber}</em> and a detailed description
+        of the problem.
+      </p>
+    ),
+  });
+
   const rows = actions.map(
-    ({ id, action, isEnabled, button, enabled, disabled }) => (
+    ({ id, action, isEnabled, button, enabled, disabled, method }) => (
       <div className="row" key={id}>
         <div className="col-sm-4 mb-2 d-grid">
-          {Array.isArray(action) && action.length ? (
+          {Array.isArray(action) && action.length && isEnabled ? (
             <Dropdown className="d-flex flex-column">
               <Dropdown.Toggle as={ActionToggle}>{button}</Dropdown.Toggle>
               <Dropdown.Menu>
@@ -179,13 +202,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
                   <Dropdown.Item
                     key={href}
                     href={href}
-                    onClick={(e) => {
-                      if (method !== "get") {
-                        e.preventDefault();
-                        e.target.dataset.method = method;
-                        if ($ && $.rails) $.rails.handleMethod($(e.target));
-                      }
-                    }}
+                    data-method={method}
                   >
                     {name}
                   </Dropdown.Item>
@@ -198,6 +215,7 @@ export default function ActionsModal({ requestId, grantNumber }) {
                 isEnabled ? "" : "disabled"
               }`}
               href={isEnabled ? action : ""}
+              data-method={method}
             >
               <span>{button}</span>
             </a>
