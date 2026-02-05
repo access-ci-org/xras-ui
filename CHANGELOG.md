@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.30.0](https://github.com/access-ci-org/xras-ui/compare/v0.29.0...v0.30.0) (2026-02-05)
+
+
+### Features
+
+* **projects:** Add "Upgrade" option ([09f4be1](https://github.com/access-ci-org/xras-ui/commit/09f4be14679b745248054386bf5ecb36fcf02bbe))
+
 ## [0.29.0](https://github.com/access-ci-org/xras-ui/compare/v0.28.0...v0.29.0) (2026-02-05)
 
 
