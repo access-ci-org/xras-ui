@@ -35,6 +35,8 @@ import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
+import apiReducer from "./projects/helpers/apiSlice";
+
 export function shadowTarget(
   host,
   { bootstrapFonts = true, bootstrapVariables = true, baseUrl = null } = {},
@@ -260,14 +262,20 @@ export function myPublications({
   routes,
   target,
   username,
+  showUpdatePublications,
 }) {
   addRoutes(routes);
   const myPublicationsStore = configureStore({
     reducer: {
+      api: apiReducer,
       publicationEdit: publicationEditSlice,
       publicationsSearch: publicationsSearchSlice,
     },
     preloadedState: {
+      api: {
+          showUpdatePublications,
+          username,
+      },
       publicationsSearch: {
         ...publicationsSearchInitialState,
         filterSelections: {
@@ -279,12 +287,19 @@ export function myPublications({
         ...publicationEditInitialState,
         authenticityToken: authenticityToken,
       },
+        dismissPublicationNotice: {
+            showUpdatePublications: showUpdatePublications, // use initial value from Rails
+            status: "idle",
+            error: null,
+            message: null,
+        },
     },
   });
 
   ReactDOM.createRoot(target).render(
     <Provider store={myPublicationsStore}>
-      <MyPublications />
+        <MyPublications showUpdatePublications={showUpdatePublications}
+        />
     </Provider>,
   );
 }
