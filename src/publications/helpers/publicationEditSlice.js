@@ -365,27 +365,32 @@ export const savePublication = () => async (dispatch, getState) => {
   }
 
   dispatch(updateSaving(true));
+  dispatch(updateShowSaved(false));
 
-  await fetch(url, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(formData),
-  }).then(
-    () => {
-      if (!publication.publication_id) {
-        dispatch(resetState());
-        dispatch(getData());
-      }
-      dispatch(updateShowSaved(true));
-      dispatch(updateSaving(false));
-    },
-    () => {
-      dispatch(updateSaving(false));
-      dispatch(updateErrors("There was an error saving this publication."));
-    },
-  );
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Save failed with status ${response.status}`);
+    }
+
+    if (!publication.publication_id) {
+      dispatch(resetState());
+      dispatch(getData());
+    }
+
+    dispatch(updateShowSaved(true));
+  } catch {
+    dispatch(updateErrors("There was an error saving this publication."));
+  } finally {
+    dispatch(updateSaving(false));
+  }
 };
 
 export default publicationEditSlice.reducer;
