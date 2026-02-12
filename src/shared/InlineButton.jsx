@@ -5,6 +5,7 @@ export default function InlineButton({
   onClick,
   target,
   title,
+  type = "button",
 }) {
   const children = <i className={`bi bi-${icon}`} />;
   const props = {
@@ -23,6 +24,6 @@ export default function InlineButton({
   return href ? (
     <a {...props}>{children}</a>
   ) : (
-    <button {...props}>{children}</button>
+    <button {...props} type={type}>{children}</button>
   );
 }
