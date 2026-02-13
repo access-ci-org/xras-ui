@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.30.1](https://github.com/access-ci-org/xras-ui/compare/v0.30.0...v0.30.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* Button Type and Error Message on Save ([c46eaef](https://github.com/access-ci-org/xras-ui/commit/c46eaeffb06a427896d963dcd6ed3371c46ee041))
+
 ## [0.30.0](https://github.com/access-ci-org/xras-ui/compare/v0.29.0...v0.30.0) (2026-02-05)
 
 
