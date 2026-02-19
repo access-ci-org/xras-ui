@@ -18,6 +18,41 @@ import Projects from "./Projects";
 import ProjectSearch from "./ProjectSearch";
 import Resources from "./Resources";
 
+const START_YEAR = 1980;
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const normalizePublicationYear = (value) => {
+  return value == null ? "" : `${value}`;
+};
+
+const normalizePublicationMonth = (value) => {
+  if (value == null || value === "") return "";
+
+  const numericMonth = Number(value);
+  if (Number.isInteger(numericMonth) && numericMonth >= 1 && numericMonth <= 12) {
+    return `${numericMonth}`;
+  }
+
+  const normalizedMonth = `${value}`.trim().toLowerCase();
+  const monthIndex = MONTHS.findIndex(
+    (month) => month.toLowerCase() === normalizedMonth,
+  );
+  return monthIndex >= 0 ? `${monthIndex + 1}` : "";
+};
+
 export default function PublicationForm() {
   const dispatch = useDispatch();
   const publication = useSelector(getPublication);
@@ -54,24 +89,17 @@ export default function PublicationForm() {
 
   const fixedFields = () => {
     const lastYear = new Date().getFullYear() + 2;
-    let year = 1980;
-    const years = [];
-    while (year <= lastYear) years.push(year++);
+    const years = Array.from(
+      { length: lastYear - START_YEAR + 1 },
+      (_, idx) => START_YEAR + idx,
+    );
 
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
+    const publicationYearValue = normalizePublicationYear(
+      publication.publication_year,
+    );
+    const publicationMonthValue = normalizePublicationMonth(
+      publication.publication_month,
+    );
 
     const reqIcon = <i className="bi bi-asterisk text-danger"></i>;
 
@@ -88,7 +116,7 @@ export default function PublicationForm() {
               type={"text"}
               className={`form-control ${formValid ? "" : "is-invalid"}`}
               value={publication.title || ""}
-              onChange={(e) => updateTitle(e)}
+              onChange={updateTitle}
             />
           </div>
         </div>
@@ -102,16 +130,17 @@ export default function PublicationForm() {
               name={"publication_year"}
               id={"publication_year"}
               className={"form-control"}
-              value={publication.publication_year || ""}
+              value={publicationYearValue}
               onChange={(e) => {
-                updatePublication({
+                dispatch(updatePublication({
                   key: "publication_year",
                   value: e.target.value,
-                });
+                }));
               }}
             >
+              <option value="">Select a year</option>
               {years.map((year) => (
-                <option key={`year_${year}`} value={year}>
+                <option key={`year_${year}`} value={`${year}`}>
                   {year}
                 </option>
               ))}
@@ -128,16 +157,17 @@ export default function PublicationForm() {
               name={"publication_month"}
               id={"publication_month"}
               className={"form-control"}
-              value={publication.publication_month || ""}
+              value={publicationMonthValue}
               onChange={(e) => {
-                updatePublication({
+                dispatch(updatePublication({
                   key: "publication_month",
                   value: e.target.value,
-                });
+                }));
               }}
             >
-              {months.map((month, idx) => (
-                <option key={`month_${idx}`} value={idx + 1}>
+              <option value="">Select a month</option>
+              {MONTHS.map((month, idx) => (
+                <option key={`month_${idx}`} value={`${idx + 1}`}>
                   {month}
                 </option>
               ))}
