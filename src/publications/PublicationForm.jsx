@@ -18,6 +18,41 @@ import Projects from "./Projects";
 import ProjectSearch from "./ProjectSearch";
 import Resources from "./Resources";
 
+const START_YEAR = 1980;
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const normalizePublicationYear = (value) => {
+  return value == null ? "" : `${value}`;
+};
+
+const normalizePublicationMonth = (value) => {
+  if (value == null || value === "") return "";
+
+  const numericMonth = Number(value);
+  if (Number.isInteger(numericMonth) && numericMonth >= 1 && numericMonth <= 12) {
+    return `${numericMonth}`;
+  }
+
+  const normalizedMonth = `${value}`.trim().toLowerCase();
+  const monthIndex = MONTHS.findIndex(
+    (month) => month.toLowerCase() === normalizedMonth,
+  );
+  return monthIndex >= 0 ? `${monthIndex + 1}` : "";
+};
+
 export default function PublicationForm() {
   const dispatch = useDispatch();
   const publication = useSelector(getPublication);
@@ -54,57 +89,17 @@ export default function PublicationForm() {
 
   const fixedFields = () => {
     const lastYear = new Date().getFullYear() + 2;
-    let year = 1980;
-    const years = [];
-    while (year <= lastYear) years.push(year++);
+    const years = Array.from(
+      { length: lastYear - START_YEAR + 1 },
+      (_, idx) => START_YEAR + idx,
+    );
 
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
-    const publicationYearValue =
-      publication.publication_year === undefined ||
-      publication.publication_year === null
-        ? ""
-        : `${publication.publication_year}`;
-
-    const publicationMonthValue = (() => {
-      if (
-        publication.publication_month === undefined ||
-        publication.publication_month === null ||
-        publication.publication_month === ""
-      ) {
-        return "";
-      }
-
-      const numericMonth = Number(publication.publication_month);
-      if (
-        Number.isInteger(numericMonth) &&
-        numericMonth >= 1 &&
-        numericMonth <= 12
-      ) {
-        return `${numericMonth}`;
-      }
-
-      const monthIndex = months.findIndex(
-        (month) =>
-          month.toLowerCase() ===
-          `${publication.publication_month}`.trim().toLowerCase(),
-      );
-
-      return monthIndex >= 0 ? `${monthIndex + 1}` : "";
-    })();
+    const publicationYearValue = normalizePublicationYear(
+      publication.publication_year,
+    );
+    const publicationMonthValue = normalizePublicationMonth(
+      publication.publication_month,
+    );
 
     const reqIcon = <i className="bi bi-asterisk text-danger"></i>;
 
@@ -121,7 +116,7 @@ export default function PublicationForm() {
               type={"text"}
               className={`form-control ${formValid ? "" : "is-invalid"}`}
               value={publication.title || ""}
-              onChange={(e) => updateTitle(e)}
+              onChange={updateTitle}
             />
           </div>
         </div>
@@ -171,7 +166,7 @@ export default function PublicationForm() {
               }}
             >
               <option value="">Select a month</option>
-              {months.map((month, idx) => (
+              {MONTHS.map((month, idx) => (
                 <option key={`month_${idx}`} value={`${idx + 1}`}>
                   {month}
                 </option>

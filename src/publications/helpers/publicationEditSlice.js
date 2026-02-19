@@ -2,6 +2,14 @@ import { createSelector, createSlice } from "@reduxjs/toolkit";
 import config from "../../shared/helpers/config";
 import { invalidFormAlert, validateForm } from "../FormValidation";
 
+const SKIPPED_PUBLICATION_KEYS = new Set([
+  "fields",
+  "authors",
+  "projects",
+  "publication_resources",
+  "tags",
+]);
+
 export const initialState = {
   authenticityToken: null,
   data_loaded: false,
@@ -91,22 +99,21 @@ const publicationEditSlice = createSlice({
     setPublication: (state, { payload }) => {
       // Prefilling the per PublicationType fields
       state.publication.fields.forEach((f) => {
-        f.field_value = payload[f.csl_field_name] || "";
+        f.field_value = payload[f.csl_field_name] ?? "";
       });
 
       // Prefilling the Publication fields
       // Iterate over payload keys to ensure all DOI lookup data is set
-      Object.keys(payload).forEach((k) => {
+      Object.entries(payload).forEach(([key, value]) => {
         // Skip fields that are arrays/objects that need special handling
-        if (k !== "fields" && k !== "authors" && k !== "projects" && k !== "publication_resources" && k !== "tags") {
-          // Update publication fields from payload, checking !== undefined to allow valid values
-          if (payload[k] !== undefined && payload[k] !== null) {
-            state.publication[k] = payload[k];
-          }
+        if (SKIPPED_PUBLICATION_KEYS.has(key)) return;
+        // Update publication fields from payload, checking for null/undefined to allow valid values
+        if (value != null) {
+          state.publication[key] = value;
         }
       });
 
-      state.form_valid = payload["title"]?.trim() == "" ? false : true;
+      state.form_valid = Boolean(payload.title?.trim());
     },
     setPublicationId: (state, { payload }) => {
       state.publicationId = payload;
