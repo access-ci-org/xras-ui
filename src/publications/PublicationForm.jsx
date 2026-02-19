@@ -73,6 +73,39 @@ export default function PublicationForm() {
       "December",
     ];
 
+    const publicationYearValue =
+      publication.publication_year === undefined ||
+      publication.publication_year === null
+        ? ""
+        : `${publication.publication_year}`;
+
+    const publicationMonthValue = (() => {
+      if (
+        publication.publication_month === undefined ||
+        publication.publication_month === null ||
+        publication.publication_month === ""
+      ) {
+        return "";
+      }
+
+      const numericMonth = Number(publication.publication_month);
+      if (
+        Number.isInteger(numericMonth) &&
+        numericMonth >= 1 &&
+        numericMonth <= 12
+      ) {
+        return `${numericMonth}`;
+      }
+
+      const monthIndex = months.findIndex(
+        (month) =>
+          month.toLowerCase() ===
+          `${publication.publication_month}`.trim().toLowerCase(),
+      );
+
+      return monthIndex >= 0 ? `${monthIndex + 1}` : "";
+    })();
+
     const reqIcon = <i className="bi bi-asterisk text-danger"></i>;
 
     return (
@@ -102,16 +135,17 @@ export default function PublicationForm() {
               name={"publication_year"}
               id={"publication_year"}
               className={"form-control"}
-              value={publication.publication_year || ""}
+              value={publicationYearValue}
               onChange={(e) => {
-                updatePublication({
+                dispatch(updatePublication({
                   key: "publication_year",
                   value: e.target.value,
-                });
+                }));
               }}
             >
+              <option value="">Select a year</option>
               {years.map((year) => (
-                <option key={`year_${year}`} value={year}>
+                <option key={`year_${year}`} value={`${year}`}>
                   {year}
                 </option>
               ))}
@@ -128,16 +162,17 @@ export default function PublicationForm() {
               name={"publication_month"}
               id={"publication_month"}
               className={"form-control"}
-              value={publication.publication_month || ""}
+              value={publicationMonthValue}
               onChange={(e) => {
-                updatePublication({
+                dispatch(updatePublication({
                   key: "publication_month",
                   value: e.target.value,
-                });
+                }));
               }}
             >
+              <option value="">Select a month</option>
               {months.map((month, idx) => (
-                <option key={`month_${idx}`} value={idx + 1}>
+                <option key={`month_${idx}`} value={`${idx + 1}`}>
                   {month}
                 </option>
               ))}

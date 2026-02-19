@@ -95,13 +95,18 @@ const publicationEditSlice = createSlice({
       });
 
       // Prefilling the Publication fields
-      Object.keys(state.publication).forEach((k) => {
-        if (payload[k]) {
-          state.publication[k] = payload[k];
+      // Iterate over payload keys to ensure all DOI lookup data is set
+      Object.keys(payload).forEach((k) => {
+        // Skip fields that are arrays/objects that need special handling
+        if (k !== "fields" && k !== "authors" && k !== "projects" && k !== "publication_resources" && k !== "tags") {
+          // Update publication fields from payload, checking !== undefined to allow valid values
+          if (payload[k] !== undefined && payload[k] !== null) {
+            state.publication[k] = payload[k];
+          }
         }
       });
 
-      state.form_valid = payload["title"].trim() == "" ? false : true;
+      state.form_valid = payload["title"]?.trim() == "" ? false : true;
     },
     setPublicationId: (state, { payload }) => {
       state.publicationId = payload;
