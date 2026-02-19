@@ -102,6 +102,14 @@ const publicationEditSlice = createSlice({
         f.field_value = payload[f.csl_field_name] ?? "";
       });
 
+      // Handle authors separately if provided (e.g., from DOI lookup)
+      if (Array.isArray(payload.authors)) {
+        state.publication.authors = payload.authors.map((author) => ({
+          ...author,
+          affiliation: author.affiliation ?? "",
+        }));
+      }
+
       // Prefilling the Publication fields
       // Iterate over payload keys to ensure all DOI lookup data is set
       Object.entries(payload).forEach(([key, value]) => {
