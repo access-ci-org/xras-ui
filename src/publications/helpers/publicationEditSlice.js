@@ -4,7 +4,6 @@ import { invalidFormAlert, validateForm } from "../FormValidation";
 
 const SKIPPED_PUBLICATION_KEYS = new Set([
   "fields",
-  "authors",
   "projects",
   "publication_resources",
   "tags",
@@ -102,19 +101,23 @@ const publicationEditSlice = createSlice({
         f.field_value = payload[f.csl_field_name] ?? "";
       });
 
-      // Handle authors separately if provided (e.g., from DOI lookup)
-      if (Array.isArray(payload.authors)) {
-        state.publication.authors = payload.authors.map((author) => ({
-          ...author,
-          affiliation: author.affiliation ?? "",
-        }));
-      }
-
       // Prefilling the Publication fields
       // Iterate over payload keys to ensure all DOI lookup data is set
       Object.entries(payload).forEach(([key, value]) => {
         // Skip fields that are arrays/objects that need special handling
         if (SKIPPED_PUBLICATION_KEYS.has(key)) return;
+        
+        // Handle authors separately (e.g., from DOI lookup)
+        if (key === "authors") {
+          if (Array.isArray(value)) {
+            state.publication.authors = value.map((author) => ({
+              ...author,
+              affiliation: author.affiliation ?? "",
+            }));
+          }
+          return;
+        }
+        
         // Update publication fields from payload, checking for null/undefined to allow valid values
         if (value != null) {
           state.publication[key] = value;
