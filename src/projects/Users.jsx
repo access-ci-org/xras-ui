@@ -60,7 +60,14 @@ export default function Users({ grantNumber, requestId }) {
   } else if (error) {
     alert = (
       <Alert color="danger">
-        Sorry, your changes could not be saved. Please try again later.
+        Sorry, some of your changes could not be saved.
+        {project.usersErrors?.length > 0 && (
+          <ul className="mb-0" style={{ fontSize: "inherit" }}>
+            {project.usersErrors.map((message, index) => (
+              <li key={index}>{message}</li>
+            ))}
+          </ul>
+        )}
       </Alert>
     );
   } else if (!canManageUsers) {

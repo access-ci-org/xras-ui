@@ -718,7 +718,14 @@ export const saveUsers = createAsyncThunk(
       return { grantNumber };
     }
 
-    return rejectWithValue({ grantNumber });
+    let errors;
+    try {
+      const body = await res.json();
+      errors = body.errors;
+    } catch {
+      errors = ["Unable to save changes"];
+    }
+    return rejectWithValue({ grantNumber, errors });
   },
 );
 
@@ -1049,6 +1056,7 @@ export const apiSlice = createSlice({
       })
       .addCase(saveUsers.rejected, (state, action) => {
         const project = getProject(state, action);
+        project.usersErrors = action.payload.errors;
         project.usersStatus = statuses.error;
       })
       .addCase(dismissNotice.fulfilled, (state, action) => {
