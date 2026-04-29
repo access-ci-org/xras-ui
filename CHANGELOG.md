@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.30.3](https://github.com/access-ci-org/xras-ui/compare/v0.30.2...v0.30.3) (2026-04-27)
+
+
+### Bug Fixes
+
+* Display API error messages on failed user save ([3672c69](https://github.com/access-ci-org/xras-ui/commit/3672c694bbb814b73dff850f36b144d2f710169a))
+
 ## [0.30.2](https://github.com/access-ci-org/xras-ui/compare/v0.30.1...v0.30.2) (2026-02-23)
 
 
