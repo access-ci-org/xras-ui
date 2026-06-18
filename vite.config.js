@@ -1,12 +1,18 @@
 import { resolve } from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
     "process.env": {},
     "process.env.NODE_ENV": JSON.stringify(mode),
+  },
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "src"),
+    },
   },
   build: {
     cssCodeSplit: true,
@@ -15,6 +21,7 @@ export default defineConfig(({ mode }) => ({
         resolve(__dirname, "src/main.jsx"),
         resolve(__dirname, "src/bootstrap/bootstrap-namespaced.scss"),
         resolve(__dirname, "src/bootstrap/access.scss"),
+        resolve(__dirname, "src/tailwind.css"),
       ],
       name: "XrasUi",
       fileName: "xras-ui",
@@ -26,9 +33,10 @@ export default defineConfig(({ mode }) => ({
           if (chunkInfo.name === "bootstrap-namespaced.css")
             return "bootstrap.css";
           if (chunkInfo.name === "access.css") return "access.css";
+          if (chunkInfo.name === "tailwind.css") return "tailwind.css";
         },
       },
     },
   },
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
 }));

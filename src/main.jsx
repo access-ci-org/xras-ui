@@ -37,33 +37,42 @@ import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
 import apiReducer from "./projects/helpers/apiSlice";
 
+export { supportingGrants } from "./supporting-grants";
+
 export function shadowTarget(
   host,
-  { bootstrapFonts = true, bootstrapVariables = true, baseUrl = null } = {},
+  {
+    bootstrapFonts = true,
+    bootstrapVariables = true,
+    baseUrl = null,
+    stylesheets = null,
+  } = {},
 ) {
   const shadow = host.attachShadow({ mode: "open" });
   const bsOuter = document.createElement("div");
   const bsMiddle = document.createElement("div");
   const bsInner = document.createElement("div");
   const target = document.createElement("div");
-  const bsStyle = document.createElement("link");
-  const uiStyle = document.createElement("link");
-  const accessStyle = document.createElement("link");
   baseUrl = baseUrl == null ? import.meta.url.replace(/\/[^/]+$/, "") : baseUrl;
 
-  bsStyle.rel = "stylesheet";
-  bsStyle.href = `${baseUrl}/bootstrap.css`;
-  uiStyle.rel = "stylesheet";
-  uiStyle.href = `${baseUrl}/xras-ui.css`;
-  accessStyle.rel = "stylesheet";
-  accessStyle.href = `${baseUrl}/access.css`;
+  const hrefs = stylesheets ?? [
+    `${baseUrl}/bootstrap.css`,
+    `${baseUrl}/xras-ui.css`,
+    `${baseUrl}/access.css`,
+  ];
+  for (const href of hrefs) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href =
+      href.startsWith("http") || href.startsWith("/")
+        ? href
+        : `${baseUrl}/${href}`;
+    shadow.appendChild(link);
+  }
 
   bsInner.appendChild(target);
   bsMiddle.appendChild(bsInner);
   bsOuter.appendChild(bsMiddle);
-  shadow.appendChild(bsStyle);
-  shadow.appendChild(uiStyle);
-  shadow.appendChild(accessStyle);
   shadow.appendChild(bsOuter);
 
   bsOuter.classList.add("bootstrap");

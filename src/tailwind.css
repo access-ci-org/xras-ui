@@ -1,0 +1,48 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,70,400;0,100,400;0,100,600;0,100,800;1,100,400&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --radius: 0.5rem;
+
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
+
+  --color-primary: #1a5b6e;
+  --color-primary-foreground: #ffffff;
+
+  --color-destructive: #e7000b;
+  --color-destructive-foreground: #ffffff;
+
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+
+  --color-accent: var(--color-primary);
+  --color-accent-foreground: var(--color-primary-foreground);
+
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 84% 4.9%);
+
+  --color-border: #dadada;
+  --color-input: #dadada;
+  --color-ring: hsl(222.2 84% 4.9%);
+}
+
+/*
+ * Browsers don't apply `@property` custom-property registrations (which
+ * Tailwind relies on for e.g. `border`'s default `border-style: solid`)
+ * inside a Shadow Root, so declare the fallback explicitly instead of
+ * depending on `--tw-border-style`'s registered initial value.
+ */
+*,
+::before,
+::after {
+  border-style: solid;
+}
+
+:host {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
