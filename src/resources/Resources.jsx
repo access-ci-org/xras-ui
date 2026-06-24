@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { updateBackend } from "./helpers/actions";
 import { sortResources, startScrolling, stopScrolling } from "./helpers/utils";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import styles from "./Resources.module.scss";
 
 import ImportResourceModal from "./ImportResourceModal";
@@ -30,7 +32,6 @@ export default function Resources({
 
   const handleTabClick = (tabName) => {
     setActiveTab(tabName);
-    console.log(tabName)
     if(tabName == activeResourcesTabName) {
       setResources(sortedAvailableResources)
     } else {
@@ -40,7 +41,6 @@ export default function Resources({
 
   function handleTabChange(tabName, e) {
     e.preventDefault();
-    setActiveTab(tabName);
     handleTabClick(tabName);
   };
 
@@ -91,51 +91,34 @@ export default function Resources({
     <>
       <div className={styles["resources-container"]}>
         {canAdd && (
-          <button
-            className="btn btn-primary pull-right"
-            onClick={() => setShowImportModal(true)}
-          >
+          <Button className="float-right" onClick={() => setShowImportModal(true)}>
             Add a Resource from CIDeR
-          </button>
+          </Button>
         )}
         <h2>Select a resource from the list to modify</h2>
         <p className={styles["drag-instruction"]}>
           Drag items to reorder the list.
         </p>
 
-        <div className="w-full max-w-md mx-auto p-4">
-          <ul className="nav nav-tabs">
-            <li className="nav-item">
-              <a
-                  className={`nav-link ${activeTab === activeResourcesTabName ? 'active' : ''}`}
-                  data-toggle={activeTab === activeResourcesTabName ? "tab" : undefined}
-                  style={{
-                    cursor: 'default',
-                    ...(activeTab === activeResourcesTabName ? {
-                      border: '1px solid #ddd',
-                      borderBottomColor: 'transparent',
-                      color: '#555',
-                      backgroundColor: '#fff'
-                    } : {})
-                  }}
-                  onClick={(e) => handleTabChange(activeResourcesTabName, e)}
+        <div className="mx-auto w-full max-w-md p-4">
+          <div className="flex border-b">
+            {[activeResourcesTabName, inactiveResourcesTabName].map((tabName) => (
+              <button
+                key={tabName}
+                type="button"
+                className={cn(
+                  "-mb-px border border-b-0 px-4 py-2",
+                  activeTab === tabName
+                    ? "border-border bg-background font-bold"
+                    : "border-transparent text-muted-foreground",
+                )}
+                onClick={(e) => handleTabChange(tabName, e)}
               >
-                {activeResourcesTabName}
-              </a>
-            </li>
-            <li className="nav-item">
-              <a
-                  className={`nav-link ${activeTab === inactiveResourcesTabName ? 'active' : ''}`}
-                  data-toggle={activeTab === inactiveResourcesTabName ? "tab" : undefined}
-                  style={{cursor: 'default'}}
-                  onClick={(e) => handleTabChange(inactiveResourcesTabName, e)}
-              >
-                {inactiveResourcesTabName}
-              </a>
-            </li>
-          </ul>
+                {tabName}
+              </button>
+            ))}
+          </div>
 
-          {/* Tab Content: List of Names */}
           <div className={styles["resources-list"]}>
             <div className={styles["resources-header"]}>
               <span className={styles["header-name"]}>Resource Name</span>

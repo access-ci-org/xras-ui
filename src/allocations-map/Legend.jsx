@@ -31,7 +31,7 @@ export default function Legend({ activeOrg, creditLevels, organizationType }) {
   ));
   return (
     <div className={style.legend}>
-      <h2 className="fs-6 mt-0 mb-0">
+      <h2 className="mb-0 mt-0 text-base">
         ACCESS Credits <small>or credit equivalents</small>
       </h2>
       <div className={style.symbols}>{levels}</div>

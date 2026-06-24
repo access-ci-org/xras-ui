@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Maximize, Minimize } from "lucide-react";
 import {
   getBasemapStyle,
   getCreditLevels,
@@ -123,7 +124,7 @@ export default function AllocationsMap() {
   return (
     <section
       className={`${style["allocations-map"]} ${
-        fullscreen ? style.fullscreen : "border border-3 border-primary"
+        fullscreen ? style.fullscreen : "border-4 border-primary"
       }`}
       ref={root}
     >
@@ -152,12 +153,11 @@ export default function AllocationsMap() {
         className={style.fullscreen}
         onClick={() => setFullscreen(!fullscreen)}
       >
-        <i
-          className={`bi ${
-            fullscreen ? "bi-fullscreen-exit" : "bi-arrows-fullscreen"
-          }`}
-          aria-label="Fullscreen"
-        />
+        {fullscreen ? (
+          <Minimize className="size-4" aria-label="Fullscreen" />
+        ) : (
+          <Maximize className="size-4" aria-label="Fullscreen" />
+        )}
       </button>
     </section>
   );

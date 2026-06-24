@@ -12,8 +12,6 @@ import Projects from "./projects/Projects";
 import apiSlice from "./projects/helpers/apiSlice";
 
 import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
-import browserSlice from "./projects-browser/helpers/browserSlice";
-import { initialState as projectsBrowserInitialState } from "./projects-browser/helpers/initialState";
 
 import MyPublications from "./publications/MyPublications";
 import PublicationsBrowser from "./publications/PublicationsBrowser";
@@ -30,10 +28,9 @@ import publicationsSelectSlice, {
 } from "./publications/helpers/publicationsSelectSlice";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
-import onRampsCatalogSlice from "./onramps-resource-catalog/helpers/catalogSlice";
 
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
-import catalogSlice from "./resource-catalog/helpers/catalogSlice";
+import Keywords from "./keywords/Keywords";
 
 import apiReducer from "./projects/helpers/apiSlice";
 
@@ -136,22 +133,7 @@ export function projects({ target, username, routes }) {
 }
 
 export function projectsBrowser({ target, apiUrl }) {
-  const projectsBrowserStore = configureStore({
-    reducer: {
-      projectsBrowser: browserSlice,
-    },
-    preloadedState: {
-      projectsBrowser: {
-        ...projectsBrowserInitialState,
-        apiUrl,
-      },
-    },
-  });
-  ReactDOM.createRoot(target).render(
-    <Provider store={projectsBrowserStore}>
-      <ProjectsBrowser />
-    </Provider>,
-  );
+  ReactDOM.createRoot(target).render(<ProjectsBrowser api_url={apiUrl} />);
 }
 
 export function publicationsBrowser({ target, routes, authenticityToken }) {
@@ -249,20 +231,13 @@ export function onRampsResourceCatalog({
   baseUrl,
   onRampsApi,
 }) {
-  const store = configureStore({
-    reducer: {
-      resourceCatalog: onRampsCatalogSlice,
-    },
-  });
   ReactDOM.createRoot(target).render(
-    <Provider store={store}>
-      <OnRampsResourceCatalog
-        catalogSources={catalogSources}
-        onRamps={onRamps}
-        baseUrl={baseUrl}
-        onRampsApi={onRampsApi}
-      />
-    </Provider>,
+    <OnRampsResourceCatalog
+      catalogSources={catalogSources}
+      onRamps={onRamps}
+      baseUrl={baseUrl}
+      onRampsApi={onRampsApi}
+    />,
   );
 }
 
@@ -322,22 +297,15 @@ export function resourceCatalog({
   allowedCategories,
   allowedFilters,
 }) {
-  const store = configureStore({
-    reducer: {
-      resourceCatalog: catalogSlice,
-    },
-  });
   ReactDOM.createRoot(target).render(
-    <Provider store={store}>
-      <ResourceCatalog
-        apiUrl={apiUrl}
-        excludedCategories={excludedCategories}
-        excludedFilters={excludedFilters}
-        excludedResources={excludedResources}
-        allowedCategories={allowedCategories}
-        allowedFilters={allowedFilters}
-      />
-    </Provider>,
+    <ResourceCatalog
+      apiUrl={apiUrl}
+      excludedCategories={excludedCategories}
+      excludedFilters={excludedFilters}
+      excludedResources={excludedResources}
+      allowedCategories={allowedCategories}
+      allowedFilters={allowedFilters}
+    />,
   );
 }
 

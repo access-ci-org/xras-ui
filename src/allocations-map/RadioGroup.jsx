@@ -1,3 +1,5 @@
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import style from "./RadioGroup.module.scss";
 
 export default function RadioGroup({
@@ -12,7 +14,7 @@ export default function RadioGroup({
     radios.push(
       <input
         type="radio"
-        className="btn-check"
+        className="peer sr-only"
         key={name}
         name={name}
         id={name}
@@ -22,20 +24,21 @@ export default function RadioGroup({
         disabled={disabledValues.includes(name)}
       />,
       <label
-        className={`btn btn-outline-primary ${style.button}`}
+        className={cn(
+          "flex items-center justify-center gap-1 border border-primary px-3 py-1.5 text-xs text-primary transition-colors not-first:-ml-px peer-checked:bg-primary peer-checked:text-primary-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+          style.button,
+        )}
         key={`${name}-label`}
         htmlFor={name}
-        disabled={disabledValues.includes(name)}
       >
-        {value === name ? <i className={`bi bi-check ${style.icon}`} /> : null}{" "}
-        {text}
-      </label>
-    )
+        {value === name ? <Check className="size-3.5" /> : null} {text}
+      </label>,
+    ),
   );
   return (
     <div className="mb-2">
       <div
-        className={`btn-group ${style.group}`}
+        className={cn("flex", style.group)}
         role="group"
         aria-label={label}
       >
