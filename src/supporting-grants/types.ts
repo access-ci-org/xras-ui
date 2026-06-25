@@ -22,14 +22,6 @@ export type GrantFieldName =
   | "programOfficerEmail"
   | "comments";
 
-// Mirrors the shape of Rails' `@fields` hash, e.g.
-// @fields.dig("request", "grants", "fundingAgencyId", "hidden")
-export interface FieldsConfig {
-  request?: {
-    grants?: Partial<Record<GrantFieldName, { hidden?: boolean }>>;
-  };
-}
-
 export interface SupportingGrant {
   id?: number | string;
   fundingAgencyId: number | string | null;
@@ -52,7 +44,6 @@ export interface SupportingGrantsProps {
   target: HTMLElement;
   fundingAgencies: FundingAgency[];
   fosTypes: FosType[];
-  fieldsConfig: FieldsConfig;
   initialGrants?: SupportingGrant[];
   initialIncludeSupportingGrants?: boolean | null;
   onSubmit?: (grants: SupportingGrant[]) => void;

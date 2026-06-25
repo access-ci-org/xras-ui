@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { GrantFields } from "./GrantFields";
 import {
-  fieldsConfigAtom,
   fosTypesAtom,
   fundingAgenciesAtom,
   includeSupportingGrantsAtom,
@@ -150,7 +149,6 @@ export function SupportingGrantsSection(
           new Map<WritableAtom<any, any[], any>, unknown>([
             [fundingAgenciesAtom, props.fundingAgencies],
             [fosTypesAtom, props.fosTypes],
-            [fieldsConfigAtom, props.fieldsConfig],
             [
               includeSupportingGrantsAtom,
               props.initialIncludeSupportingGrants ?? null,
