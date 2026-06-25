@@ -328,6 +328,8 @@ const makeResource = ({
   endDate,
   exchangeRate,
   minimumExchange,
+  negative_only,
+  negativeOnly,
   organizationId,
   organizationFaviconUrl,
   organizationName,
@@ -367,6 +369,7 @@ const makeResource = ({
     isUnderReview: false,
     isNew: false,
     minimumExchange: minimumExchange,
+    negativeOnly: negativeOnly ?? negative_only ?? false,
     name: displayResourceName.trim(),
     questions: (attributeSets || [])
       .filter(({ isActive }) => isActive)
@@ -648,20 +651,27 @@ export const saveResources = createAsyncThunk(
       method: request.exchangeActionId ? "PUT" : "POST",
     });
 
-    let errors, actionId;
+    let responseData = {};
+    let errors = [];
+    let actionId = null;
+
     try {
-      const data = await res.json();
-      errors = data.errors;
-      actionId = data.actionId;
+      responseData = await res.json();
+      errors = responseData.errors || [];
+      actionId = responseData.actionId;
     } catch {
       errors = ["Unable to save exchange"];
-      actionId = null;
     }
 
-    if (res.status == 200) {
+    if (res.status == 200 && responseData.success !== false) {
       return { requestId, exchangeActionId: actionId };
     }
-    return rejectWithValue({ requestId, exchangeActionId: actionId, errors });
+
+    return rejectWithValue({
+      requestId,
+      exchangeActionId: actionId,
+      errors: errors.length ? errors : ["Unable to save exchange"],
+    });
   },
 );
 
@@ -853,12 +863,29 @@ export const apiSlice = createSlice({
 
       for (let resource of request.resources) {
         if (resource.resourceId == resourceId) {
+          // Block transfers TO negative-only / decommissioned resources
+          if (resource.negativeOnly && requested > resource.allocated) {
+            request.exchangeErrors = [
+              `${resource.name} is decommissioned and only allows transfers FROM the resource, not TO it.`,
+            ];
+            request.exchangeStatus = statuses.error;
+            return;
+          }
+
+          // Clear old error if user changes to a valid value
+          request.exchangeErrors = [];
+          if (request.exchangeStatus === statuses.error) {
+            request.exchangeStatus = null;
+          }
+
           resource.requested = requested;
+
           // If the user is requesting a change to the resource,
           // make sure required resources are present in the request.
           if (resource.requested != resource.allocated)
             addResourceAndDeps(resource.resourceId, request);
         }
+
         if (resource.isCredit) {
           credit = resource;
           availableCredits +=
