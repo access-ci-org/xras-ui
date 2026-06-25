@@ -40,13 +40,24 @@ export function FormDescription({ children }: { children?: React.ReactNode }) {
   return <p className="text-sm text-muted-foreground">{children}</p>;
 }
 
+function errorMessage(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return String(error);
+}
+
 export function FormError({ errors }: { errors: unknown[] }) {
   if (!errors.length) return null;
   return (
     <p className="text-sm text-destructive">
-      {errors
-        .map((error) => (typeof error === "string" ? error : String(error)))
-        .join(", ")}
+      {errors.map(errorMessage).join(", ")}
     </p>
   );
 }

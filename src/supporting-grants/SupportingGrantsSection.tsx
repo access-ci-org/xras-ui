@@ -12,6 +12,7 @@ import {
   fundingAgenciesAtom,
   includeSupportingGrantsAtom,
 } from "./atoms";
+import { supportingGrantsFormSchema } from "./schema";
 import type { SupportingGrant, SupportingGrantsProps } from "./types";
 
 function emptyGrant(): SupportingGrant {
@@ -55,6 +56,9 @@ function SupportingGrantsForm({
     defaultValues: { grants: initialGrants ?? [] } as {
       grants: SupportingGrant[];
     },
+    validators: {
+      onSubmit: supportingGrantsFormSchema,
+    },
     onSubmit: ({ value }) => {
       onSubmit?.(value.grants);
     },
@@ -65,7 +69,15 @@ function SupportingGrantsForm({
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        void form.handleSubmit();
+        void (async () => {
+          // handleSubmit() skips re-running the schema if it thinks the
+          // form is already invalid from a prior attempt, which leaves
+          // stale errors in place even after the underlying issue is
+          // fixed. Force a fresh full validation first so it sees the
+          // form's true current state.
+          await form.validate("submit");
+          await form.handleSubmit();
+        })();
       }}
       className="supporting-grants-section"
     >
@@ -116,6 +128,12 @@ function SupportingGrantsForm({
           )}
         </form.Field>
       )}
+
+      <div className="mt-4">
+        <form.AppForm>
+          <form.SubscribeButton label="Submit" />
+        </form.AppForm>
+      </div>
     </form>
   );
 }

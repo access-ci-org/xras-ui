@@ -62,50 +62,68 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
         </form.AppField>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <form.AppField name={`grants[${index}].beginDate`}>
-          {(field) => <field.FieldDatePicker label="Start Date" required />}
-        </form.AppField>
+      <form.Subscribe
+        selector={(state) => state.values.grants[index]?.isPending === false}
+      >
+        {(requireAwardDetails) => (
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <form.AppField name={`grants[${index}].beginDate`}>
+                {(field) => (
+                  <field.FieldDatePicker
+                    label="Start Date"
+                    required={requireAwardDetails}
+                  />
+                )}
+              </form.AppField>
 
-        <form.AppField name={`grants[${index}].endDate`}>
-          {(field) => <field.FieldDatePicker label="End Date" required />}
-        </form.AppField>
-      </div>
+              <form.AppField name={`grants[${index}].endDate`}>
+                {(field) => (
+                  <field.FieldDatePicker
+                    label="End Date"
+                    required={requireAwardDetails}
+                  />
+                )}
+              </form.AppField>
+            </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <form.AppField name={`grants[${index}].primaryFosTypeId`}>
-          {(field) => (
-            <field.FieldSelect
-              label="Field of Science"
-              required
-              placeholder="-- Please select one --"
-              options={fosTypes.map((fos) => ({
-                value: String(fos.id),
-                label: fos.name,
-              }))}
-            />
-          )}
-        </form.AppField>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <form.AppField name={`grants[${index}].primaryFosTypeId`}>
+                {(field) => (
+                  <field.FieldSelect
+                    label="Field of Science"
+                    required
+                    placeholder="-- Please select one --"
+                    options={fosTypes.map((fos) => ({
+                      value: String(fos.id),
+                      label: fos.name,
+                    }))}
+                  />
+                )}
+              </form.AppField>
 
-        <form.AppField name={`grants[${index}].awardedAmount`}>
-          {(field) => (
-            <field.FieldInput
-              label="Awarded Amount"
-              required
-              placeholder="Enter awarded amount"
-            />
-          )}
-        </form.AppField>
-        <form.Field name={`grants[${index}].awardedUnits`}>
-          {(field) => (
-            <input
-              type="hidden"
-              value="Dollars"
-              onChange={() => field.handleChange("Dollars")}
-            />
-          )}
-        </form.Field>
-      </div>
+              <form.AppField name={`grants[${index}].awardedAmount`}>
+                {(field) => (
+                  <field.FieldInput
+                    label="Awarded Amount"
+                    required={requireAwardDetails}
+                    placeholder="Enter awarded amount"
+                  />
+                )}
+              </form.AppField>
+              <form.Field name={`grants[${index}].awardedUnits`}>
+                {(field) => (
+                  <input
+                    type="hidden"
+                    value="Dollars"
+                    onChange={() => field.handleChange("Dollars")}
+                  />
+                )}
+              </form.Field>
+            </div>
+          </>
+        )}
+      </form.Subscribe>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <form.AppField name={`grants[${index}].programOfficerName`}>
