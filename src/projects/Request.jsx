@@ -26,8 +26,12 @@ export default function Request({ requestId, grantNumber }) {
   if (!request) return;
   if (request.error) return <Alert color="danger">{request.error}</Alert>;
 
+
+  const status = request.timeStatus || request.actions[0].status;
+  const isHold = status === "Hold Off" || status === "Hold";
+  const isExchange = request.exchangeActionId !== null;
   const displayStatus =
-    request.timeStatus || request.actions[0].status.toLowerCase();
+    isHold ? isExchange ? "under review" : "submitted" : status.toLowerCase();
 
   const deleteAction = request.actions.find(
     ({ showDeleteModal }) => showDeleteModal,

@@ -1,4 +1,5 @@
 export default function StatusBadge({ status, title }) {
+  const displayStatus = status === "Hold" || status === "Hold Off" ? "Submitted" : status;
   const color =
     {
       Active: "primary",
@@ -7,10 +8,10 @@ export default function StatusBadge({ status, title }) {
       Pending: "secondary",
       "Under Review": "secondary",
       "Returned for Corrections": "secondary"
-    }[status] || "dark";
+    }[displayStatus] || "dark";
   return (
     <span className={`badge text-bg-${color} align-self-center`} title={title}>
-      {status}
+      {displayStatus}
     </span>
   );
 }
