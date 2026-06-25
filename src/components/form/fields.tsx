@@ -30,11 +30,12 @@ export function FieldInput({
   label,
   description,
   required,
+  onBlur,
   ...props
 }: FieldWrapperProps &
   Omit<
     React.ComponentProps<typeof Input>,
-    "id" | "value" | "onChange" | "onBlur"
+    "id" | "value" | "onChange"
   >) {
   const field = useFieldContext<string>();
 
@@ -50,7 +51,10 @@ export function FieldInput({
         id={field.name}
         value={field.state.value ?? ""}
         onChange={(e) => field.handleChange(e.target.value)}
-        onBlur={field.handleBlur}
+        onBlur={(e) => {
+          field.handleBlur();
+          onBlur?.(e);
+        }}
         {...props}
       />
       <FormError errors={field.state.meta.errors} />
