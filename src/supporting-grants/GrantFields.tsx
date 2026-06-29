@@ -8,6 +8,17 @@ import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
 import { fetchNSFGrantDetails, nsfDateToIso } from "./nsf-lookup";
 import type { GrantFieldName, SupportingGrant } from "./types";
 
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+function formatAsCurrency(value: string): string {
+  const amount = Number(value.replace(/[^0-9.-]+/g, ""));
+  if (!value || !Number.isFinite(amount)) return value;
+  return currencyFormatter.format(amount);
+}
+
 interface GrantFieldsProps {
   form: AppForm<{ grants: SupportingGrant[] }>;
   index: number;
@@ -62,7 +73,10 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
     setIfEmpty("piName", pdPIName);
     setIfEmpty("beginDate", startDate ? nsfDateToIso(startDate) : undefined);
     setIfEmpty("endDate", expDate ? nsfDateToIso(expDate) : undefined);
-    setIfEmpty("awardedAmount", fundsObligatedAmt);
+    setIfEmpty(
+      "awardedAmount",
+      fundsObligatedAmt ? formatAsCurrency(fundsObligatedAmt) : undefined,
+    );
     setIfEmpty("programOfficerName", poName);
     setIfEmpty("programOfficerEmail", poEmail);
 
@@ -181,6 +195,9 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
                     label="Awarded Amount"
                     required={requireAwardDetails}
                     placeholder="Enter awarded amount"
+                    onBlur={(e) =>
+                      field.handleChange(formatAsCurrency(e.target.value))
+                    }
                   />
                 )}
               </form.AppField>
