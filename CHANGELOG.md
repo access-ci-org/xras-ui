@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.31.0](https://github.com/access-ci-org/xras-ui/compare/v0.30.3...v0.31.0) (2026-06-30)
+
+
+### Features
+
+* HBS banner for survey implemented ([7ced1e4](https://github.com/access-ci-org/xras-ui/commit/7ced1e42f20aec45333ef9ea69899e66c2300fb6))
+
 ## [0.30.3](https://github.com/access-ci-org/xras-ui/compare/v0.30.2...v0.30.3) (2026-04-27)
 
 
