@@ -37,6 +37,8 @@ import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 
 import apiReducer from "./projects/helpers/apiSlice";
 
+import Alert from "./shared/Alert";
+
 export function shadowTarget(
   host,
   { bootstrapFonts = true, bootstrapVariables = true, baseUrl = null } = {},
@@ -112,6 +114,27 @@ export function editResource({
   );
 }
 
+function MyProjectsPage({ username }) {
+  return (
+    <>
+      <Alert color="info">
+        A research team from Harvard University is conducting a short voluntary
+        survey about users’ experiences with ACCESS computing resources. Survey
+        responses will be linked to your publicly available user-level allocation
+        data. Participation will not affect your relationship with ACCESS or your
+        standing with ACCESS in any way. Individual survey responses and linked
+        individual-level data will not be shared back with ACCESS.{" "}
+        <a href="https://harvard.az1.qualtrics.com/jfe/form/SV_7Us3XQgaeeYahO6" target="_blank" rel="noreferrer">
+          Take the survey
+        </a>{" "}
+        Questions: <a href="mailto:kmyers@hbs.edu">kmyers@hbs.edu</a>
+      </Alert>
+
+      <Projects username={username} />
+    </>
+  );
+}
+
 export function projects({ target, username, routes }) {
   addRoutes(routes);
   const projectsStore = configureStore({
@@ -121,7 +144,7 @@ export function projects({ target, username, routes }) {
   });
   ReactDOM.createRoot(target).render(
     <Provider store={projectsStore}>
-      <Projects username={username} />
+      <MyProjectsPage username={username} />
     </Provider>,
   );
 }
