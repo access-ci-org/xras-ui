@@ -24,7 +24,7 @@ const getUserSortKey = (user) =>
 
 const addProject = (
   state,
-  { grantNumber, projectManager, requestMasterId, requests, title, users },
+  { grantNumber, projectManager, requestMasterId, requests, title, users, iurs=null, iurRequired=false },
   projectStatus,
 ) => {
   grantNumber = grantNumber || requestMasterId;
@@ -33,10 +33,12 @@ const addProject = (
     (request) => request.timeStatus == "current",
   );
   const currentRequestId = currentRequest ? currentRequest.requestId : null;
+
   state.projects[grantNumber] = {
     currentRequestId,
     grantNumber,
     isManager: projectManager,
+    iurs,
     requestsList: requests.map((request) => {
       const { actions, allocationType, endDate, requestId, startDate, status } =
         request;
@@ -54,6 +56,7 @@ const addProject = (
         status,
       };
     }),
+    iurRequired,
     selectedRequestId: currentRequestId || requests[0].requestId,
     status: projectStatus,
     tab: "overview",

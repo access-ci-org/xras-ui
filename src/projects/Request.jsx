@@ -10,6 +10,7 @@ import Alert from "../shared/Alert";
 import ConfirmModal from "./ConfirmModal";
 import DeleteModal from "./DeleteModal";
 import History from "./History";
+import InternationalUserRequest from "./InternationalUserRequest";
 import Overview from "./Overview";
 import Resources from "./Resources";
 import ResourcesModal from "./ResourcesModal";
@@ -98,6 +99,19 @@ export default function Request({ requestId, grantNumber }) {
           </ul>
         </Alert>
       )}
+      {project.isManager && project.iurs && project.iurs.some(p => p.status === "Incomplete") && (
+        <Alert color="danger">
+          There is an incomplete International User Request form that requires your attention.
+          Check the "Intl. Users" tab for more details.
+        </Alert>
+      )}
+      {project.isManager && !project.iurs && project.iurRequired && (
+        <Alert color="danger">
+          This project has International Users but no International User Justification form has been created.
+          <br />
+          <a href={config.routes.justification_request_path(requestId)}>Create an International User Justification</a>
+        </Alert>
+      )}
       <Tabs activeKey={project.tab} onSelect={setTab} className="mt-3 mb-3">
         <Tab eventKey="overview" title="Overview" className="mb-0">
           <Overview requestId={requestId} grantNumber={grantNumber} />
@@ -116,6 +130,11 @@ export default function Request({ requestId, grantNumber }) {
         >
           <Users grantNumber={grantNumber} />
         </Tab>
+        {project.isManager && project.iurs && (
+          <Tab eventKey="international" title="Intl. Users">
+            <InternationalUserRequest project={project} requestId={requestId} />
+          </Tab>
+        )}
         <Tab eventKey="publications" title="Publications">
           <ProjectPublications
             grantNumber={grantNumber}
