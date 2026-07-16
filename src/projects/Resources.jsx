@@ -201,7 +201,11 @@ export default function Resources({ requestId, grantNumber }) {
   const availableResourceGroups = [];
   if (canExchange && exchangeEditable) {
     request.allowedActions.Exchange.resources
-      .filter((res) => !resourceIds.includes(res.resourceId))
+      .filter(
+        (res) =>
+          !res.negativeOnly &&
+          !resourceIds.includes(res.resourceId),
+      )
       .map((res) => {
         availableResourcesMap[res.resourceId] = res;
         const groupLabel = `${res.type} Resources (${res.unit})`;

@@ -238,6 +238,9 @@ const addRequest = (
         // Add required resource IDs.
         resource.requires =
           exchangeResources[resource.resourceId].requires || [];
+        // Add negativeOnly flag to indicate if the resource is decommissioned.
+        resource.negativeOnly =
+          exchangeResources[resource.resourceId].negativeOnly ?? false;
       }
   }
 
@@ -863,10 +866,10 @@ export const apiSlice = createSlice({
 
       for (let resource of request.resources) {
         if (resource.resourceId == resourceId) {
-          // Block transfers TO negative-only / decommissioned resources
+          // Block Exchanges TO negative-only / decommissioned resources
           if (resource.negativeOnly && requested > resource.allocated) {
             request.exchangeErrors = [
-              `${resource.name} is decommissioned and only allows transfers FROM the resource, not TO it.`,
+              `${resource.name} is decommissioned and only allows exchanges FROM the resource, not TO it.`,
             ];
             request.exchangeStatus = statuses.error;
             return;
