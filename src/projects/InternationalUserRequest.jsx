@@ -2,17 +2,30 @@ import config from "../shared/helpers/config";
 import Alert from "../shared/Alert";
 
 export default function InternationalUserRequest({ project, requestId }) {
-  if(!project.iurs && !project.iurRequired) return <></>
+  if(!project.internationalUserRequests) return <></>
 
-  const route = config.routes.justification_request_path(requestId);
+  const viewPath = config.routes.request_international_user_request_path;
+  const editPath = config.routes.edit_request_international_user_request_path;
   const formatDate = (d) => {
-    const date = new Date(d);
-    return date.toLocaleDateString('en-US');
+    if (d) {
+        return (new Date(d)).toLocaleDateString('en-US');
+      } else {
+        return <>&mdash;</>;
+      }
+  }
+
+  const link = (req) => {
+    const canEdit = req.status == 'Incomplete' || req.status == 'Submitted'
+    const route = canEdit ? editPath : viewPath;
+    const text = canEdit ? 'View / Update' : 'View';
+    return (
+      <a href={route(requestId, req.id)} type="button" className="btn btn-primary btn-sm">{text}</a>
+    );
   }
 
   return (
     <div>
-      <h3>International User Requests</h3>
+      <h3>International User Justifications</h3>
       <table className="table">
         <thead>
           <tr>
@@ -22,13 +35,11 @@ export default function InternationalUserRequest({ project, requestId }) {
           </tr>
         </thead>
         <tbody>
-          {project.iurs.map((req) =>
-            <tr key={`iur_${req.international_user_request_id}`}>
+          {project.internationalUserRequests.map((req) =>
+            <tr key={req.id}>
               <td>{req.status}</td>
-              <td>{formatDate(req.submitted_at)}</td>
-              <td className="text-end">
-                <a href={route} type="button" className="btn btn-primary btn-sm">View / Update</a>
-              </td>
+              <td>{formatDate(req.submittedAt)}</td>
+              <td className="text-end">{link(req)}</td>
             </tr>
           )}
         </tbody>

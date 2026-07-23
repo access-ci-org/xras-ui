@@ -99,17 +99,10 @@ export default function Request({ requestId, grantNumber }) {
           </ul>
         </Alert>
       )}
-      {project.isManager && project.iurs && project.iurs.some(p => p.status === "Incomplete") && (
+      {project.internationalUserRequests && project.internationalUserRequests.some(p => p.status === "Incomplete") && (
         <Alert color="danger">
-          There is an incomplete International User Request form that requires your attention.
+          There is an incomplete International User Justification form that requires your attention.
           Check the "Intl. Users" tab for more details.
-        </Alert>
-      )}
-      {project.isManager && !project.iurs && project.iurRequired && (
-        <Alert color="danger">
-          This project has International Users but no International User Justification form has been created.
-          <br />
-          <a href={config.routes.justification_request_path(requestId)}>Create an International User Justification</a>
         </Alert>
       )}
       <Tabs activeKey={project.tab} onSelect={setTab} className="mt-3 mb-3">
@@ -130,7 +123,7 @@ export default function Request({ requestId, grantNumber }) {
         >
           <Users grantNumber={grantNumber} />
         </Tab>
-        {project.isManager && project.iurs && (
+        {project.internationalUserRequests && (
           <Tab eventKey="international" title="Intl. Users">
             <InternationalUserRequest project={project} requestId={requestId} />
           </Tab>
