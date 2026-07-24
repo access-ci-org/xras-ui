@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.32.0](https://github.com/access-ci-org/xras-ui/compare/v0.31.0...v0.32.0) (2026-07-24)
+
+
+### Features
+
+* Added Justification form status to xras-ui ([30e0b1e](https://github.com/access-ci-org/xras-ui/commit/30e0b1e36ab097f7cfe103601e9d0880c010985b))
+* Release of International Users Features ([e399762](https://github.com/access-ci-org/xras-ui/commit/e3997625ad6be12b98b0fb793d03cb59e12feb9b))
+
 ## [0.31.0](https://github.com/access-ci-org/xras-ui/compare/v0.30.3...v0.31.0) (2026-06-30)
 
 
