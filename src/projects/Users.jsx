@@ -165,7 +165,12 @@ export default function Users({ grantNumber, requestId }) {
           className="form-select"
           value={value}
           onChange={(e) => setUserRole(row.username, e.target.value)}
-          disabled={!canManageUsers || value == "pi" || value == "co_pi"}
+          disabled={
+            !canManageUsers ||
+            !row.canChangeRoles ||
+            value == "pi" ||
+            value == "co_pi"
+          }
           style={{
             position: "absolute",
             left: 0,

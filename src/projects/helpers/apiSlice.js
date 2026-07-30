@@ -24,7 +24,15 @@ const getUserSortKey = (user) =>
 
 const addProject = (
   state,
-  { grantNumber, projectManager, requestMasterId, requests, title, users, internationalUserRequests=null },
+  {
+    grantNumber,
+    projectManager,
+    requestMasterId,
+    requests,
+    title,
+    users,
+    internationalUserRequests = null,
+  },
   projectStatus,
 ) => {
   grantNumber = grantNumber || requestMasterId;
@@ -63,6 +71,7 @@ const addProject = (
     users: users
       .map(
         ({
+          canChangeRoles,
           eligibleReason,
           email,
           firstName,
@@ -89,6 +98,7 @@ const addProject = (
           for (let res of userResources)
             resourceUsernames[res.xrasResourceId] = res.resourceUsername;
           return {
+            canChangeRoles,
             eligibility: isEligible,
             eligibilityReason: eligibleReason,
             email,
@@ -475,6 +485,7 @@ export const searchUsers = async (searchText) => {
   const res = await fetch(`${config.routes.search_people_path()}?${params}`);
   return (await res.json()).map(
     ({
+      can_change_roles,
       eligible_reason,
       email,
       first_name,
@@ -483,6 +494,7 @@ export const searchUsers = async (searchText) => {
       username,
       organization,
     }) => ({
+      canChangeRoles: can_change_roles,
       eligibility: is_eligible,
       eligibilityReason: eligible_reason,
       email,
