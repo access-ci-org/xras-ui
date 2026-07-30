@@ -50,6 +50,7 @@ export default function Resources({ requestId, grantNumber }) {
   const saved = request.exchangeStatus == statuses.success;
   const error = request.exchangeStatus == statuses.error;
   const errorMessages = request.exchangeErrors;
+  const hasExchangeErrors = errorMessages.length > 0;
   const previous = request.exchangeActionId !== null;
   const exchangeEditable = request.exchangeActionEditable;
 
@@ -567,7 +568,7 @@ export default function Resources({ requestId, grantNumber }) {
               ref={submitButton}
               type="button"
               className="btn btn-secondary"
-              disabled={saving || !hasRequested || !hasReason || hasUnmetDeps || anyBelowMinimum}
+              disabled={saving || !hasRequested || !hasReason || hasUnmetDeps || anyBelowMinimum || hasExchangeErrors}
               onClick={toggleResourcesModal}
             >
               {saving ? "Submitting..." : "Submit for Approval"}

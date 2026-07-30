@@ -331,7 +331,6 @@ const makeResource = ({
   endDate,
   exchangeRate,
   minimumExchange,
-  negative_only,
   negativeOnly,
   organizationId,
   organizationFaviconUrl,
@@ -372,7 +371,7 @@ const makeResource = ({
     isUnderReview: false,
     isNew: false,
     minimumExchange: minimumExchange,
-    negativeOnly: negativeOnly ?? negative_only ?? false,
+    negativeOnly: negativeOnly ?? false,
     name: displayResourceName.trim(),
     questions: (attributeSets || [])
       .filter(({ isActive }) => isActive)
@@ -666,7 +665,7 @@ export const saveResources = createAsyncThunk(
       errors = ["Unable to save exchange"];
     }
 
-    if (res.status == 200 && responseData.success !== false) {
+    if (res.status == 200) {
       return { requestId, exchangeActionId: actionId };
     }
 
@@ -866,27 +865,13 @@ export const apiSlice = createSlice({
 
       for (let resource of request.resources) {
         if (resource.resourceId == resourceId) {
-          // Block Exchanges TO negative-only / decommissioned resources
-          if (resource.negativeOnly && requested > resource.allocated) {
-            request.exchangeErrors = [
-              `${resource.name} is decommissioned and only allows exchanges FROM the resource, not TO it.`,
-            ];
-            request.exchangeStatus = statuses.error;
-            return;
-          }
-
-          // Clear old error if user changes to a valid value
-          request.exchangeErrors = [];
-          if (request.exchangeStatus === statuses.error) {
-            request.exchangeStatus = null;
-          }
-
           resource.requested = requested;
 
           // If the user is requesting a change to the resource,
           // make sure required resources are present in the request.
-          if (resource.requested != resource.allocated)
+          if (resource.requested != resource.allocated) {
             addResourceAndDeps(resource.resourceId, request);
+          }
         }
 
         if (resource.isCredit) {
@@ -898,12 +883,32 @@ export const apiSlice = createSlice({
         }
       }
 
-      if (credit)
+      if (credit) {
         credit.requested = roundNumber(
           availableCredits,
           credit.decimalPlaces,
           "floor",
         );
+      }
+
+      const invalidResource = request.resources.find(
+        (resource) =>
+          resource.negativeOnly &&
+          Number(resource.requested) > Number(resource.allocated),
+      );
+
+      if (invalidResource) {
+        request.exchangeErrors = [
+          `${invalidResource.name} is decommissioned. Its balance can only be decreased.`,
+        ];
+        request.exchangeStatus = statuses.error;
+      } else {
+        request.exchangeErrors = [];
+
+        if (request.exchangeStatus === statuses.error) {
+          request.exchangeStatus = null;
+        }
+      }
     },
     setResourcesReason: (state, action) => {
       const request = getRequest(state, action);
