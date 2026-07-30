@@ -744,31 +744,35 @@ export const saveUsers = createAsyncThunk(
 );
 
 export const dismissNotice = createAsyncThunk(
-    "publications/dismissNotice",
-    async (_, { rejectWithValue }) => {
-        try {
-            const res = await fetch(config.routes.publications_dismiss_notice_path(), {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-Token": document.querySelector("meta[name=csrf-token]").content,
-                },
-                body: JSON.stringify({
-                    acknowledged: true,
-                }),
-            });
+  "publications/dismissNotice",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch(
+        config.routes.publications_dismiss_notice_path(),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": document.querySelector("meta[name=csrf-token]")
+              .content,
+          },
+          body: JSON.stringify({
+            acknowledged: true,
+          }),
+        },
+      );
 
-            const data = await res.json();
+      const data = await res.json();
 
-            if (!res.ok) {
-                return rejectWithValue(data);
-            }
+      if (!res.ok) {
+        return rejectWithValue(data);
+      }
 
-            return data;
-        } catch (err) {
-            return rejectWithValue({ error: err.message });
-        }
+      return data;
+    } catch (err) {
+      return rejectWithValue({ error: err.message });
     }
+  },
 );
 
 export const apiSlice = createSlice({
@@ -1075,13 +1079,14 @@ export const apiSlice = createSlice({
       })
       .addCase(dismissNotice.fulfilled, (state, action) => {
         if (action.payload?.success) {
-        state.showUpdatePublications = false;
+          state.showUpdatePublications = false;
         }
       });
   },
 });
 
-export const selectShowUpdatePublications = (state) => state.api.showUpdatePublications;
+export const selectShowUpdatePublications = (state) =>
+  state.api.showUpdatePublications;
 
 export const selectError = (state) => state.api.error;
 export const selectProjectsList = (state) => state.api.projectsList;
