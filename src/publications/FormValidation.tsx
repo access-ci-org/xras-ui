@@ -1,10 +1,12 @@
+import type { ReactNode } from "react";
+
 export const validateForm = (
-  publication,
-  requiredPubFields,
-  requiredAuthFields
+  publication: Record<string, unknown>,
+  requiredPubFields: string[],
+  requiredAuthFields: string[],
 ) => {
   let formValid = true;
-  const missingFields = [];
+  const missingFields: string[] = [];
 
   for (const field of requiredPubFields) {
     if (!publication[field]) {
@@ -13,7 +15,7 @@ export const validateForm = (
     }
   }
 
-  const authors = publication.authors || [];
+  const authors = (publication.authors as Record<string, unknown>[] | undefined) || [];
 
   for (const author of authors) {
     for (const authField of requiredAuthFields) {
@@ -28,7 +30,7 @@ export const validateForm = (
   return { formValid, missingFields };
 };
 
-export const invalidFormAlert = (missingFields) => {
+export const invalidFormAlert = (missingFields: string[]): ReactNode => {
   if (missingFields.length > 0) {
     return (
       <div role="alert">
@@ -40,12 +42,11 @@ export const invalidFormAlert = (missingFields) => {
         </ul>
       </div>
     );
-  } else {
-    return null;
   }
+  return null;
 };
 
-export function camelCaseToTitleCase(camelCaseWord) {
+export function camelCaseToTitleCase(camelCaseWord: string) {
   return camelCaseWord
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

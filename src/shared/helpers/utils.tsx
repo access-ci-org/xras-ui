@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import config, { type Routes } from "./config";
+import config from "./config";
 import type { ProjectSummary, RequestSummary } from "../types";
 
 export const roundNumber = (
@@ -164,7 +164,7 @@ export function getCost(
   return cost + res.allocated * res.exchangeRates.base.unitCost;
 }
 
-export function addRoutes(routes?: Partial<Routes>) {
+export function addRoutes(routes?: Record<string, (...args: any[]) => string>) {
   // Override the default routes with the ones from Rails.
   if (routes) config.routes = { ...config.routes, ...routes };
 }

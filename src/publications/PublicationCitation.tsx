@@ -1,11 +1,13 @@
+import type { PublicationSummary } from "./types";
+
 const doiRegexp = /10\.\d{4,9}\/[-._;()/:A-Z0-9]+/i;
 
-export const cleanDOI = (doi) => {
+export const cleanDOI = (doi?: string | null) => {
   const doiMatch = (doi || "").match(doiRegexp);
   return doiMatch ? doiMatch[0] : null;
 };
 
-export default function PublicationCitation({ publication }) {
+export default function PublicationCitation({ publication }: { publication: PublicationSummary }) {
   const {
     authors: authorsList,
     doi,
@@ -21,7 +23,7 @@ export default function PublicationCitation({ publication }) {
     "Volume/Issue": volume,
   } = fields;
   const authors = authorsList
-    .map((author) => `${author.last_name}, ${author.first_name.substr(0, 1)}.`)
+    .map((author) => `${author.last_name}, ${author.first_name.substring(0, 1)}.`)
     .join(", ");
   const year = pubYear || "N/A";
   const title = pubTitle.endsWith(".") ? pubTitle : `${pubTitle}.`;
@@ -35,8 +37,8 @@ export default function PublicationCitation({ publication }) {
   if (["Journal Paper", "Other"].includes(pubType))
     return (
       <>
-        {authors} ({year}). {title} {journal && <em>{journal}.</em>}{" "}
-        {volume && <>{volume},</>} {pages && <>{pages}.</>} {doiLink}
+        {authors} ({year}). {title} {journal && <em>{journal}.</em>} {volume && <>{volume},</>}{" "}
+        {pages && <>{pages}.</>} {doiLink}
       </>
     );
 
@@ -50,8 +52,7 @@ export default function PublicationCitation({ publication }) {
   if (["Book", "Book Chapter"].includes(pubType))
     return (
       <>
-        {authors} ({year}). <em>{title}</em>{" "}
-        {publisher && <em>{publisher}.</em>} {doiLink}
+        {authors} ({year}). <em>{title}</em> {publisher && <em>{publisher}.</em>} {doiLink}
       </>
     );
 
@@ -70,4 +71,6 @@ export default function PublicationCitation({ publication }) {
         {publisher && <>, {publisher}</>}]. {doiLink}
       </>
     );
+
+  return null;
 }

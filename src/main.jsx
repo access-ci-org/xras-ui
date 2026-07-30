@@ -1,6 +1,8 @@
 import ReactDOM from "react-dom/client";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
+import { Provider as JotaiProvider, createStore } from "jotai";
+import { useHydrateAtoms } from "jotai/utils";
 import { addRoutes } from "./shared/helpers/utils";
 
 import AllocationsMap from "./allocations-map/AllocationsMap";
@@ -17,22 +19,12 @@ import MyPublications from "./publications/MyPublications";
 import PublicationsBrowser from "./publications/PublicationsBrowser";
 import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsSelect from "./publications/PublicationsSelect";
-import publicationsSearchSlice, {
-  initialState as publicationsSearchInitialState,
-} from "./publications/helpers/publicationsSearchSlice";
-import publicationEditSlice, {
-  initialState as publicationEditInitialState,
-} from "./publications/helpers/publicationEditSlice";
-import publicationsSelectSlice, {
-  initialState as publicationsSelectInitialState,
-} from "./publications/helpers/publicationsSelectSlice";
+import { authenticityTokenAtom, publicationIdAtom } from "./publications/atoms";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
 
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import Keywords from "./keywords/Keywords";
-
-import apiReducer from "./projects/helpers/apiSlice";
 
 export { supportingGrants } from "./supporting-grants";
 
@@ -136,26 +128,14 @@ export function projectsBrowser({ target, apiUrl }) {
   ReactDOM.createRoot(target).render(<ProjectsBrowser api_url={apiUrl} />);
 }
 
-export function publicationsBrowser({ target, routes, authenticityToken }) {
+export function publicationsBrowser({ target, routes }) {
   addRoutes(routes);
-  const publicationsSearchStore = configureStore({
-    reducer: {
-      publicationsSearch: publicationsSearchSlice,
-      publicationEdit: publicationEditSlice,
-    },
-    preloadedState: {
-      publicationEdit: {
-        ...publicationEditInitialState,
-        authenticityToken: authenticityToken,
-      },
-    },
-  });
+  ReactDOM.createRoot(target).render(<PublicationsBrowser />);
+}
 
-  ReactDOM.createRoot(target).render(
-    <Provider store={publicationsSearchStore}>
-      <PublicationsBrowser />
-    </Provider>,
-  );
+function HydrateAtoms({ values, children }) {
+  useHydrateAtoms(values);
+  return children;
 }
 
 export function publicationEdit({
@@ -164,23 +144,22 @@ export function publicationEdit({
   routes,
   authenticityToken,
 }) {
-  const store = configureStore({
-    reducer: {
-      publicationEdit: publicationEditSlice,
-    },
-    preloadedState: {
-      publicationEdit: {
-        ...publicationEditInitialState,
-        authenticityToken: authenticityToken,
-      },
-    },
-  });
   addRoutes(routes);
+  const store = createStore();
 
   ReactDOM.createRoot(target).render(
-    <Provider store={store}>
-      <PublicationEdit publicationId={publicationId} />
-    </Provider>,
+    <JotaiProvider store={store}>
+      <HydrateAtoms
+        values={
+          new Map([
+            [publicationIdAtom, publicationId],
+            [authenticityTokenAtom, authenticityToken],
+          ])
+        }
+      >
+        <PublicationEdit />
+      </HydrateAtoms>
+    </JotaiProvider>,
   );
 }
 
@@ -191,36 +170,13 @@ export function publicationsSelect({
   target,
   usernames,
 }) {
-  const store = configureStore({
-    reducer: {
-      publicationEdit: publicationEditSlice,
-      publicationsSearch: publicationsSearchSlice,
-      publicationsSelect: publicationsSelectSlice,
-    },
-    preloadedState: {
-      publicationsSearch: {
-        ...publicationsSearchInitialState,
-        filterSelections: {
-          ...publicationsSearchInitialState.filterSelections,
-          createdBy: usernames,
-        },
-      },
-      publicationEdit: {
-        ...publicationEditInitialState,
-        authenticityToken: authenticityToken,
-      },
-      publicationsSelect: {
-        ...publicationsSelectInitialState,
-        selected: selectedPublicationIds,
-      },
-    },
-  });
   addRoutes(routes);
-
   ReactDOM.createRoot(target).render(
-    <Provider store={store}>
-      <PublicationsSelect />
-    </Provider>,
+    <PublicationsSelect
+      authenticityToken={authenticityToken}
+      selectedPublicationIds={selectedPublicationIds}
+      usernames={usernames}
+    />,
   );
 }
 
@@ -249,42 +205,12 @@ export function myPublications({
   showUpdatePublications,
 }) {
   addRoutes(routes);
-  const myPublicationsStore = configureStore({
-    reducer: {
-      api: apiReducer,
-      publicationEdit: publicationEditSlice,
-      publicationsSearch: publicationsSearchSlice,
-    },
-    preloadedState: {
-      api: {
-          showUpdatePublications,
-          username,
-      },
-      publicationsSearch: {
-        ...publicationsSearchInitialState,
-        filterSelections: {
-          ...publicationsSearchInitialState.filterSelections,
-          createdBy: [username],
-        },
-      },
-      publicationEdit: {
-        ...publicationEditInitialState,
-        authenticityToken: authenticityToken,
-      },
-        dismissPublicationNotice: {
-            showUpdatePublications: showUpdatePublications, // use initial value from Rails
-            status: "idle",
-            error: null,
-            message: null,
-        },
-    },
-  });
-
   ReactDOM.createRoot(target).render(
-    <Provider store={myPublicationsStore}>
-        <MyPublications showUpdatePublications={showUpdatePublications}
-        />
-    </Provider>,
+    <MyPublications
+      authenticityToken={authenticityToken}
+      username={username}
+      showUpdatePublications={showUpdatePublications}
+    />,
   );
 }
 

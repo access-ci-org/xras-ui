@@ -15,7 +15,7 @@ export type Routes = {
   search_people_path: () => string;
   usage_detail_path: (grantNumber: string, resourceId: number | string) => string;
   publications_dismiss_notice_path: () => string;
-};
+} & Record<string, (...args: any[]) => string>;
 
 const baseUrl = "https://allocations.access-ci.org";
 

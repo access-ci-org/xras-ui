@@ -17,9 +17,11 @@ type AlertProps = {
   children: React.ReactNode;
   color: string;
   dismissable?: boolean;
+  /** Called when the dismiss button is clicked, in addition to hiding the alert locally. */
+  onDismiss?: () => void;
 };
 
-export default function Alert({ children, color, dismissable = false }: AlertProps) {
+export default function Alert({ children, color, dismissable = false, onDismiss }: AlertProps) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
 
@@ -37,7 +39,10 @@ export default function Alert({ children, color, dismissable = false }: AlertPro
         <button
           type="button"
           aria-label="Close"
-          onClick={() => setDismissed(true)}
+          onClick={() => {
+            setDismissed(true);
+            onDismiss?.();
+          }}
           className="absolute right-2 top-2 text-current opacity-70 hover:opacity-100"
         >
           <X className="size-4" />
