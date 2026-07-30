@@ -1,6 +1,5 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import style from "./RadioGroup.module.scss";
 
 export default function RadioGroup({
   choices,
@@ -8,8 +7,14 @@ export default function RadioGroup({
   label,
   value,
   setValue,
+}: {
+  choices: [string, string][];
+  disabledValues?: string[];
+  label: string;
+  value: string;
+  setValue: (value: string) => void;
 }) {
-  const radios = [];
+  const radios: React.ReactNode[] = [];
   choices.forEach(([name, text]) =>
     radios.push(
       <input
@@ -25,8 +30,8 @@ export default function RadioGroup({
       />,
       <label
         className={cn(
-          "flex items-center justify-center gap-1 border border-primary px-3 py-1.5 text-xs text-primary transition-colors not-first:-ml-px peer-checked:bg-primary peer-checked:text-primary-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-          style.button,
+          "relative w-full not-first:-ml-px",
+          "flex items-center justify-center gap-1 border border-primary px-3 py-1.5 text-xs text-primary transition-colors peer-checked:bg-primary peer-checked:text-primary-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
         )}
         key={`${name}-label`}
         htmlFor={name}
@@ -37,11 +42,7 @@ export default function RadioGroup({
   );
   return (
     <div className="mb-2">
-      <div
-        className={cn("flex", style.group)}
-        role="group"
-        aria-label={label}
-      >
+      <div className="flex w-96 bg-muted" role="group" aria-label={label}>
         {radios}
       </div>
     </div>

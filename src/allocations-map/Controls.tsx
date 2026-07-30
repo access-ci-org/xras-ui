@@ -1,14 +1,20 @@
 import RadioGroup from "./RadioGroup";
-import style from "./Controls.module.scss";
+import type { CreditType } from "./types";
+import type { OrganizationType } from "./config";
 
 export default function Controls({
   creditType,
   organizationType,
   setCreditType,
   setOrganizationType,
+}: {
+  creditType: CreditType;
+  organizationType: OrganizationType;
+  setCreditType: (value: CreditType) => void;
+  setOrganizationType: (value: OrganizationType) => void;
 }) {
   return (
-    <div className={style.controls}>
+    <div className="absolute left-[25px] top-[25px] bg-white/50 p-2.5">
       <h2>ACCESS Allocations</h2>
       <RadioGroup
         choices={[
@@ -18,7 +24,7 @@ export default function Controls({
         ]}
         label="Credit Type"
         value={creditType}
-        setValue={setCreditType}
+        setValue={(value) => setCreditType(value as CreditType)}
       />
       <RadioGroup
         choices={[
@@ -28,7 +34,7 @@ export default function Controls({
         disabledValues={creditType === "allocated" ? ["rp"] : []}
         label="Organization Type"
         value={organizationType}
-        setValue={setOrganizationType}
+        setValue={(value) => setOrganizationType(value as OrganizationType)}
       />
     </div>
   );
