@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import style from "./AdvancedSettingsSection.module.scss";
 
 type AdvancedSettingsSectionProps = {
   headerText?: ReactNode;
@@ -10,6 +9,8 @@ type AdvancedSettingsSectionProps = {
   isEditing?: boolean;
   onEditingChange: (editing: boolean) => void;
   warningMessage?: string;
+  /** Renders the warning banner inline instead of overlaid, for compact single-field sections. */
+  compactWarning?: boolean;
 };
 
 export const AdvancedSettingsSection = ({
@@ -19,28 +20,31 @@ export const AdvancedSettingsSection = ({
   isEditing = false,
   onEditingChange,
   warningMessage = "",
+  compactWarning = false,
 }: AdvancedSettingsSectionProps) => {
-  const altWarningBanner = (headerText as any)?.type === "label";
   return (
-    <div className={style["advanced-settings"]}>
+    <div className="relative">
       {(headerText || header) && (
-        <div className={style["header-wrapper"]}>
+        <div className="flex items-center justify-between">
           {headerText}
           {header && (
-            <div
-              className={cn(style["header-buttons-container"], !isEditing && style["blurred"])}
-            >
+            <div className={cn(!isEditing && "pointer-events-none blur-sm brightness-95")}>
               {header}
             </div>
           )}
         </div>
       )}
-      <div style={{ width: "100%" }}>
+      <div className="w-full">
         {!isEditing && (
           <div
-            className={altWarningBanner ? style["alt-warning-banner"] : style["warning-banner"]}
+            className={cn(
+              "flex items-center justify-between gap-3 rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 shadow-sm",
+              compactWarning
+                ? "relative mb-4 max-w-3xl"
+                : "absolute inset-x-4 top-1/2 z-10 -translate-y-1/2",
+            )}
           >
-            <span className={style["warning-text"]}>
+            <span>
               <strong>CAUTION! </strong> {warningMessage}
             </span>
             <Button variant="destructive" onClick={() => onEditingChange(true)}>
@@ -48,7 +52,12 @@ export const AdvancedSettingsSection = ({
             </Button>
           </div>
         )}
-        <div className={cn(style["content-container"], !isEditing && style["blurred"])}>
+        <div
+          className={cn(
+            "transition-[filter] duration-300",
+            !isEditing && "pointer-events-none blur-sm brightness-95",
+          )}
+        >
           {children}
         </div>
       </div>
