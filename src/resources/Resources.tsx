@@ -1,45 +1,50 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { updateBackend } from "./helpers/actions";
-import { sortResources, startScrolling, stopScrolling } from "./helpers/utils";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import styles from "./Resources.module.scss";
-
+import { updateBackend } from "./helpers/actions";
+import { sortResources, startScrolling, stopScrolling } from "./helpers/utils";
 import ImportResourceModal from "./ImportResourceModal";
+import type { ResourceListItem } from "./types";
+
+const ACTIVE_TAB = "Active";
+const INACTIVE_TAB = "Inactive";
 
 export default function Resources({
-  availableResources, unavailableResources = [],
+  availableResources,
+  unavailableResources = [],
   canAdd = false,
   relativeUrlRoot,
+}: {
+  availableResources: ResourceListItem[];
+  unavailableResources?: ResourceListItem[];
+  canAdd?: boolean;
+  relativeUrlRoot: string;
 }) {
   const sortedAvailableResources = useMemo(
     () => sortResources(availableResources),
-    [availableResources]
+    [availableResources],
   );
   const sortedUnavailableResources = useMemo(
-      () => sortResources(unavailableResources),
-      [unavailableResources]
+    () => sortResources(unavailableResources),
+    [unavailableResources],
   );
   const [resources, setResources] = useState(sortedAvailableResources);
   const [showImportModal, setShowImportModal] = useState(false);
 
-  const draggedIndexRef = useRef(null);
-  const scrollIntervalRef = useRef(null);
-  const activeResourcesTabName = 'Active'
-  const inactiveResourcesTabName = 'Inactive'
-  const [activeTab, setActiveTab] = useState(activeResourcesTabName);
+  const draggedIndexRef = useRef<number | null>(null);
+  const scrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [activeTab, setActiveTab] = useState(ACTIVE_TAB);
 
-
-  const handleTabClick = (tabName) => {
+  const handleTabClick = (tabName: string) => {
     setActiveTab(tabName);
-    if(tabName == activeResourcesTabName) {
-      setResources(sortedAvailableResources)
+    if (tabName === ACTIVE_TAB) {
+      setResources(sortedAvailableResources);
     } else {
-      setResources(sortedUnavailableResources)
+      setResources(sortedUnavailableResources);
     }
   };
 
-  function handleTabChange(tabName, e) {
+  const handleTabChange = (tabName: string, e: React.MouseEvent) => {
     e.preventDefault();
     handleTabClick(tabName);
   };
@@ -48,13 +53,13 @@ export default function Resources({
     setResources(sortedAvailableResources);
   }, [sortedAvailableResources]);
 
-  const handleDragStart = (e, index) => {
+  const handleDragStart = (_e: React.DragEvent, index: number) => {
     draggedIndexRef.current = index;
   };
 
-  const handleDragOver = (e, index) => {
+  const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (draggedIndexRef.current === index) return;
+    if (draggedIndexRef.current === null || draggedIndexRef.current === index) return;
 
     const newResources = [...resources];
     const draggedItem = newResources[draggedIndexRef.current];
@@ -89,20 +94,18 @@ export default function Resources({
 
   return (
     <>
-      <div className={styles["resources-container"]}>
+      <div className="mx-auto">
         {canAdd && (
           <Button className="float-right" onClick={() => setShowImportModal(true)}>
             Add a Resource from CIDeR
           </Button>
         )}
         <h2>Select a resource from the list to modify</h2>
-        <p className={styles["drag-instruction"]}>
-          Drag items to reorder the list.
-        </p>
+        <p className="mb-4 italic text-muted-foreground">Drag items to reorder the list.</p>
 
         <div className="mx-auto w-full max-w-md p-4">
           <div className="flex border-b">
-            {[activeResourcesTabName, inactiveResourcesTabName].map((tabName) => (
+            {[ACTIVE_TAB, INACTIVE_TAB].map((tabName) => (
               <button
                 key={tabName}
                 type="button"
@@ -119,44 +122,41 @@ export default function Resources({
             ))}
           </div>
 
-          <div className={styles["resources-list"]}>
-            <div className={styles["resources-header"]}>
-              <span className={styles["header-name"]}>Resource Name</span>
-              <span className={styles["header-repo"]}>Repository Key</span>
+          <div className="list-none p-0">
+            <div className="mb-2 flex justify-between rounded bg-muted p-2 font-bold">
+              <span>Resource Name</span>
+              <span>Repository Key</span>
             </div>
             {resources.map((resource, index) => (
-                <div
-                    key={resource.resource_id}
-                    className={`${styles["resources-item"]}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDrop={handleDrop}
-                >
-                  <span className={styles["drag-handle"]}></span>
-                  <span className={styles["resource-name"]}>
-                <a
+              <div
+                key={resource.resource_id}
+                className="mb-1 flex cursor-move items-center justify-between rounded bg-muted/50 p-2 transition-colors last:mb-0 hover:bg-muted"
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={handleDrop}
+              >
+                <span
+                  className="mr-4 inline-block h-4 w-[15px] shrink-0 bg-[linear-gradient(to_bottom,#999_20%,transparent_20%,transparent_40%,#999_40%,#999_60%,transparent_60%,transparent_80%,#999_80%)]"
+                  aria-hidden
+                />
+                <span className="grow-[2]">
+                  <a
                     href={`${relativeUrlRoot}/resources/${resource.resource_id}`}
-                    className={styles["resource-link"]}
-                >
-                  {resource.display_resource_name}
-                </a>
-              </span>
-                  <span className={styles["resource-repo"]}>
-                {resource.resource_repository_key || "N/A"}
-              </span>
-                </div>
+                    className="text-[#0066cc] hover:underline"
+                  >
+                    {resource.display_resource_name}
+                  </a>
+                </span>
+                <span className="grow text-right text-muted-foreground">
+                  {resource.resource_repository_key || "N/A"}
+                </span>
+              </div>
             ))}
           </div>
         </div>
-
-
-
-
       </div>
-      {showImportModal && (
-        <ImportResourceModal onClose={() => setShowImportModal(false)} />
-      )}
+      {showImportModal && <ImportResourceModal onClose={() => setShowImportModal(false)} />}
     </>
   );
 }

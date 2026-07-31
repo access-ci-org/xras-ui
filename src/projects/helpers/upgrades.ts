@@ -1,7 +1,16 @@
-const upgradeMap = {
+import type { AllowedAction, Request } from "../types";
+
+const upgradeMap: Record<string, string> = {
   Explore: "Discover",
   Discover: "Accelerate",
-  Accelerate: "Maximize"
+  Accelerate: "Maximize",
+};
+
+export type Upgrade = {
+  isEnabled: boolean;
+  isRenewalEnabled?: boolean;
+  allocationType?: string;
+  opportunityId?: number;
 };
 
 /**
@@ -19,14 +28,10 @@ const upgradeMap = {
  *   - "opportunityId":  (number) if an upgrade is available, the opportunityId
  *
  * Note:  +request+ isn't exactly the object as returned from GET /v1/projects;
- * it's modified in apiSlice.js.
- *
- * @param {object} request
- * @param {Array} renewalActions
- * @return {object}
+ * it's modified in atoms.ts.
  */
-export function getUpgrade(request, renewalActions) {
-  const upgrade = {isEnabled: false};
+export function getUpgrade(request: Request, renewalActions: AllowedAction[]): Upgrade {
+  const upgrade: Upgrade = { isEnabled: false };
 
   if (!(request.allocationType in upgradeMap)) {
     // This isn't a credits-based allocation type.  Normal renewal rules apply.
@@ -64,12 +69,12 @@ export function getUpgrade(request, renewalActions) {
     return upgrade;
   }
 
-  for (let renewal of renewalActions) {
+  for (const renewal of renewalActions) {
     // The allowedAction object doesn't include the allocation type of the
     // opportunity, so we have to assume that the allocation type is a
     // substring of the opportunity name (e.g., "Accelerate ACCESS" or
     // "Maximize ACCESS – March 2026").
-    if (renewal.opportunityName.includes(upgrade.allocationType)) {
+    if (renewal.opportunityName?.includes(upgrade.allocationType)) {
       upgrade.opportunityId = renewal.opportunityId;
       upgrade.isEnabled = true;
       break;
@@ -84,22 +89,15 @@ export function getUpgrade(request, renewalActions) {
  * However, credit-based allocations have been set to 365 days before the end
  * of the allocation to permit upgrades before then.  The UI should hide the
  * normal "Renewal" option until 30 days before the allocation end date.
- *
- * @param {object} request
- * @return {boolean}
  */
-function canRenewNormally(request) {
+function canRenewNormally(request: Request) {
   return daysUntilEndDate(request) < 31;
 }
 
-/**
- * @param {object} request
- * @return {number}
- */
-function daysUntilEndDate(request) {
-  const endDate = new Date(request.endDate);
+function daysUntilEndDate(request: Request) {
+  const endDate = new Date(request.endDate ?? "");
   const currentDate = new Date();
-  return Math.max(0, Math.ceil((endDate - currentDate) / (1000 * 60 * 60 * 24)));
+  return Math.max(0, Math.ceil((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
 /**
@@ -110,30 +108,26 @@ function daysUntilEndDate(request) {
  * Note that this does not always happen.  Sometimes the admins award the full
  * amount up front.  Other times they don't award the full amount even with
  * supplements.
- *
- * @param {object} request
- * @param {object} credits The object returned from calculateCredits().
- * @return {boolean}
  */
-function receivedAllCredits(request, credits) {
+function receivedAllCredits(request: Request, credits: ReturnType<typeof calculateCredits>) {
   if (credits.allocated >= fullAward(request)) return true;
 
-  return request.actions.some(function (action) {
-    return action.type == "Supplement" &&
+  return request.actions.some(
+    (action) =>
+      action.type == "Supplement" &&
       action.status == "Approved" &&
-      action.resources.some(r => r.isCredit && r.allocated > 0)
-  });
+      action.resources.some((r) => r.isCredit && r.allocated > 0),
+  );
 }
 
-/**
- * @param {object} request
- * @return {number}
- */
-function fullAward(request) {
+function fullAward(request: Request) {
   switch (request.allocationType) {
-    case 'Explore':    return  400000.0;
-    case 'Discover':   return 1500000.0;
-    case 'Accelerate': return 3000000.0;
+    case "Explore":
+      return 400000.0;
+    case "Discover":
+      return 1500000.0;
+    case "Accelerate":
+      return 3000000.0;
   }
 
   return 0;
@@ -146,16 +140,14 @@ function fullAward(request) {
  * revised to also be based on remaining (compute) resources, so that a project
  * isn't immediately offered an upgrade if they exchange all of their credits
  * but haven't used the resources.
- *
- * @param {object} request
- * @param {object} credits The object returned from calculateCredits().
- * @return {boolean}
  */
-function needsMoreCredits(request, credits) {
+function needsMoreCredits(request: Request, credits: ReturnType<typeof calculateCredits>) {
   switch (request.allocationType) {
-    case 'Explore':  return credits.usage >= 0.90;
-    case 'Discover': return credits.usage >= 0.75;
-    case 'Accelerate':
+    case "Explore":
+      return credits.usage >= 0.9;
+    case "Discover":
+      return credits.usage >= 0.75;
+    case "Accelerate":
       return credits.exchanged >= 0.75 * fullAward(request);
   }
 
@@ -171,7 +163,7 @@ function needsMoreCredits(request, credits) {
  * been allocated, but ACCESS Credits are "used" by exchanging them (via
  * transfer) for other resources.
  *
- * The getResourceUsagePercent() function from src/shared/helpers/utils.jsx
+ * The getResourceUsagePercent() function from src/shared/helpers/utils.tsx
  * tries to do the same thing by adding up the allocation multiplied by the
  * exchange rate, but that doesn't always return the correct answer either
  * because it always uses the current exchange rate, and if the project
@@ -183,19 +175,16 @@ function needsMoreCredits(request, credits) {
  *
  * Note that this will include credits from actions which have been approved
  * but not sent to the accounting service.
- *
- * @param {object} request
- * @return {object}
  */
-function calculateCredits(request) {
+function calculateCredits(request: Request) {
   let allocated = 0.0;
   let remaining = 0.0;
 
-  for (let action of request.actions) {
+  for (const action of request.actions) {
     if (action.status != "Approved") continue;
-    let exchange = action.type == "Exchange" || action.type == "Transfer";
+    const exchange = action.type == "Exchange" || action.type == "Transfer";
 
-    for (let resource of action.resources) {
+    for (const resource of action.resources) {
       if (!resource.isCredit) continue;
       if (!exchange) allocated += resource.allocated;
       remaining += resource.allocated;
@@ -205,6 +194,6 @@ function calculateCredits(request) {
   return {
     allocated: allocated,
     exchanged: allocated - remaining,
-    usage: allocated > 0 ? (allocated - remaining) / allocated : 0
-  }
+    usage: allocated > 0 ? (allocated - remaining) / allocated : 0,
+  };
 }

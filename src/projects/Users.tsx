@@ -1,18 +1,18 @@
-import { filterResource, searchUsers } from "./helpers/apiSlice";
-import { useProject, useRequest } from "./helpers/hooks";
-import { formatManagers, roles } from "../shared/helpers/utils";
-import config from "../shared/helpers/config";
-import gridStyle from "../shared/Grid.module.scss";
-
 import AsyncSelect from "react-select/async";
-
+import { OctagonAlert } from "lucide-react";
 import Alert from "../shared/Alert";
-import Grid from "../shared/Grid";
+import Grid, { type GridColumn } from "../shared/Grid";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
 import ResourceName from "../shared/ResourceName";
 import UserName from "../shared/UserName";
+import gridStyle from "../shared/Grid.module.scss";
+import config from "../shared/helpers/config";
+import { formatManagers, roles } from "../shared/helpers/utils";
+import { filterResource, searchUsers } from "./atoms";
+import { useProject, useRequest } from "./helpers/hooks";
+import type { SearchedUser } from "./types";
 
-export default function Users({ grantNumber, requestId }) {
+export default function Users({ grantNumber, requestId }: { grantNumber: string; requestId?: number }) {
   const {
     project,
     addUser,
@@ -23,17 +23,9 @@ export default function Users({ grantNumber, requestId }) {
     statuses,
     toggleUsersResources,
   } = useProject(grantNumber);
-  const { request } = project
-    ? useRequest(requestId || project.currentRequestId, grantNumber)
-    : { request: null };
-  if (
-    !project ||
-    !project.currentRequestId ||
-    !request ||
-    project.error ||
-    request.error
-  )
-    return;
+  const { request } = useRequest(requestId || project?.currentRequestId, grantNumber);
+
+  if (!project || !project.currentRequestId || !request || project.error || request.error) return null;
 
   const canManageUsers = project.isManager;
   const canExchange = "Exchange" in request.allowedActions;
@@ -52,17 +44,16 @@ export default function Users({ grantNumber, requestId }) {
   if (saved && !hasChanges) {
     alert = (
       <Alert color="info">
-        Your changes have been saved. Creation of user accounts can take some
-        time. Users can check the status of their accounts on the Overview tab
-        of the My Projects page.
+        Your changes have been saved. Creation of user accounts can take some time. Users can check the
+        status of their accounts on the Overview tab of the My Projects page.
       </Alert>
     );
   } else if (error) {
     alert = (
       <Alert color="danger">
         Sorry, some of your changes could not be saved.
-        {project.usersErrors?.length > 0 && (
-          <ul className="mb-0" style={{ fontSize: "inherit" }}>
+        {project.usersErrors && project.usersErrors.length > 0 && (
+          <ul className="mb-0">
             {project.usersErrors.map((message, index) => (
               <li key={index}>{message}</li>
             ))}
@@ -73,8 +64,8 @@ export default function Users({ grantNumber, requestId }) {
   } else if (!canManageUsers) {
     alert = (
       <Alert color="warning">
-        You do not have permission to manage users for this project. Please
-        contact {formatManagers(project)} to request a change.
+        You do not have permission to manage users for this project. Please contact{" "}
+        {formatManagers(project)} to request a change.
       </Alert>
     );
   } else if (!resources.length) {
@@ -83,10 +74,7 @@ export default function Users({ grantNumber, requestId }) {
         This project does not have any resources.{" "}
         {canExchange ? (
           <a
-            href={config.routes.request_action_path(
-              request.requestId,
-              "new?action_type=Exchange",
-            )}
+            href={config.routes.request_action_path(request.requestId, "new?action_type=Exchange")}
             onClick={(e) => {
               e.preventDefault();
               setTab("resources");
@@ -99,41 +87,32 @@ export default function Users({ grantNumber, requestId }) {
       </Alert>
     );
   } else if (allInactive) {
-    alert = (
-      <Alert color="warning">
-        This project does not have any active resources.
-      </Alert>
-    );
+    alert = <Alert color="warning">This project does not have any active resources.</Alert>;
   }
 
-  const formatHeader = (name, column) => {
+  const formatHeader = (name: React.ReactNode, column: GridColumn) => {
     let description, onChange, selectedLength, totalLength;
     if (column.key == "all") {
       description = "all resources for all users";
-      onChange = (checked) => toggleUsersResources(checked);
+      onChange = (checked: boolean) => toggleUsersResources(checked);
       selectedLength = 0;
-      for (let user of users) selectedLength += user.resourceIds.length;
+      for (const user of users) selectedLength += user.resourceIds.length;
       totalLength = users.length * resources.length;
     } else {
       description = `all users for ${column.name}`;
-      onChange = (checked) => toggleUsersResources(checked, null, column.key);
-      selectedLength = users.filter(({ resourceIds }) =>
-        resourceIds.includes(column.key),
-      ).length;
+      const resourceId = Number(column.key);
+      onChange = (checked: boolean) => toggleUsersResources(checked, null, resourceId);
+      selectedLength = users.filter(({ resourceIds }) => resourceIds.includes(resourceId)).length;
       totalLength = users.length;
     }
 
     return (
       <>
-        {column.key == "all" ? (
-          name
-        ) : (
-          <ResourceName resource={column} userGuide={false} />
-        )}
+        {column.key == "all" ? name : <ResourceName resource={column as any} userGuide={false} />}
         <br />
         <MultiStateCheckbox
           description={description}
-          disabled={column.disabled}
+          disabled={(column as any).disabled}
           onChange={onChange}
           selectedLength={selectedLength}
           totalLength={totalLength}
@@ -148,12 +127,12 @@ export default function Users({ grantNumber, requestId }) {
     </option>
   ));
 
-  const columns = [
+  const columns: GridColumn[] = [
     {
       key: "name",
       name: "Name",
       width: 200,
-      format: (value, row) => <UserName user={row} />,
+      format: (_value, row) => <UserName user={row as any} />,
     },
     { key: "username", name: "ACCESS Username", width: 100 },
     {
@@ -162,22 +141,13 @@ export default function Users({ grantNumber, requestId }) {
       width: 100,
       format: (value, row) => (
         <select
-          className="form-select"
+          className="absolute inset-0 border-0"
           value={value}
           onChange={(e) => setUserRole(row.username, e.target.value)}
           disabled={!canManageUsers || value == "pi" || value == "co_pi"}
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            right: 0,
-            borderWidth: 0,
-          }}
         >
           {roleOptions.filter(
-            (option) =>
-              option.key == value || !["pi", "co_pi"].includes(option.key),
+            (option) => option.key == value || !["pi", "co_pi"].includes(option.key as string),
           )}
         </select>
       ),
@@ -191,7 +161,7 @@ export default function Users({ grantNumber, requestId }) {
       class: `text-center ${gridStyle.important}`,
       disabled: !canManageUsers || allInactive,
       width: 100,
-      format: (value, row) => (
+      format: (_value, row) => (
         <MultiStateCheckbox
           description={`all users for ${row.name}`}
           disabled={!canManageUsers || allInactive}
@@ -203,36 +173,25 @@ export default function Users({ grantNumber, requestId }) {
       formatHeader,
     });
 
-  for (let resource of resources)
+  for (const resource of resources)
     columns.push({
-      key: resource.resourceId,
+      key: resource.resourceId.toString(),
       name: resource.name,
       class: "text-center",
       disabled: !canManageUsers || !resource.isActive,
       icon: resource.icon,
-      format: (value, row) => (
-        <>
-          <input
-            className="form-check-input"
-            disabled={!canManageUsers || !resource.isActive}
-            onChange={(e) =>
-              toggleUsersResources(
-                e.target.checked,
-                row.username,
-                resource.resourceId,
-              )
-            }
-            type="checkbox"
-            checked={row.resourceIds.includes(resource.resourceId)}
-          />
-        </>
+      format: (_value, row) => (
+        <input
+          disabled={!canManageUsers || !resource.isActive}
+          onChange={(e) => toggleUsersResources(e.target.checked, row.username, resource.resourceId)}
+          type="checkbox"
+          checked={row.resourceIds.includes(resource.resourceId)}
+        />
       ),
       formatHeader,
     });
 
-  const rowClasses = users.map((user) =>
-    user.hasChanges ? gridStyle.edited : "",
-  );
+  const rowClasses = users.map((user) => (user.hasChanges ? gridStyle.edited : ""));
 
   return (
     <>
@@ -247,34 +206,24 @@ export default function Users({ grantNumber, requestId }) {
         scrollRowIndex={project.usersNewRowIndex}
       />
       {canManageUsers && resources.length && !allInactive ? (
-        <div style={{ marginTop: "-1px", position: "relative", zIndex: 100 }}>
-          <AsyncSelect
+        <div className="relative -mt-px" style={{ zIndex: 100 }}>
+          <AsyncSelect<{ label: React.ReactNode; value: SearchedUser }>
             classNames={{ control: () => "react-select" }}
             loadOptions={async (value) => {
-              const users = await searchUsers(value);
-              return users.map((user) => ({
+              const found = await searchUsers(value);
+              return found.map((user) => ({
                 isDisabled: user.eligibility === "no",
                 label: (
-                  <span className="d-flex justify-content-between">
+                  <span className="flex justify-between">
                     <span
-                      className={
-                        user.eligibility === "no"
-                          ? "text-decoration-line-through"
-                          : ""
-                      }
-                      style={{
-                        color:
-                          user.eligibility === "no" ? "#707070" : undefined,
-                      }}
+                      className={user.eligibility === "no" ? "text-[#707070] line-through" : ""}
                     >
-                      {user.username} ({user.firstName} {user.lastName},{" "}
-                      {user.organization}
+                      {user.username} ({user.firstName} {user.lastName}, {user.organization}
                       {user.email ? `, ${user.email}` : ""}
                     </span>
                     {user.eligibility === "no" && user.eligibilityReason && (
-                      <span className="text-danger ms-2">
-                        <i className="bi bi-exclamation-octagon"></i>{" "}
-                        {user.eligibilityReason}
+                      <span className="ml-2 text-destructive">
+                        <OctagonAlert className="inline size-4" /> {user.eligibilityReason}
                       </span>
                     )}
                   </span>
@@ -282,29 +231,28 @@ export default function Users({ grantNumber, requestId }) {
                 value: user,
               }));
             }}
-            onChange={(option) => addUser(option.value)}
+            onChange={(option) => option && addUser(option.value)}
             placeholder="Add another user..."
             value={null}
             aria-label="Add another user"
           />
         </div>
       ) : null}
-      {canManageUsers &&
-      ((resources.length && !allInactive) || hasNonPIUsers) ? (
-        <div className="d-flex mt-3">
+      {canManageUsers && ((resources.length && !allInactive) || hasNonPIUsers) ? (
+        <div className="mt-3 flex">
           <button
             type="button"
-            className="btn btn-danger me-2"
+            className="mr-2 bg-destructive px-4 py-2 font-bold uppercase text-destructive-foreground disabled:opacity-50"
             disabled={saving || !hasChanges}
-            onClick={resetUsers}
+            onClick={() => resetUsers()}
           >
             Reset Form
           </button>
           <button
             type="button"
-            className="btn btn-secondary"
+            className="bg-muted px-4 py-2 font-bold uppercase disabled:opacity-50"
             disabled={saving || !hasChanges}
-            onClick={saveUsers}
+            onClick={() => saveUsers()}
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

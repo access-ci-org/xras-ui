@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const colorClasses: Record<string, string> = {
@@ -12,7 +13,7 @@ const colorClasses: Record<string, string> = {
 type InlineButtonProps = {
   color?: string;
   href?: string;
-  icon: string;
+  icon: LucideIcon;
   onClick?: () => void;
   target?: string;
   title?: string;
@@ -22,13 +23,13 @@ type InlineButtonProps = {
 export default function InlineButton({
   color = "primary",
   href,
-  icon,
+  icon: Icon,
   onClick,
   target,
   title,
   type = "button",
 }: InlineButtonProps) {
-  const children = <i className={`bi bi-${icon}`} />;
+  const children = <Icon className="size-4" />;
   const className = cn("ml-1 inline-flex p-1 text-sm", colorClasses[color] ?? colorClasses.primary);
 
   return href ? (

@@ -1,3 +1,4 @@
+import { Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { badgeColorClasses } from "./helpers/badgeColors";
 import { formatDate, formatExchangeRate } from "./helpers/utils";
@@ -17,7 +18,7 @@ export default function DiscountBadge({
   const { base, current } = resource.exchangeRates;
   if (current.unitCost >= base.unitCost) return null;
 
-  const icon = current.endDate ? "calendar3" : "people-fill";
+  const Icon = current.endDate ? Calendar : Users;
   const color = current.endDate ? "primary" : "success";
 
   const pctOff = Math.round((100 * (base.unitCost - current.unitCost)) / base.unitCost);
@@ -42,7 +43,7 @@ export default function DiscountBadge({
         badgeColorClasses[color],
       )}
     >
-      <i className={`bi bi-${icon}`} />
+      <Icon className="size-3.5" />
       {text}
     </span>
   );

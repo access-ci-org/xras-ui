@@ -1,4 +1,5 @@
 import { useAtomValue, useSetAtom } from "jotai";
+import { Asterisk, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -112,7 +113,7 @@ export default function PublicationForm() {
 
           <div className="mb-3">
             <Label htmlFor="publication_title">
-              Title <i className="bi bi-asterisk text-destructive" />
+              Title <Asterisk className="inline size-3.5 text-destructive" />
             </Label>
             <Input
               id="publication_title"
@@ -180,7 +181,7 @@ export default function PublicationForm() {
           <InfoTip>
             Add authors by clicking the &quot;Add Author&quot; button below and entering the
             author&apos;s details. You may also remove authors by clicking the{" "}
-            <i className="bi bi-trash fw-bold text-destructive" /> button
+            <Trash2 className="inline size-4 text-destructive" /> button
           </InfoTip>
         </div>
         <div className="p-3">

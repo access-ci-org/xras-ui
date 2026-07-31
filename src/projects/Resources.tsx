@@ -1,5 +1,14 @@
 import { useRef } from "react";
-import { useProject, useRequest } from "./helpers/hooks";
+import { Table } from "lucide-react";
+import Select from "react-select";
+import Alert from "../shared/Alert";
+import Grid, { type GridColumn } from "../shared/Grid";
+import InfoTip from "../shared/InfoTip";
+import InlineButton from "../shared/InlineButton";
+import ResourceName from "../shared/ResourceName";
+import StatusBadge from "../shared/StatusBadge";
+import BlurInput from "../shared/BlurInput";
+import gridStyle from "../shared/Grid.module.scss";
 import config from "../shared/helpers/config";
 import {
   formatArray,
@@ -11,20 +20,17 @@ import {
   parseResourceName,
   roundNumber,
 } from "../shared/helpers/utils";
-import gridStyle from "../shared/Grid.module.scss";
-
-import Select from "react-select";
-
-import Alert from "../shared/Alert";
-import Grid from "../shared/Grid";
-import InfoTip from "../shared/InfoTip";
-import InlineButton from "../shared/InlineButton";
-import ResourceName from "../shared/ResourceName";
 import ResourcesDiagram from "./ResourcesDiagram";
-import StatusBadge from "../shared/StatusBadge";
-import BlurInput from "../shared/BlurInput";
+import { useProject, useRequest } from "./helpers/hooks";
+import type { Resource } from "./types";
 
-export default function Resources({ requestId, grantNumber }) {
+export default function Resources({
+  requestId,
+  grantNumber,
+}: {
+  requestId: number;
+  grantNumber?: string;
+}) {
   const {
     request,
     addResource,
@@ -37,12 +43,14 @@ export default function Resources({ requestId, grantNumber }) {
     toggleConfirmModal,
     toggleResourcesModal,
   } = useRequest(requestId, grantNumber);
-  const { project } = useProject(
-    grantNumber || (request && request.grantNumber),
-  );
-  const resourceSearch = useRef(null);
-  const submitButton = useRef(null);
-  if (!request || !project) return;
+  const { project } = useProject(grantNumber || request?.grantNumber);
+  const resourceSearch = useRef<HTMLDivElement>(null);
+  const submitButton = useRef<HTMLButtonElement>(null);
+  if (!request || !project) return null;
+
+  const exchangeAction = request.allowedActions.Exchange;
+  const exchangeActionSingle = Array.isArray(exchangeAction) ? exchangeAction[0] : exchangeAction;
+
   const canExchange = "Exchange" in request.allowedActions;
   const canRenew = "Renewal" in request.allowedActions;
   const canSupplement = "Supplement" in request.allowedActions;
@@ -56,22 +64,21 @@ export default function Resources({ requestId, grantNumber }) {
   const resources = request.resources;
   const reason = request.resourcesReason;
 
-  const resourcesMap = {};
-  for (let res of resources) resourcesMap[res.resourceId] = res;
+  const resourcesMap: Record<number, Resource> = {};
+  for (const res of resources) resourcesMap[res.resourceId] = res;
 
   const requestMore = () => {
-    getResourceUsagePercent(request) >= 0.75
-      ? toggleActionsModal()
-      : toggleConfirmModal();
+    if (getResourceUsagePercent(request) >= 0.75) toggleActionsModal();
+    else toggleConfirmModal();
   };
 
   // Find unmet resource dependencies.
-  const unmetDeps = [];
-  for (let res of resources) {
-    let missing = [];
+  const unmetDeps: React.ReactNode[] = [];
+  for (const res of resources) {
+    let missing: Resource[] = [];
     if (res.requested > 0) {
-      for (let depId of res.requires || []) {
-        let dep = resourcesMap[depId];
+      for (const depId of res.requires || []) {
+        const dep = resourcesMap[depId];
         if (!dep) continue;
         if (dep.requested > 0) {
           missing = [];
@@ -84,13 +91,7 @@ export default function Resources({ requestId, grantNumber }) {
           <span key={res.resourceId}>
             <ResourceName resource={res} userGuide={false} /> requires{" "}
             {formatArray(
-              missing.map((res) => (
-                <ResourceName
-                  key={res.resourceId}
-                  resource={res}
-                  userGuide={false}
-                />
-              )),
+              missing.map((res) => <ResourceName key={res.resourceId} resource={res} userGuide={false} />),
               "or",
             )}
             .
@@ -100,25 +101,24 @@ export default function Resources({ requestId, grantNumber }) {
   }
   const hasUnmetDeps = unmetDeps.length > 0;
 
-  const getBalance = (row) => row.requested - row.used;
-  const belowMinimum = (row) => row.isNew && (0 < row.requested) && (row.requested < row.minimumExchange);
-  const belowMinimums = [];
-  for (let res of resources) {
+  const getBalance = (row: Resource) => row.requested - row.used;
+  const belowMinimum = (row: Resource) =>
+    row.isNew && 0 < row.requested && row.requested < row.minimumExchange;
+  const belowMinimums: React.ReactNode[] = [];
+  for (const res of resources) {
     if (!res.isCredit && belowMinimum(res)) {
       belowMinimums.push(
-	<span key={res.resourceId}>
-	  The minimum initial request for <ResourceName resource={res} userGuide={false} /> is { res.minimumExchange } {res.unit}. <br />
-	</span>,
+        <span key={res.resourceId}>
+          The minimum initial request for <ResourceName resource={res} userGuide={false} /> is{" "}
+          {res.minimumExchange} {res.unit}. <br />
+        </span>,
       );
     }
   }
   const anyBelowMinimum = belowMinimums.length > 0;
 
   let alert;
-  if (saved)
-    alert = (
-      <Alert color="info">Your exchange request has been submitted.</Alert>
-    );
+  if (saved) alert = <Alert color="info">Your exchange request has been submitted.</Alert>;
   else if (
     error &&
     errorMessages.length > 0 &&
@@ -127,21 +127,15 @@ export default function Resources({ requestId, grantNumber }) {
   )
     alert = (
       <Alert color="danger">
-        {project.currentUser.role === "pi" ? (
+        {project.currentUser?.role === "pi" ? (
           <>
-            Please{" "}
-            <a href={config.routes.profile_path()}>
-              update your academic status
-            </a>{" "}
-            before making an exchange request.
+            Please <a href={config.routes.profile_path()}>update your academic status</a> before making an
+            exchange request.
           </>
         ) : (
           <>
-            The primary investigator for this project has an unknown academic
-            status. Please ask{" "}
-            {project.users
-              .filter((user) => user.role === "pi")
-              .map((user) => `${user.firstName} ${user.lastName}`)}{" "}
+            The primary investigator for this project has an unknown academic status. Please ask{" "}
+            {project.users.filter((user) => user.role === "pi").map((user) => `${user.firstName} ${user.lastName}`)}{" "}
             to update the academic status in their profile, and then try again.
           </>
         )}
@@ -150,59 +144,47 @@ export default function Resources({ requestId, grantNumber }) {
   else if (error)
     alert = (
       <Alert color="danger">
-        Sorry, something went wrong: {errorMessages.join(", ")}. For assistance,
-        please{" "}
-        <a href="https://support.access-ci.org/open-a-ticket">
-          open a help ticket
-        </a>{" "}
-        and include this message.
+        Sorry, something went wrong: {errorMessages.join(", ")}. For assistance, please{" "}
+        <a href="https://support.access-ci.org/open-a-ticket">open a help ticket</a> and include this
+        message.
       </Alert>
     );
   else if (previous)
     alert = (
       <Alert color="warning">
-        You have an exchange request under review. The information below
-        reflects the pending exchange request.
+        You have an exchange request under review. The information below reflects the pending exchange
+        request.
       </Alert>
     );
   else if (request.timeStatus == "current" && !project.isManager)
     alert = (
       <Alert color="warning">
-        You do not have permission to manage resources for this project. Please
-        contact {formatManagers(project)} to request a change.
+        You do not have permission to manage resources for this project. Please contact{" "}
+        {formatManagers(project)} to request a change.
       </Alert>
     );
   else if (hasUnmetDeps)
-    alert = (
-      <Alert color="warning">
-        {unmetDeps} Please adjust your balance values.
-      </Alert>
-    );
-  else if (anyBelowMinimum)
-    alert = (
-      <Alert color="warning">
-	{belowMinimums}
-      </Alert>
-    );
+    alert = <Alert color="warning">{unmetDeps} Please adjust your balance values.</Alert>;
+  else if (anyBelowMinimum) alert = <Alert color="warning">{belowMinimums}</Alert>;
 
   const hasReason = reason.length > 0;
   let hasAddedResources = false;
   let hasRequested = false;
 
-  for (let resource of resources) {
+  for (const resource of resources) {
     if (resource.isNew) hasAddedResources = true;
     if (resource.allocated != resource.requested) hasRequested = true;
     if (hasAddedResources && hasRequested) break;
   }
 
   const resourceIds = resources.map((res) => res.resourceId);
-  const availableResourcesMap = {};
-  const groupedResourcesMap = {};
-  const availableResourceGroups = [];
-  if (canExchange && exchangeEditable) {
-    request.allowedActions.Exchange.resources
+  const availableResourcesMap: Record<number, Resource> = {};
+  const groupedResourcesMap: Record<string, Resource[]> = {};
+  const availableResourceGroups: { label: string; options: { value: number; label: string }[] }[] = [];
+  if (canExchange && exchangeEditable && exchangeActionSingle) {
+    exchangeActionSingle.resources
       .filter((res) => !resourceIds.includes(res.resourceId))
-      .map((res) => {
+      .forEach((res) => {
         availableResourcesMap[res.resourceId] = res;
         const groupLabel = `${res.type} Resources (${res.unit})`;
         groupedResourcesMap[groupLabel] = groupedResourcesMap[groupLabel] || [];
@@ -214,11 +196,8 @@ export default function Resources({ requestId, grantNumber }) {
         label,
         options: options
           .sort((a, b) =>
-            a.exchangeRates.current.unitCost <
-              b.exchangeRates.current.unitCost ||
-            (a.exchangeRates.current.unitCost ==
-              b.exchangeRates.current.unitCost &&
-              a.name < b.name)
+            a.exchangeRates.current.unitCost < b.exchangeRates.current.unitCost ||
+            (a.exchangeRates.current.unitCost == b.exchangeRates.current.unitCost && a.name < b.name)
               ? -1
               : 1,
           )
@@ -234,16 +213,16 @@ export default function Resources({ requestId, grantNumber }) {
     }
   }
 
-  const exchangeActionResourceIds = canExchange
-    ? request.allowedActions.Exchange.resources.map((res) => res.resourceId)
+  const exchangeActionResourceIds = canExchange && exchangeActionSingle
+    ? exchangeActionSingle.resources.map((res) => res.resourceId)
     : [];
 
-  let credit;
+  let credit: Resource | undefined;
 
   // Grid rows
-  const rows = [];
-  const rowClasses = [];
-  for (let res of resources) {
+  const rows: Resource[] = [];
+  const rowClasses: string[] = [];
+  for (const res of resources) {
     if (res.isCredit) {
       credit = res;
     } else {
@@ -258,11 +237,9 @@ export default function Resources({ requestId, grantNumber }) {
     }
   }
 
-  const resourceAddMessage = `Add ${
-    rows.length ? "another" : "a"
-  } resource to your exchange...`;
+  const resourceAddMessage = `Add ${rows.length ? "another" : "a"} resource to your exchange...`;
 
-  const cleanBalance = (balanceString, row) => {
+  const cleanBalance = (balanceString: string, row: Resource) => {
     const allocatedBalance = row.allocated - row.used;
     const desiredBalance = roundNumber(
       Number(balanceString.replace(/[^0-9-.]/g, "")),
@@ -277,60 +254,49 @@ export default function Resources({ requestId, grantNumber }) {
     // reduces the allocation and then later increases it before submitting, we need
     // to split the increase at the current allocation and apply the base exchange rate
     // to the lower portion and the current exchange rate to the upper portion.
-    let availableCredits =
-      credit.requested * credit.exchangeRates.base.unitCost;
-    const costToAllocated =
-      (row.allocated - row.requested) * row.exchangeRates.base.unitCost;
+    let availableCredits = (credit?.requested ?? 0) * (credit?.exchangeRates.base.unitCost ?? 0);
+    const costToAllocated = (row.allocated - row.requested) * row.exchangeRates.base.unitCost;
     const baseCost = Math.min(availableCredits, costToAllocated);
 
     availableCredits -= baseCost;
-    let maxBalance =
-      row.requested - row.used + baseCost / row.exchangeRates.base.unitCost;
-    if (availableCredits > 0)
-      maxBalance += availableCredits / row.exchangeRates.current.unitCost;
+    let maxBalance = row.requested - row.used + baseCost / row.exchangeRates.base.unitCost;
+    if (availableCredits > 0) maxBalance += availableCredits / row.exchangeRates.current.unitCost;
 
-    if (desiredBalance > maxBalance)
-      return roundNumber(maxBalance, row.decimalPlaces, "floor");
+    if (desiredBalance > maxBalance) return roundNumber(maxBalance, row.decimalPlaces, "floor");
     return desiredBalance;
   };
 
-  const formatUnitCost = (resource) =>
+  const formatUnitCost = (resource: Resource) =>
     resource.isBoolean ? (
       <>&mdash;</>
     ) : (
       <>
-        {icon(config.resourceTypeIcons[credit.icon])}
-        <span className="ms-2">
-          {formatExchangeRate(
-            resource.unit,
-            resource.exchangeRates.current.unitCost,
-            credit.name,
-          )}
+        {credit && icon(config.resourceTypeIcons[credit.icon])}
+        <span className="ml-2">
+          {credit && formatExchangeRate(resource.unit, resource.exchangeRates.current.unitCost, credit.name)}
         </span>
       </>
     );
 
   // Grid columns
-  const columns = [
+  const columns: GridColumn[] = [
     {
       key: "name",
       name: "Resource",
-      format: (name, row) => (
+      format: (_name, row) => (
         <>
-          <ResourceName resource={row} />
-          {(project.currentUser.resourceIds.includes(row.resourceId) ||
-            project.currentUser.resourceAccountInactiveIds.includes(
-              row.resourceId,
-            )) && (
+          <ResourceName resource={row as Resource} />
+          {(project.currentUser?.resourceIds.includes((row as Resource).resourceId) ||
+            project.currentUser?.resourceAccountInactiveIds.includes((row as Resource).resourceId)) && (
             <InlineButton
-              icon="table"
-              onClick={() => openUsageDetailModal(row.resourceRepositoryKey)}
+              icon={Table}
+              onClick={() => openUsageDetailModal((row as Resource).resourceRepositoryKey ?? "")}
               target="_blank"
-              title={`${row.name} Usage Details`}
+              title={`${(row as Resource).name} Usage Details`}
             />
           )}{" "}
           <StatusBadge
-            status={row.isActive ? "Active" : row.isNew ? "New" : "Inactive"}
+            status={(row as Resource).isActive ? "Active" : (row as Resource).isNew ? "New" : "Inactive"}
           />
         </>
       ),
@@ -340,7 +306,7 @@ export default function Resources({ requestId, grantNumber }) {
       key: "unit",
       name: "Unit Cost",
       width: 300,
-      format: (value, row) => formatUnitCost(row),
+      format: (_value, row) => formatUnitCost(row as Resource),
     },
   ];
 
@@ -349,52 +315,44 @@ export default function Resources({ requestId, grantNumber }) {
       {
         key: "requested",
         name: "Balance",
-        class: "text-end",
+        class: "relative",
         rowClass: (row) =>
-          exchangeEditable && exchangeActionResourceIds.includes(row.resourceId)
+          exchangeEditable && exchangeActionResourceIds.includes((row as Resource).resourceId)
             ? gridStyle.input
             : "",
         format: (value, row) => {
-          const editable =
-            exchangeEditable &&
-            exchangeActionResourceIds.includes(row.resourceId);
-          return row.isBoolean ? (
-            <span className="d-flex">
-              <span className="w-100">
+          const typedRow = row as Resource;
+          const editable = exchangeEditable && exchangeActionResourceIds.includes(typedRow.resourceId);
+          return typedRow.isBoolean ? (
+            <span className="flex">
+              <span className="w-full">
                 <input
-                  className="form-check-input"
                   type="checkbox"
                   checked={value == 1}
                   disabled={!editable}
-                  onChange={(e) =>
-                    setResourceRequest(row.resourceId, e.target.checked ? 1 : 0)
-                  }
+                  onChange={(e) => setResourceRequest(typedRow.resourceId, e.target.checked ? 1 : 0)}
                 />
               </span>
-              <span className="text-start ps-2" style={{ width: "8rem" }}>
-                Requested
-              </span>
+              <span className="w-32 ps-2 text-left">Requested</span>
             </span>
           ) : (
-            <span className="d-flex">
+            <span className="flex">
               {editable ? (
                 <BlurInput
-                  classes="text-end w-100"
-                  clean={(balanceString) => cleanBalance(balanceString, row)}
-                  format={formatNumber}
-                  label={`Balance for ${row.name}`}
+                  classes="text-right w-full"
+                  clean={(balanceString) => cleanBalance(balanceString, typedRow).toString()}
+                  format={(value) => formatNumber(Number(value))}
+                  label={`Balance for ${typedRow.name}`}
                   setValue={(cleaned) => {
-                    setResourceRequest(row.resourceId, cleaned + row.used);
+                    setResourceRequest(typedRow.resourceId, Number(cleaned) + typedRow.used);
                   }}
                   style={{ padding: "0.1rem 0.5rem" }}
-                  value={getBalance(row)}
+                  value={getBalance(typedRow).toString()}
                 />
               ) : (
-                <span>{formatNumber(getBalance(row))}</span>
+                <span>{formatNumber(getBalance(typedRow))}</span>
               )}
-              <span className="text-start ps-2" style={{ width: "8rem" }}>
-                {row.unit}
-              </span>
+              <span className="w-32 ps-2 text-left">{typedRow.unit}</span>
             </span>
           );
         },
@@ -403,15 +361,12 @@ export default function Resources({ requestId, grantNumber }) {
             {name}
             {exchangeEditable ? (
               <InfoTip
-                bg="secondary"
-                color="dark"
                 initial="myprojects.requestedAllocation"
                 placement="top-end"
                 visible={project.tab == "resources"}
               >
-                You can increase or decrease the balance below to change your
-                allocation on a resource. Enter the total amount you would like
-                to have available once the exchange is complete.
+                You can increase or decrease the balance below to change your allocation on a resource.
+                Enter the total amount you would like to have available once the exchange is complete.
               </InfoTip>
             ) : null}
           </>
@@ -420,17 +375,18 @@ export default function Resources({ requestId, grantNumber }) {
       {
         key: "change",
         name: "Credit Change",
-        format: (value, row) => {
-          const transfer = row.requested - row.allocated;
-          const cost = -1 * transfer * row.exchangeRates.current.unitCost;
+        format: (_value, row) => {
+          const typedRow = row as Resource;
+          const transfer = typedRow.requested - typedRow.allocated;
+          const cost = -1 * transfer * typedRow.exchangeRates.current.unitCost;
           return cost !== 0 ? (
             <span
-              className={`badge bg-${
-                cost > 0 ? "primary" : "danger"
-              } rounded-pill`}
+              className={`rounded-full px-2 py-0.5 text-xs font-medium text-white ${
+                cost > 0 ? "bg-primary" : "bg-destructive"
+              }`}
             >
               {cost > 0 ? "+" : ""}
-              {formatNumber(cost, credit)} {credit.unit}
+              {formatNumber(cost, { decimalPlaces: credit?.decimalPlaces })} {credit?.unit}
             </span>
           ) : (
             <>&mdash;</>
@@ -440,19 +396,19 @@ export default function Resources({ requestId, grantNumber }) {
     );
 
   return (
-    <div className="resources">
+    <div>
       {resources.length ? <ResourcesDiagram requestId={requestId} /> : null}
       {credit && (canExchange || canRenew || canSupplement) ? (
-        <h2 className="mb-1 mt-2 d-flex justify-content-between">
+        <h2 className="mb-1 mt-2 flex justify-between">
           <span>
             {icon(config.resourceTypeIcons.credit)}{" "}
-            {formatNumber(credit.requested, credit)} {credit.unit} available to
-            exchange
+            {formatNumber(credit.requested, { decimalPlaces: credit.decimalPlaces })} {credit.unit} available
+            to exchange
           </span>
           {canRenew || canSupplement ? (
             <button
               type="button"
-              className="btn btn-sm btn-primary ms-2"
+              className="ml-2 bg-primary px-3 py-1 text-sm font-bold uppercase text-primary-foreground"
               onClick={requestMore}
             >
               {icon(config.resourceTypeIcons.credit)} Request More{" "}
@@ -473,38 +429,24 @@ export default function Resources({ requestId, grantNumber }) {
           minWidth="800px"
         />
       ) : (
-        <div className="card p-2 text-bg-light p-3">
-          This project does not have any resources.
-        </div>
+        <div className="border bg-muted p-3">This project does not have any resources.</div>
       )}
       {availableResourceGroups.length ? (
         <>
-          <div
-            className="p-2"
-            style={{
-              backgroundColor: "var(--teal-200)",
-              border: "1px solid #cccccc",
-              marginTop: "-1px",
-            }}
-            ref={resourceSearch}
-          >
+          <div className="-mt-px border p-2" style={{ backgroundColor: "var(--teal-200)" }} ref={resourceSearch}>
             <Select
               classNames={{ control: () => "react-select mb-1" }}
               options={availableResourceGroups}
-              onChange={(option) => addResource(option.value)}
+              onChange={(option) => option && addResource(option.value)}
               placeholder={resourceAddMessage}
               value={null}
               aria-label={resourceAddMessage}
-              formatOptionLabel={({ value, label }) => {
+              formatOptionLabel={({ value, label }: { value: number; label: string }) => {
                 const resource = availableResourcesMap[value];
                 return (
-                  <span className="d-flex justify-content-between">
+                  <span className="flex justify-between">
                     <span>
-                      <ResourceName
-                        key={label}
-                        resource={resource}
-                        userGuide={false}
-                      />
+                      <ResourceName key={label} resource={resource} userGuide={false} />
                     </span>
                     <span>{formatUnitCost(resource)}</span>
                   </span>
@@ -514,17 +456,14 @@ export default function Resources({ requestId, grantNumber }) {
           </div>
           {!rows.length ? (
             <InfoTip
-              bg="secondary"
-              color="dark"
               visible={project.tab == "resources"}
               initial={true}
               target={resourceSearch}
             >
-              Ready to get started? Search for a resource to add it to your
-              project.
+              Ready to get started? Search for a resource to add it to your project.
             </InfoTip>
           ) : null}
-          <p className="text-black-50" style={{ fontSize: "0.9rem" }}>
+          <p className="text-sm text-muted-foreground">
             Need help choosing a resource? Visit our{" "}
             <a href={config.routes.resources_path()}>Resource Catalog</a>.
           </p>
@@ -534,54 +473,48 @@ export default function Resources({ requestId, grantNumber }) {
       {canExchange && exchangeEditable ? (
         <>
           <div className="mb-3">
-            <label htmlFor="resources-reason" className="form-label required">
-              Please briefly explain how the requested resources and amounts
-              will contribute to your research.
+            <label htmlFor="resources-reason" className="required">
+              Please briefly explain how the requested resources and amounts will contribute to your
+              research.
             </label>
             <textarea
-              className="form-control"
+              className="min-h-[3rem] w-full rounded-none border border-input bg-transparent px-3 py-1 shadow-sm"
               id="resources-reason"
-              rows="2"
+              rows={2}
               value={reason}
               onChange={(e) => setResourcesReason(e.target.value)}
-              style={{ minHeight: "3rem" }}
             ></textarea>
           </div>
 
-          <div className="d-flex">
+          <div className="flex">
             <button
               type="button"
-              className="btn btn-danger me-2"
-              disabled={
-                saving || (!hasRequested && !hasReason && !hasAddedResources)
-              }
-              onClick={resetResources}
+              className="mr-2 bg-destructive px-4 py-2 font-bold uppercase text-destructive-foreground disabled:opacity-50"
+              disabled={saving || (!hasRequested && !hasReason && !hasAddedResources)}
+              onClick={() => resetResources()}
             >
               Reset Form
             </button>
             <button
               ref={submitButton}
               type="button"
-              className="btn btn-secondary"
+              className="bg-muted px-4 py-2 font-bold uppercase disabled:opacity-50"
               disabled={saving || !hasRequested || !hasReason || hasUnmetDeps || anyBelowMinimum}
-              onClick={toggleResourcesModal}
+              onClick={() => toggleResourcesModal()}
             >
               {saving ? "Submitting..." : "Submit for Approval"}
             </button>
           </div>
           {hasRequested && !hasUnmetDeps ? (
             <InfoTip
-              bg="secondary"
-              color="dark"
               initial="myprojects.submitExchange"
               maxWidth="390px"
               placement="right"
               target={submitButton}
               visible={project.tab == "resources"}
             >
-              When you are finished adding resources, enter a justification for
-              the requested resources above. Then you can submit your exchange
-              for approval.
+              When you are finished adding resources, enter a justification for the requested resources
+              above. Then you can submit your exchange for approval.
             </InfoTip>
           ) : null}
         </>

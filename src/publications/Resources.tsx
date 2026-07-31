@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { Asterisk } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import Alert from "../shared/Alert";
@@ -73,7 +74,7 @@ export default function Resources() {
     <div className="mb-4">
       <div className="mb-2 font-bold">
         Resources
-        <i className="bi bi-asterisk ml-1 text-destructive" />
+        <Asterisk className="ml-1 inline size-3.5 text-destructive" />
       </div>
 
       <div className="mb-2 text-sm text-muted-foreground">

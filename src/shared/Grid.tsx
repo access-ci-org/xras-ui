@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { Trash2 } from "lucide-react";
+import { Info, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import gridStyle from "./Grid.module.scss";
 import { SelectInput } from "./SelectInput/SelectInput";
@@ -23,6 +23,9 @@ export type GridColumn = {
   minDate?: string;
   maxDate?: string;
   onChange?: (value: any, row: GridRow) => void;
+  /** Extra column-level metadata for custom format/formatHeader callbacks. */
+  disabled?: boolean;
+  icon?: string;
 };
 
 type CellProps = { column: GridColumn; row: GridRow; style: React.CSSProperties };
@@ -165,7 +168,7 @@ export default function Grid({
       {column.tooltip && (
         <Tooltip>
           <TooltipTrigger className="ml-1 align-middle">
-            <span className="bi bi-info-circle text-muted-foreground" />
+            <Info className="size-3.5 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent>{column.tooltip}</TooltipContent>
         </Tooltip>

@@ -1,6 +1,4 @@
 import ReactDOM from "react-dom/client";
-import { configureStore } from "@reduxjs/toolkit";
-import { Provider } from "react-redux";
 import { Provider as JotaiProvider, createStore } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 import { addRoutes } from "./shared/helpers/utils";
@@ -11,7 +9,6 @@ import Resources from "./resources/Resources";
 import EditResource from "./edit-resource/EditResource";
 
 import Projects from "./projects/Projects";
-import apiSlice from "./projects/helpers/apiSlice";
 
 import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
 
@@ -28,27 +25,12 @@ import Keywords from "./keywords/Keywords";
 
 export { supportingGrants } from "./supporting-grants";
 
-export function shadowTarget(
-  host,
-  {
-    bootstrapFonts = true,
-    bootstrapVariables = true,
-    baseUrl = null,
-    stylesheets = null,
-  } = {},
-) {
+export function shadowTarget(host, { baseUrl = null, stylesheets = null } = {}) {
   const shadow = host.attachShadow({ mode: "open" });
-  const bsOuter = document.createElement("div");
-  const bsMiddle = document.createElement("div");
-  const bsInner = document.createElement("div");
   const target = document.createElement("div");
   baseUrl = baseUrl == null ? import.meta.url.replace(/\/[^/]+$/, "") : baseUrl;
 
-  const hrefs = stylesheets ?? [
-    `${baseUrl}/bootstrap.css`,
-    `${baseUrl}/xras-ui.css`,
-    `${baseUrl}/access.css`,
-  ];
+  const hrefs = stylesheets ?? [`${baseUrl}/xras-ui.css`, `${baseUrl}/access.css`];
   for (const href of hrefs) {
     const link = document.createElement("link");
     link.rel = "stylesheet";
@@ -59,17 +41,7 @@ export function shadowTarget(
     shadow.appendChild(link);
   }
 
-  bsInner.appendChild(target);
-  bsMiddle.appendChild(bsInner);
-  bsOuter.appendChild(bsMiddle);
-  shadow.appendChild(bsOuter);
-
-  bsOuter.classList.add("bootstrap");
-  if (bootstrapVariables) bsMiddle.classList.add("bootstrap-variables");
-  if (bootstrapFonts) {
-    bsInner.classList.add("bootstrap-fonts");
-    bsInner.setAttribute("data-bs-theme", "light");
-  }
+  shadow.appendChild(target);
 
   return target;
 }
@@ -112,16 +84,7 @@ export function editResource({
 
 export function projects({ target, username, routes }) {
   addRoutes(routes);
-  const projectsStore = configureStore({
-    reducer: {
-      api: apiSlice,
-    },
-  });
-  ReactDOM.createRoot(target).render(
-    <Provider store={projectsStore}>
-      <Projects username={username} />
-    </Provider>,
-  );
+  ReactDOM.createRoot(target).render(<Projects username={username} />);
 }
 
 export function projectsBrowser({ target, apiUrl }) {

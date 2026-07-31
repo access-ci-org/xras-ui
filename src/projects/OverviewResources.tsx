@@ -1,4 +1,7 @@
-import { useProject, useRequest } from "./helpers/hooks";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import Grid, { type GridColumn } from "../shared/Grid";
+import StatusBadge from "../shared/StatusBadge";
+import ResourceName from "../shared/ResourceName";
 import config from "../shared/helpers/config";
 import {
   icon,
@@ -8,24 +11,26 @@ import {
   formatNumber,
   resourceColors,
 } from "../shared/helpers/utils";
+import { useProject, useRequest } from "./helpers/hooks";
+import type { Resource } from "./types";
 
-import Grid from "../shared/Grid";
-import ResourceName from "../shared/ResourceName";
-import StatusBadge from "../shared/StatusBadge";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
-
-export default function OverviewResources({ requestId, grantNumber }) {
+export default function OverviewResources({
+  requestId,
+  grantNumber,
+}: {
+  requestId: number;
+  grantNumber: string;
+}) {
   const { request } = useRequest(requestId, grantNumber);
-  const { project } = useProject(grantNumber || request.grantNumber);
-  const { setTab } = useProject(grantNumber || request.grantNumber);
-  if (!request || !project) return;
+  const { project, setTab } = useProject(grantNumber || request?.grantNumber);
+  if (!request || !project) return null;
 
-  let credit;
+  let credit: Resource | undefined;
 
   // User counts
-  const userCounts = {};
-  for (let user of project.users || []) {
-    for (let resourceId of user.resourceIds) {
+  const userCounts: Record<number, number> = {};
+  for (const user of project.users || []) {
+    for (const resourceId of user.resourceIds) {
       userCounts[resourceId] = userCounts[resourceId] || 0;
       userCounts[resourceId] += 1;
     }
@@ -51,11 +56,11 @@ export default function OverviewResources({ requestId, grantNumber }) {
   const hasPreviousExchange = request.exchangeActionId !== null;
 
   // Grid columns
-  const columns = [
+  const columns: GridColumn[] = [
     {
       key: "name",
       name: "Resource",
-      format: (value, row) => <ResourceName resource={row} />,
+      format: (_value, row) => <ResourceName resource={row as Resource} />,
     },
     {
       key: "isActive",
@@ -65,7 +70,7 @@ export default function OverviewResources({ requestId, grantNumber }) {
     {
       key: "used",
       name: "Balance",
-      class: "position-relative",
+      class: "relative",
       format: (used, row) => {
         if (row.isBoolean) return formatBoolean(row.allocated);
         const balance = row.allocated - used;
@@ -73,12 +78,11 @@ export default function OverviewResources({ requestId, grantNumber }) {
         return (
           <>
             <div
-              className={`usage bg-${row.color}`}
-              style={{ width: `${Math.min(pct, 100)}%` }}
+              className="absolute inset-y-0 left-0"
+              style={{ backgroundColor: row.color, width: `${Math.min(pct, 100)}%` }}
             ></div>
             {formatNumber(balance, { abbreviate: true })} of{" "}
-            {formatNumber(row.allocated, { abbreviate: true })} {row.unit}{" "}
-            remaining ({Math.round(pct)}%)
+            {formatNumber(row.allocated, { abbreviate: true })} {row.unit} remaining ({Math.round(pct)}%)
           </>
         );
       },
@@ -86,7 +90,7 @@ export default function OverviewResources({ requestId, grantNumber }) {
     {
       key: "endDate",
       name: "End Date",
-      format: (value) => formatDate(value),
+      format: (value) => (value ? formatDate(value) : ""),
     },
   ];
 
@@ -94,7 +98,7 @@ export default function OverviewResources({ requestId, grantNumber }) {
     columns.push({
       key: "userCount",
       name: "Users",
-      class: "text-end",
+      class: "text-right",
       format: formatNumber,
     });
 
@@ -102,22 +106,17 @@ export default function OverviewResources({ requestId, grantNumber }) {
     columns.push({
       key: "resourceUsername",
       name: "My Username",
-      format: (value, row) => {
-        const username = project.currentUser.resourceUsernames[row.resourceId];
+      format: (_value, row) => {
+        const username = project.currentUser!.resourceUsernames[row.resourceId];
         if (username) return username;
-        if (
-          project.currentUser.resourceAccountPendingIds.includes(row.resourceId)
-        )
+        if (project.currentUser!.resourceAccountPendingIds.includes(row.resourceId))
           return (
             <StatusBadge
               status="Pending"
               title="Creation of your account by the resource provider is pending."
             />
           );
-        if (
-          project.currentUser.resourceIds.includes(row.resourceId) ||
-          !row.isActive
-        )
+        if (project.currentUser!.resourceIds.includes(row.resourceId) || !row.isActive)
           return <>&mdash;</>;
         if (project.isManager)
           return (
@@ -131,46 +130,41 @@ export default function OverviewResources({ requestId, grantNumber }) {
               Grant access
             </a>
           );
-        const tooltip = (
-          <Tooltip>
-            Please contact {formatManagers(project)} to request access to this
-            resource.
-          </Tooltip>
-        );
         return (
-          <OverlayTrigger overlay={tooltip}>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-              }}
-            >
-              Request access
-            </a>
-          </OverlayTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                }}
+              >
+                Request access
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>
+              Please contact {formatManagers(project)} to request access to this resource.
+            </TooltipContent>
+          </Tooltip>
         );
       },
     });
 
   return (
-    <div className="overview">
-      {canExchange &&
-      !hasPreviousExchange &&
-      availableCredits > config.creditAlertThreshold ? (
+    <div>
+      {canExchange && !hasPreviousExchange && credit && availableCredits > config.creditAlertThreshold ? (
         <button
           onClick={() => setTab("resources")}
-          className="alert alert-info d-flex justify-content-between align-items-center w-100"
+          className="mb-1 mt-2 flex w-full items-center justify-between border border-sky-500/50 bg-sky-50 p-3 text-sky-900"
         >
           <span>
-            <span className="fs-3">
-              {icon(config.resourceTypeIcons[credit.icon])}{" "}
-              {formatNumber(availableCredits)}
+            <span className="text-2xl">
+              {icon(config.resourceTypeIcons.credit)} {formatNumber(availableCredits)}
             </span>{" "}
             {credit.unit} available
           </span>
-          <span className="align-middle d-flex align-items-center">
-            Exchange credits for resources!{" "}
-            <span className="fs-3">{icon("chevron-right")}</span>
+          <span className="flex items-center align-middle">
+            Exchange credits for resources! <span className="text-2xl">{icon("chevron-right")}</span>
           </span>
         </button>
       ) : null}

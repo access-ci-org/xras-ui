@@ -1,6 +1,39 @@
 import type { ReactNode } from "react";
+import {
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Coins,
+  Cpu,
+  HardDrive,
+  User,
+  UserCheck,
+  UserCog,
+  UserPlus,
+  Users,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react";
 import config from "./config";
 import type { ProjectSummary, RequestSummary } from "../types";
+
+// Keyed by the same identifiers `config.resourceTypeIcons`/`config.roleIcons`
+// already used for Bootstrap Icon names, so those config values didn't need
+// to change when the icon set moved to lucide-react.
+const icons: Record<string, LucideIcon> = {
+  "cash-coin": Coins,
+  "cpu-fill": Cpu,
+  "hdd-fill": HardDrive,
+  "person-square": User,
+  "person-fill-check": UserCheck,
+  "person-fill-add": UserPlus,
+  "person-fill-gear": UserCog,
+  "people-fill": Users,
+  "chevron-right": ChevronRight,
+  "check-circle": CheckCircle2,
+  "x-circle": XCircle,
+  calendar3: Calendar,
+};
 
 export const roundNumber = (
   value: number,
@@ -54,7 +87,10 @@ export const formatRequestName = (
   return `${request.allocationType}: ${action} ${entry}`;
 };
 
-export const icon = (name: string) => <i className={`bi bi-${name}`} />;
+export const icon = (name: string) => {
+  const Icon = icons[name];
+  return Icon ? <Icon className="inline-block size-[1em] align-[-0.125em]" /> : null;
+};
 
 export const parseResourceName = (name: string) => {
   const matches = name.match(/^([^()]+) (\(([^)]+)\))?$/);
@@ -147,7 +183,11 @@ for (const role of roles) acctRolesMap[role.role] = role;
 export const xrasRolesMap: Record<string, string> = {};
 for (const { role, xrasRole } of roles) xrasRolesMap[role] = xrasRole;
 
-export const resourceColors = ["info", "success", "secondary", "warning", "danger"];
+// Matches the old Bootstrap theme palette (see the removed src/bootstrap/access.scss
+// $info/$secondary/$warning/$danger overrides, and Bootstrap's default $success),
+// used to distinguish resource bars/segments in charts. Consumers apply these as
+// inline styles rather than Tailwind classes since the set is data-driven.
+export const resourceColors = ["#00a8d1", "#198754", "#fec42d", "#ef7537", "#a70000"];
 
 export function getCost(
   res: {

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { Pencil } from "lucide-react";
 import Grid, { type GridColumn } from "../shared/Grid";
 import InlineButton from "../shared/InlineButton";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
@@ -54,7 +55,7 @@ export default function PublicationsGrid({
             <InlineButton
               key="edit"
               onClick={() => editPublication(row.publication_id)}
-              icon="pencil"
+              icon={Pencil}
               title="Edit publication"
             />
           )}

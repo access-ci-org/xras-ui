@@ -1,3 +1,4 @@
+import { BookOpen } from "lucide-react";
 import config from "./helpers/config";
 import { icon, parseResourceName } from "./helpers/utils";
 import InlineButton from "./InlineButton";
@@ -17,7 +18,7 @@ export default function ResourceName({
       {icon(config.resourceTypeIcons[resource.icon])} {displayName}
       {!resource.isCredit && resource.userGuideUrl && userGuide ? (
         <InlineButton
-          icon="book"
+          icon={BookOpen}
           href={resource.userGuideUrl}
           target="_blank"
           title={`${resource.name} User Guide`}

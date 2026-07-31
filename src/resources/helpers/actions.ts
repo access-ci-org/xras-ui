@@ -1,16 +1,16 @@
-export const updateResources = (newResources) => ({
-  type: "UPDATE_RESOURCES",
-  payload: newResources,
-});
+import type { ResourceListItem } from "../types";
 
-export const updateBackend = async (relativeUrlRoot, updatedResources) => {
+export const updateBackend = async (
+  relativeUrlRoot: string,
+  updatedResources: ResourceListItem[],
+) => {
   try {
     const response = await fetch(`${relativeUrlRoot}/resources`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')
-          .content,
+        "X-CSRF-Token":
+          document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "",
       },
       body: JSON.stringify({
         resources: updatedResources.map((resource, index) => ({

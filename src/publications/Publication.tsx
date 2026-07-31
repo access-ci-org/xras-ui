@@ -1,4 +1,5 @@
 import { useSetAtom } from "jotai";
+import { FileText, Link2, Pencil, Server } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseResourceName } from "../shared/helpers/utils";
 import InlineButton from "../shared/InlineButton";
@@ -27,14 +28,14 @@ export default function Publication({
           {allowEdit && publication.can_edit && (
             <InlineButton
               onClick={() => editPublication(publication.publication_id)}
-              icon="pencil"
+              icon={Pencil}
               title="Edit publication"
             />
           )}
         </div>
         <ul className="m-0 list-none py-0 pl-[50px] pt-2.5">
-          <li className="mr-4 inline-block text-base">
-            <i className="bi bi-file-earmark mr-1" />
+          <li className="mr-4 inline-flex items-center text-base">
+            <FileText className="mr-1 size-4" />
             {pubType === "Other" ? "Publication" : pubType}
           </li>
           {grantNumbers.map((grant, index) => (
@@ -44,8 +45,9 @@ export default function Publication({
                 target="_blank"
                 rel="noreferrer"
                 title={`Supported by project ${grant}`}
+                className="inline-flex items-center"
               >
-                <i className="bi bi-link-45deg mr-1" />
+                <Link2 className="mr-1 size-4" />
                 {grant}
               </a>
             </li>
@@ -53,8 +55,8 @@ export default function Publication({
           {resources.map((resource) => {
             const { full, short } = parseResourceName(resource);
             return (
-              <li key={resource} className="mr-4 inline-block text-base">
-                <i className="bi bi-server mr-1" />
+              <li key={resource} className="mr-4 inline-flex items-center text-base">
+                <Server className="mr-1 size-4" />
                 {short ? <abbr title={full}>{short}</abbr> : full}
               </li>
             );

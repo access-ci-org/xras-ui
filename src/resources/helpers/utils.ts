@@ -1,4 +1,8 @@
-export const sortResources = (resources) => {
+import type { ResourceListItem } from "../types";
+
+type ScrollIntervalRef = { current: ReturnType<typeof setInterval> | null };
+
+export const sortResources = (resources: ResourceListItem[]) => {
   return [...resources].sort((a, b) => {
     if (a.relative_order === null && b.relative_order === null) {
       return a.display_resource_name.localeCompare(b.display_resource_name);
@@ -9,14 +13,19 @@ export const sortResources = (resources) => {
   });
 };
 
-export const startScrolling = (direction, scrollIntervalRef) => {
+export const startScrolling = (
+  direction: number,
+  scrollIntervalRef: ScrollIntervalRef,
+) => {
   if (scrollIntervalRef.current) return;
   scrollIntervalRef.current = setInterval(() => {
     window.scrollBy(0, direction * 10);
   }, 16);
 };
 
-export const stopScrolling = (scrollIntervalRef) => {
+export const stopScrolling = (
+  scrollIntervalRef: ScrollIntervalRef,
+) => {
   if (scrollIntervalRef.current) {
     clearInterval(scrollIntervalRef.current);
     scrollIntervalRef.current = null;
