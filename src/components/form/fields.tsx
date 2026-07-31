@@ -1,5 +1,7 @@
 import * as React from "react";
+import ReactSelect from "react-select";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -169,6 +171,85 @@ export interface RadioOption<TValue> {
 
 function radioKey(value: unknown) {
   return JSON.stringify(value);
+}
+
+export function FieldCheckbox({ label, description }: FieldWrapperProps) {
+  const field = useFieldContext<boolean>();
+
+  return (
+    <FormItem>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id={field.name}
+          checked={field.state.value}
+          onCheckedChange={(checked) => field.handleChange(checked === true)}
+        />
+        {label ? (
+          <Label htmlFor={field.name} className="font-normal">
+            {label}
+          </Label>
+        ) : null}
+      </div>
+      <FormDescription>{description}</FormDescription>
+      <FormError errors={field.state.meta.errors} />
+    </FormItem>
+  );
+}
+
+export interface ReactSelectOption {
+  value: string;
+  label: string;
+}
+
+type ReactSelectPassthroughProps = Omit<
+  React.ComponentProps<typeof ReactSelect<ReactSelectOption, boolean>>,
+  "inputId" | "options" | "value" | "onChange" | "onBlur" | "isMulti"
+>;
+
+export function FieldReactSelect({
+  label,
+  description,
+  required,
+  options,
+  isMulti,
+  ...props
+}: FieldWrapperProps &
+  ReactSelectPassthroughProps & {
+    options: ReactSelectOption[];
+    isMulti?: boolean;
+  }) {
+  const field = useFieldContext<string | string[]>();
+
+  const value = isMulti
+    ? options.filter((option) => (field.state.value as string[]).includes(option.value))
+    : (options.find((option) => option.value === field.state.value) ?? null);
+
+  return (
+    <FormItem>
+      {label ? (
+        <FormLabel htmlFor={field.name} required={required}>
+          {label}
+        </FormLabel>
+      ) : null}
+      <FormDescription>{description}</FormDescription>
+      <ReactSelect
+        inputId={field.name}
+        options={options}
+        isMulti={isMulti}
+        value={value}
+        onChange={(selected) =>
+          field.handleChange(
+            isMulti
+              ? (selected as readonly ReactSelectOption[]).map((option) => option.value)
+              : ((selected as ReactSelectOption | null)?.value ?? ""),
+          )
+        }
+        onBlur={field.handleBlur}
+        {...props}
+      />
+      <FormError errors={field.state.meta.errors} />
+    </FormItem>
+  );
 }
 
 export function FieldRadio<TValue>({

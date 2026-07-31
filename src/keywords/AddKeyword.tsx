@@ -1,9 +1,6 @@
-import { useState } from "react";
+import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import AllocationTypeCheckbox from "./AllocationTypeCheckbox";
+import { AllocationTypeCheckboxes, KeywordInputField } from "./KeywordFields";
 import type { AllocationType } from "./types";
 
 type AddKeywordProps = {
@@ -12,30 +9,13 @@ type AddKeywordProps = {
 };
 
 const AddKeyword = ({ types, createData }: AddKeywordProps) => {
-  const [keywordValues, setKeywordValues] = useState("");
-  const [keywordTypes, setKeywordTypes] = useState<number[]>([]);
-
-  const handleCreateKeyword = async () => {
-    await createData(keywordValues, keywordTypes);
-    setKeywordValues("");
-    setKeywordTypes([]);
-  };
-
-  function updateKeywordAllocationTypes(allocationTypeId: number) {
-    setKeywordTypes((current) =>
-      current.includes(allocationTypeId)
-        ? current.filter((id) => id !== allocationTypeId)
-        : [...current, allocationTypeId],
-    );
-  }
-
-  function toggleSelectAllAllocationTypes() {
-    setKeywordTypes((current) =>
-      current.length === types.length
-        ? []
-        : types.map((t) => t.allocation_type_id),
-    );
-  }
+  const form = useAppForm({
+    defaultValues: { keyword: "", allocationTypeIds: [] as number[] },
+    onSubmit: async ({ value }) => {
+      await createData(value.keyword, value.allocationTypeIds);
+      form.reset();
+    },
+  });
 
   return (
     <table className="w-full border-collapse">
@@ -49,37 +29,13 @@ const AddKeyword = ({ types, createData }: AddKeywordProps) => {
       <tbody>
         <tr>
           <td className="w-[150px] p-2 align-top">
-            <Input
-              type="text"
-              value={keywordValues}
-              onChange={(e) => setKeywordValues(e.target.value)}
-            />
+            <KeywordInputField form={form} />
           </td>
           <td className="p-2 align-top">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="select-all-checkbox"
-                  checked={keywordTypes.length === types.length}
-                  onCheckedChange={toggleSelectAllAllocationTypes}
-                />
-                <Label htmlFor="select-all-checkbox" className="font-normal">
-                  Select All
-                </Label>
-              </div>
-              {types.map((type) => (
-                <AllocationTypeCheckbox
-                  key={`create_keyword_alloc_t_${type.allocation_type_id}`}
-                  id={`id_create_alloc_type_${type.allocation_type_id}`}
-                  type={type}
-                  checked={keywordTypes.includes(type.allocation_type_id)}
-                  onChange={updateKeywordAllocationTypes}
-                />
-              ))}
-            </div>
+            <AllocationTypeCheckboxes form={form} types={types} idPrefix="create_keyword" />
           </td>
           <td className="w-[50px] p-2 align-top">
-            <Button type="button" onClick={handleCreateKeyword}>
+            <Button type="button" onClick={() => form.handleSubmit()}>
               Add
             </Button>
           </td>

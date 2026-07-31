@@ -1,14 +1,8 @@
 import { useAtomValue, useSetAtom } from "jotai";
+import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cleanDOI } from "./PublicationCitation";
 import {
   filterOptionsAtom,
@@ -18,7 +12,13 @@ import {
   resetPublicationsAtom,
   updateFilterSelectionAtom,
 } from "./atoms";
-import type { FilterSelections } from "./types";
+
+const emptyFilters = {
+  journal: "",
+  authorName: "",
+  doi: "",
+  publicationType: "__all__",
+};
 
 const Filters = () => {
   const filterOptions = useAtomValue(filterOptionsAtom);
@@ -28,39 +28,61 @@ const Filters = () => {
   const resetFilters = useSetAtom(resetFiltersAtom);
   const getPublications = useSetAtom(getPublicationsAtom);
 
+  const form = useAppForm({
+    defaultValues: {
+      journal: filterSelections.journal,
+      authorName: filterSelections.authorName,
+      doi: filterSelections.doi,
+      publicationType: filterSelections.publicationType || "__all__",
+    },
+    onSubmit: ({ value }) => {
+      (Object.keys(value) as (keyof typeof value)[]).forEach((name) =>
+        updateFilterSelection({
+          name,
+          value: name === "publicationType" && value[name] === "__all__" ? "" : value[name],
+        }),
+      );
+      resetPublications();
+      window.scrollTo(0, 0);
+      getPublications();
+    },
+  });
+
   if (!filterOptions.journals) {
     return <p>Loading filters...</p>;
   }
 
-  const handleSubmit = () => {
-    resetPublications();
-    window.scrollTo(0, 0);
-    getPublications();
-  };
-
   const handleReset = () => {
+    form.reset(emptyFilters);
     resetPublications();
     resetFilters();
     window.scrollTo(0, 0);
     getPublications();
   };
 
-  const updateSelection = (name: keyof FilterSelections, value: string) =>
-    updateFilterSelection({ name, value });
-
   return (
-    <div className="sticky top-0 mb-2">
+    <form
+      className="sticky top-0 mb-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void form.handleSubmit();
+      }}
+    >
       <h3 className="mb-2">Filters</h3>
 
       <div className="mb-3">
         <Label htmlFor="journal_select">Journals</Label>
-        <Input
-          placeholder="Type to search..."
-          list="journal_list"
-          id="journal_select"
-          value={filterSelections.journal}
-          onChange={(e) => updateSelection("journal", e.target.value)}
-        />
+        <form.Field name="journal">
+          {(field) => (
+            <Input
+              placeholder="Type to search..."
+              list="journal_list"
+              id="journal_select"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          )}
+        </form.Field>
         <datalist id="journal_list">
           {filterOptions.journals.map((j) => (
             <option value={j} key={j}>
@@ -70,52 +92,45 @@ const Filters = () => {
         </datalist>
       </div>
 
-      <div className="mb-3">
-        <Label htmlFor="authorName">Author Name</Label>
-        <Input
-          placeholder="Last Name, First Initial"
-          id="authorName"
-          value={filterSelections.authorName}
-          onChange={(e) => updateSelection("authorName", e.target.value)}
-        />
-      </div>
+      <form.AppField name="authorName">
+        {(field) => (
+          <field.FieldInput label="Author Name" placeholder="Last Name, First Initial" />
+        )}
+      </form.AppField>
 
       <div className="mb-3">
         <Label htmlFor="doiNumber">DOI</Label>
-        <Input
-          id="doiNumber"
-          value={cleanDOI(filterSelections.doi) || ""}
-          onChange={(e) => updateSelection("doi", e.target.value)}
-        />
+        <form.Field name="doi">
+          {(field) => (
+            <Input
+              id="doiNumber"
+              value={cleanDOI(field.state.value) || ""}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          )}
+        </form.Field>
       </div>
 
-      <div className="mb-3">
-        <Label htmlFor="publication_type_select">Publication Type</Label>
-        <Select
-          value={filterSelections.publicationType || "__all__"}
-          onValueChange={(value) => updateSelection("publicationType", value === "__all__" ? "" : value)}
-        >
-          <SelectTrigger id="publication_type_select">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">-- All --</SelectItem>
-            {filterOptions.publication_types.map((a) => (
-              <SelectItem key={a} value={a}>
-                {a}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <form.AppField name="publicationType">
+        {(field) => (
+          <field.FieldSelect
+            label="Publication Type"
+            placeholder="-- All --"
+            options={[
+              { value: "__all__", label: "-- All --" },
+              ...filterOptions.publication_types.map((a) => ({ value: a, label: a })),
+            ]}
+          />
+        )}
+      </form.AppField>
 
       <div className="mt-2 flex gap-2">
-        <Button onClick={handleSubmit}>Submit</Button>
-        <Button variant="outline" onClick={handleReset}>
+        <Button type="submit">Submit</Button>
+        <Button type="button" variant="outline" onClick={handleReset}>
           Reset
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
 

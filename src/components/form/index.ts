@@ -2,8 +2,10 @@ import { createFormHook, type AppFieldExtendedReactFormApi } from "@tanstack/rea
 
 import { fieldContext, formContext } from "./context";
 import {
+  FieldCheckbox,
   FieldDatePicker,
   FieldInput,
+  FieldReactSelect,
   FieldSelect,
   FieldTextarea,
   FieldRadio,
@@ -16,6 +18,8 @@ const fieldComponents = {
   FieldSelect,
   FieldDatePicker,
   FieldRadio,
+  FieldReactSelect,
+  FieldCheckbox,
 };
 
 const formComponents = {

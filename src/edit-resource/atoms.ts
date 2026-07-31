@@ -73,8 +73,6 @@ export const dateErrorsAtom = atom((get) =>
 export const isAllocationEditingAtom = atom(false);
 export const showAddResourceModalAtom = atom(false);
 export const showAddAllocationTypeModalAtom = atom(false);
-export const selectedNewResourceIdsAtom = atom<number[]>([]);
-export const selectedNewAllocationTypeIdAtom = atom("");
 
 function updateResourceDetails(
   data: ResourceData,
@@ -218,7 +216,7 @@ export const changeRequiredResourceAtom = atom(
 export const saveRequiredResourcesAtom = atom(null, (get, set, selectedResourceIds: number[]) => {
   const data = get(resourceDataAtom);
   const availableResources = get(availableResourcesAtom);
-  if (!data) return;
+  if (!data) return false;
 
   const initialRequiredResources = data.resource_details.allocation_types
     .flatMap((type) => type.required_resources ?? [])
@@ -261,15 +259,14 @@ export const saveRequiredResourcesAtom = atom(null, (get, set, selectedResourceI
     ),
   );
 
-  set(selectedNewResourceIdsAtom, []);
-  set(showAddResourceModalAtom, false);
+  return true;
 });
 
 export const saveAllocationTypeAtom = atom(null, (get, set, allocationTypeId: string) => {
   const data = get(resourceDataAtom);
   const availableAllocationTypes = get(availableAllocationTypesAtom);
   const allowedActionsOptions = get(allowedActionsOptionsAtom);
-  if (!data || !allocationTypeId) return;
+  if (!data || !allocationTypeId) return false;
 
   const newAllocationType = availableAllocationTypes.find(
     (at) => at.allocation_type_id.toString() === allocationTypeId,
@@ -277,7 +274,7 @@ export const saveAllocationTypeAtom = atom(null, (get, set, allocationTypeId: st
   const isExisting = data.resource_details.allocation_types.some(
     (type) => type.allocation_type_id === newAllocationType?.allocation_type_id,
   );
-  if (!newAllocationType || isExisting) return;
+  if (!newAllocationType || isExisting) return false;
 
   set(
     resourceDataAtom,
@@ -293,17 +290,7 @@ export const saveAllocationTypeAtom = atom(null, (get, set, allocationTypeId: st
     ]),
   );
 
-  set(showAddAllocationTypeModalAtom, false);
-});
-
-export const openAddResourceModalAtom = atom(null, (get, set) => {
-  const resourceDetails = get(resourceDetailsAtom);
-  const existingRequiredResources =
-    resourceDetails?.allocation_types
-      .flatMap((type) => type.required_resources ?? [])
-      .map((resource) => resource.required_resource_id) ?? [];
-  set(selectedNewResourceIdsAtom, existingRequiredResources);
-  set(showAddResourceModalAtom, true);
+  return true;
 });
 
 export const updateBaseRateAtom = atom(null, (get, set, rate: string) => {

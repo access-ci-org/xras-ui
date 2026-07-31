@@ -1,6 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { Asterisk, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Trash2 } from "lucide-react";
+import { useAppForm } from "@/components/form";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,20 +10,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DialogFooter } from "@/components/ui/dialog";
+import config from "../shared/helpers/config";
 import DoiSearch from "./DoiSearch";
 import Authors from "./Authors";
 import InfoTip from "../shared/InfoTip";
 import Projects from "./Projects";
 import ProjectSearch from "./ProjectSearch";
 import Resources from "./Resources";
+import { invalidFormAlert, validateForm } from "./FormValidation";
 import {
-  changePublicationTypeAtom,
-  formValidAtom,
+  addErrorAtom,
+  authenticityTokenAtom,
+  errorsAtom,
+  getPublicationDataAtom,
+  hideErrorAtom,
   publicationAtom,
   publicationTypesAtom,
-  updatePublicationFieldAtom,
-  updateFieldAtom,
+  resetPublicationEditStateAtom,
+  resourcesNoneSelectedAtom,
+  savingAtom,
+  selectedProjectsAtom,
+  selectedResourcesAtom,
+  showEditModalAtom,
+  showSavedAtom,
 } from "./atoms";
+import type {
+  EditablePublication,
+  PublicationAuthor,
+  PublicationField,
+  PublicationTypeOption,
+  TagCategory,
+} from "./types";
 
 const START_YEAR = 1980;
 const MONTHS = [
@@ -55,30 +74,163 @@ const normalizePublicationMonth = (value: unknown) => {
   return monthIndex >= 0 ? `${monthIndex + 1}` : "";
 };
 
+function emptyAuthor(): PublicationAuthor {
+  return {
+    portal_username: "",
+    first_name: "",
+    middle_name: "",
+    last_name: "",
+    prefix: "",
+    suffix: "",
+    initials: "",
+    affiliation: "",
+    hash: {},
+  };
+}
+
+export type PublicationFormValues = {
+  publication_id?: number | string;
+  publication_type: string;
+  title: string;
+  publication_year: string;
+  publication_month: string;
+  doi: string;
+  fields: PublicationField[];
+  authors: PublicationAuthor[];
+  tags: TagCategory[];
+  resourceIds: number[];
+  resourcesNoneSelected: boolean;
+  extraFields: Record<string, unknown>;
+};
+
+export function mergeFieldsForType(
+  newType: string,
+  currentFields: PublicationField[],
+  publicationTypes: PublicationTypeOption[],
+): PublicationField[] {
+  const newFields = publicationTypes.find((pt) => pt.publication_type === newType)?.fields ?? [];
+  return newFields.map((nf) => {
+    const existing = currentFields.find((f) => f.csl_field_name === nf.csl_field_name);
+    return existing ? { ...nf, field_value: existing.field_value } : nf;
+  });
+}
+
 export default function PublicationForm() {
   const publication = useAtomValue(publicationAtom);
-  const publicationTypes = useAtomValue(publicationTypesAtom);
-  const formValid = useAtomValue(formValidAtom);
-  const setFormValid = useSetAtom(formValidAtom);
-  const updatePublicationField = useSetAtom(updatePublicationFieldAtom);
-  const updateField = useSetAtom(updateFieldAtom);
-  const changePublicationType = useSetAtom(changePublicationTypeAtom);
-
   if (!publication) return null;
+  return <PublicationFormContent publication={publication} />;
+}
 
-  const updateTitle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormValid(e.target.value.trim() !== "");
-    updatePublicationField({ key: "title", value: e.target.value });
+function PublicationFormContent({ publication }: { publication: EditablePublication }) {
+  const publicationTypes = useAtomValue(publicationTypesAtom);
+  const selectedResourceIds = useAtomValue(selectedResourcesAtom);
+  const resourcesNoneSelected = useAtomValue(resourcesNoneSelectedAtom);
+  const selectedProjects = useAtomValue(selectedProjectsAtom);
+  const authenticityToken = useAtomValue(authenticityTokenAtom);
+  const errors = useAtomValue(errorsAtom);
+  const setShowEditModal = useSetAtom(showEditModalAtom);
+  const setSaving = useSetAtom(savingAtom);
+  const setShowSaved = useSetAtom(showSavedAtom);
+  const addError = useSetAtom(addErrorAtom);
+  const hideError = useSetAtom(hideErrorAtom);
+  const resetPublicationEditState = useSetAtom(resetPublicationEditStateAtom);
+  const getPublicationData = useSetAtom(getPublicationDataAtom);
+
+  const defaultValues: PublicationFormValues = {
+    publication_id: publication.publication_id,
+    publication_type: publication.publication_type,
+    title: publication.title,
+    publication_year: normalizePublicationYear(publication.publication_year),
+    publication_month: normalizePublicationMonth(publication.publication_month),
+    doi: publication.doi ?? "",
+    fields: publication.fields,
+    authors: publication.authors.length > 0 ? publication.authors : [emptyAuthor()],
+    tags: publication.tags ?? [],
+    resourceIds: selectedResourceIds,
+    resourcesNoneSelected,
+    extraFields: {},
   };
+
+  const form = useAppForm({
+    defaultValues,
+    onSubmit: async ({ value }) => {
+      const { formValid, missingFields } = validateForm(
+        value,
+        ["title", "publication_year", "publication_month"],
+        ["first_name", "last_name"],
+      );
+
+      if (!formValid) {
+        errors.forEach((error) => hideError(error.id));
+        addError(invalidFormAlert(missingFields));
+        return;
+      }
+
+      const token =
+        authenticityToken ||
+        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ||
+        "";
+
+      const formData = {
+        authenticity_token: token,
+        publication: {
+          ...value.extraFields,
+          publication_id: value.publication_id,
+          publication_type: value.publication_type,
+          title: value.title,
+          publication_year: value.publication_year,
+          publication_month: value.publication_month,
+          doi: value.doi,
+          fields: value.fields,
+          access_staff_publication: value.resourcesNoneSelected,
+        },
+        authors: value.authors.map((a) => ({ ...a, order: 0 })),
+        tags: [],
+        projects: selectedProjects,
+        resources: value.resourceIds.map((resource_id) => ({ resource_id })),
+      };
+
+      const url = value.publication_id
+        ? config.routes.publication_path(value.publication_id)
+        : config.routes.publications_path();
+      const method = value.publication_id ? "PATCH" : "POST";
+
+      setSaving(true);
+      setShowSaved(false);
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+
+        if (!response.ok) throw new Error(`Save failed with status ${response.status}`);
+
+        if (!value.publication_id) {
+          resetPublicationEditState();
+          await getPublicationData(null);
+        }
+
+        setShowSaved(true);
+      } catch {
+        addError("There was an error saving this publication.");
+      } finally {
+        setSaving(false);
+      }
+    },
+  });
 
   const lastYear = new Date().getFullYear() + 2;
   const years = Array.from({ length: lastYear - START_YEAR + 1 }, (_, idx) => START_YEAR + idx);
 
-  const publicationYearValue = normalizePublicationYear(publication.publication_year);
-  const publicationMonthValue = normalizePublicationMonth(publication.publication_month);
-
   return (
-    <>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void form.handleSubmit();
+      }}
+    >
       <div className="border">
         <div className="border-b p-3">
           <h2>Publication Information</h2>
@@ -90,88 +242,105 @@ export default function PublicationForm() {
             automatically.
           </p>
 
-          <DoiSearch />
+          <DoiSearch form={form} />
 
           <div className="mb-3">
             <Label htmlFor="publication_type">Publication Type</Label>
-            <Select
-              value={(publication.publication_type as string) || undefined}
-              onValueChange={(value) => changePublicationType(value)}
-            >
-              <SelectTrigger id="publication_type" className="max-w-md">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {publicationTypes.map((pt) => (
-                  <SelectItem key={pt.publication_type} value={pt.publication_type}>
-                    {pt.publication_type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <form.Field name="publication_type">
+              {(field) => (
+                <Select
+                  value={field.state.value || undefined}
+                  onValueChange={(value) => {
+                    field.handleChange(value);
+                    form.setFieldValue(
+                      "fields",
+                      mergeFieldsForType(value, form.getFieldValue("fields"), publicationTypes),
+                    );
+                  }}
+                >
+                  <SelectTrigger id="publication_type" className="max-w-md">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {publicationTypes.map((pt) => (
+                      <SelectItem key={pt.publication_type} value={pt.publication_type}>
+                        {pt.publication_type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </form.Field>
           </div>
 
-          <div className="mb-3">
-            <Label htmlFor="publication_title">
-              Title <Asterisk className="inline size-3.5 text-destructive" />
-            </Label>
-            <Input
-              id="publication_title"
-              className={formValid ? "max-w-xl" : "max-w-xl border-destructive"}
-              value={(publication.title as string) || ""}
-              onChange={updateTitle}
-            />
-          </div>
+          <form.AppField
+            name="title"
+            validators={{
+              onChange: ({ value }) => (value.trim() === "" ? "Title is required" : undefined),
+            }}
+          >
+            {(field) => <field.FieldInput label="Title" required className="max-w-xl" />}
+          </form.AppField>
 
           <div className="mb-3">
             <Label htmlFor="publication_year">Year Published</Label>
-            <Select
-              value={publicationYearValue || undefined}
-              onValueChange={(value) => updatePublicationField({ key: "publication_year", value })}
-            >
-              <SelectTrigger id="publication_year" className="max-w-xs">
-                <SelectValue placeholder="Select a year" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year} value={`${year}`}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <form.Field name="publication_year">
+              {(field) => (
+                <Select value={field.state.value || undefined} onValueChange={field.handleChange}>
+                  <SelectTrigger id="publication_year" className="max-w-xs">
+                    <SelectValue placeholder="Select a year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => (
+                      <SelectItem key={year} value={`${year}`}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </form.Field>
           </div>
 
           <div className="mb-3">
             <Label htmlFor="publication_month">Month Published</Label>
-            <Select
-              value={publicationMonthValue || undefined}
-              onValueChange={(value) => updatePublicationField({ key: "publication_month", value })}
-            >
-              <SelectTrigger id="publication_month" className="max-w-xs">
-                <SelectValue placeholder="Select a month" />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((month, idx) => (
-                  <SelectItem key={month} value={`${idx + 1}`}>
-                    {month}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <form.Field name="publication_month">
+              {(field) => (
+                <Select value={field.state.value || undefined} onValueChange={field.handleChange}>
+                  <SelectTrigger id="publication_month" className="max-w-xs">
+                    <SelectValue placeholder="Select a month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map((month, idx) => (
+                      <SelectItem key={month} value={`${idx + 1}`}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </form.Field>
           </div>
 
-          {publication.fields.map((f, idx) => (
-            <div key={f.csl_field_name} className="mb-3">
-              <Label htmlFor={`field_${f.csl_field_name}`}>{f.name}</Label>
-              <Input
-                id={`field_${f.csl_field_name}`}
-                className="max-w-xl"
-                value={f.field_value || ""}
-                onChange={(e) => updateField({ index: idx, value: e.target.value })}
-              />
-            </div>
-          ))}
+          <form.Field name="fields" mode="array">
+            {(fieldsField) =>
+              fieldsField.state.value.map((f, idx) => (
+                <div key={f.csl_field_name} className="mb-3">
+                  <Label htmlFor={`field_${f.csl_field_name}`}>{f.name}</Label>
+                  <form.Field name={`fields[${idx}].field_value`}>
+                    {(field) => (
+                      <input
+                        id={`field_${f.csl_field_name}`}
+                        className="w-full max-w-xl border border-input bg-transparent px-3 py-1 shadow-sm"
+                        value={field.state.value || ""}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                      />
+                    )}
+                  </form.Field>
+                </div>
+              ))
+            }
+          </form.Field>
         </div>
       </div>
 
@@ -185,7 +354,7 @@ export default function PublicationForm() {
           </InfoTip>
         </div>
         <div className="p-3">
-          <Authors />
+          <Authors form={form} />
         </div>
       </div>
 
@@ -210,9 +379,51 @@ export default function PublicationForm() {
           </InfoTip>
         </div>
         <div className="p-3">
-          <Resources />
+          <Resources form={form} />
         </div>
       </div>
-    </>
+
+      <form.Subscribe
+        selector={(state) => ({
+          title: state.values.title,
+          authors: state.values.authors,
+          resourceIds: state.values.resourceIds,
+          resourcesNoneSelected: state.values.resourcesNoneSelected,
+        })}
+      >
+        {({ title, authors, resourceIds, resourcesNoneSelected: noneSelected }) => {
+          const authorsExist =
+            authors.length > 0 && authors.every((a) => a.first_name !== "" && a.last_name !== "");
+          const canSave =
+            title.trim() !== "" &&
+            authorsExist &&
+            selectedProjects.length > 0 &&
+            (resourceIds.length > 0 || noneSelected);
+
+          return (
+            <DialogFooter className="mt-3">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={!canSave}
+                onClick={() => {
+                  if (!canSave) return;
+                  void form.handleSubmit();
+                  setShowEditModal(false);
+                }}
+              >
+                Save Publication
+              </Button>
+            </DialogFooter>
+          );
+        }}
+      </form.Subscribe>
+    </form>
   );
 }

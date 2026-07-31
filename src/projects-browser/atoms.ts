@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import type { Filters, FosType, PageData, Project, TypeLists } from "./types";
+import type { Filters, PageData, Project, TypeLists } from "./types";
 
 export const apiUrlAtom = atom("");
 export const projectsAtom = atom<Project[]>([]);
@@ -10,7 +10,7 @@ export const listIsFilteredAtom = atom(false);
 export const filtersAtom = atom<Filters>({
   org: "",
   allocationType: "",
-  allFosToggled: true,
+  fosTypeIds: [],
   resource: "",
   requestNumber: "",
 });
@@ -36,15 +36,14 @@ export const showPaginationAtom = atom((get) => {
 });
 
 function buildProjectsUrl(apiUrl: string, filters: Filters, typeLists: TypeLists, currentPage: number) {
-  const fosList = typeLists.fosTypes.filter((fos) => fos.checked);
   let url = `${apiUrl}?page=${currentPage}`;
 
   if (filters.requestNumber != "") {
     return `${url}&request_number=${filters.requestNumber}`;
   }
 
-  if (fosList.length != typeLists.fosTypes.length) {
-    url += `&fos=${fosList.map((fos) => fos.fosTypeId).join(",")}`;
+  if (filters.fosTypeIds.length != typeLists.fosTypes.length) {
+    url += `&fos=${filters.fosTypeIds.join(",")}`;
   }
 
   if (filters.org != "" && filters.org != "-- ALL --") {
@@ -95,6 +94,10 @@ export const getFiltersAtom = atom(null, async (get, set) => {
   const data = await response.json();
 
   set(typeListsAtom, data.filters);
+  set(filtersAtom, {
+    ...get(filtersAtom),
+    fosTypeIds: (data.filters as TypeLists).fosTypes.map((fos) => fos.fosTypeId),
+  });
   set(filtersLoadedAtom, true);
 });
 
@@ -125,46 +128,15 @@ export const resetFiltersAtom = atom(null, (get, set) => {
   set(filtersAtom, {
     org: "",
     allocationType: "",
-    allFosToggled: true,
+    fosTypeIds: get(typeListsAtom).fosTypes.map((fos) => fos.fosTypeId),
     resource: "",
     requestNumber: "",
   });
-  set(typeListsAtom, {
-    ...get(typeListsAtom),
-    fosTypes: get(typeListsAtom).fosTypes.map((fos) => ({ ...fos, checked: true })),
-  });
 });
 
-export const toggleAllFosAtom = atom(null, (get, set) => {
-  const filters = get(filtersAtom);
-  const typeLists = get(typeListsAtom);
-  const newAllToggled = !filters.allFosToggled;
-
-  set(typeListsAtom, {
-    ...typeLists,
-    fosTypes: typeLists.fosTypes.map((fos) => ({ ...fos, checked: newAllToggled })),
-  });
-  set(filtersAtom, { ...filters, allFosToggled: newAllToggled });
+export const commitFiltersAtom = atom(null, (_get, set, filters: Filters) => {
+  set(filtersAtom, filters);
 });
-
-export const toggleFosAtom = atom(null, (get, set, fos: FosType) => {
-  const typeLists = get(typeListsAtom);
-  const fosTypes = typeLists.fosTypes.map((f) =>
-    f.fosTypeId === fos.fosTypeId ? { ...f, checked: !f.checked } : f,
-  );
-  set(typeListsAtom, { ...typeLists, fosTypes });
-  set(filtersAtom, {
-    ...get(filtersAtom),
-    allFosToggled: fosTypes.every((f) => f.checked),
-  });
-});
-
-export const updateFilterAtom = atom(
-  null,
-  (get, set, { name, value }: { name: keyof Filters; value: string }) => {
-    set(filtersAtom, { ...get(filtersAtom), [name]: value });
-  },
-);
 
 export const updatePageDataAtom = atom(null, (get, set, payload: Partial<PageData>) => {
   set(pageDataAtom, { ...get(pageDataAtom), ...payload });

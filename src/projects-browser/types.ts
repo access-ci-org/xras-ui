@@ -1,7 +1,6 @@
 export type FosType = {
   fosTypeId: number;
   fosName: string;
-  checked: boolean;
 };
 
 export type TypeLists = {
@@ -14,7 +13,7 @@ export type TypeLists = {
 export type Filters = {
   org: string;
   allocationType: string;
-  allFosToggled: boolean;
+  fosTypeIds: number[];
   resource: string;
   requestNumber: string;
 };

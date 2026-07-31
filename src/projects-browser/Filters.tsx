@@ -1,49 +1,70 @@
-import { useState } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import Select from "react-select";
+import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
+  commitFiltersAtom,
   filtersAtom,
+  filtersLoadedAtom,
   getProjectsAtom,
   listIsFilteredAtom,
   resetFiltersAtom,
-  toggleAllFosAtom,
-  toggleFosAtom,
   typeListsAtom,
-  updateFilterAtom,
   updatePageDataAtom,
 } from "./atoms";
 
 const Filters = () => {
+  const filtersLoaded = useAtomValue(filtersLoadedAtom);
+  return filtersLoaded ? <FiltersForm /> : <p>Loading filters...</p>;
+};
+
+const FiltersForm = () => {
   const filters = useAtomValue(filtersAtom);
   const typeLists = useAtomValue(typeListsAtom);
   const filtered = useAtomValue(listIsFilteredAtom);
   const setListIsFiltered = useSetAtom(listIsFilteredAtom);
   const getProjects = useSetAtom(getProjectsAtom);
   const resetFilters = useSetAtom(resetFiltersAtom);
-  const toggleAllFos = useSetAtom(toggleAllFosAtom);
-  const toggleFos = useSetAtom(toggleFosAtom);
-  const updateFilter = useSetAtom(updateFilterAtom);
+  const commitFilters = useSetAtom(commitFiltersAtom);
   const updatePageData = useSetAtom(updatePageDataAtom);
 
-  const orgList = typeLists.orgs.map((org) => ({ label: org, value: org }));
-  const [orgValue, setOrgValue] = useState<{ label: string; value: string } | null>(null);
+  const allFosIds = typeLists.fosTypes.map((fos) => fos.fosTypeId);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    updateFilter({ name: e.target.name as keyof typeof filters, value: e.target.value });
-  };
+  const form = useAppForm({
+    defaultValues: {
+      ...filters,
+      allocationType: filters.allocationType || "__all__",
+      resource: filters.resource || "__all__",
+    },
+    onSubmit: ({ value }) => {
+      commitFilters({
+        ...value,
+        allocationType: value.allocationType === "__all__" ? "" : value.allocationType,
+        resource: value.resource === "__all__" ? "" : value.resource,
+      });
+      window.scrollTo(0, 0);
+      setListIsFiltered(true);
+      updatePageData({ current_page: 1 });
+      getProjects();
+    },
+  });
 
-  const handleSubmit = () => {
-    window.scrollTo(0, 0);
-    setListIsFiltered(true);
-    updatePageData({ current_page: 1 });
-    getProjects();
-  };
+  const buttonDisabled =
+    filters.org === "" &&
+    filters.allocationType === "" &&
+    filters.fosTypeIds.length === allFosIds.length &&
+    filters.resource === "" &&
+    filters.requestNumber === "";
 
   const handleReset = () => {
-    setOrgValue(null);
+    form.reset({
+      org: "",
+      allocationType: "__all__",
+      fosTypeIds: allFosIds,
+      resource: "__all__",
+      requestNumber: "",
+    });
     updatePageData({ current_page: 1 });
     resetFilters();
     if (filtered) {
@@ -53,62 +74,67 @@ const Filters = () => {
     }
   };
 
-  const updateOrgs = (opt: { label: string; value: string } | null) => {
-    setOrgValue(opt);
-    updateFilter({ name: "org", value: opt?.value ?? "" });
-  };
-
-  const buttonDisabled =
-    filters.org == "" &&
-    filters.allocationType == "" &&
-    filters.allFosToggled &&
-    filters.resource == "" &&
-    filters.requestNumber == "";
-
   return (
-    <div className="sticky top-0 mb-2">
+    <form
+      className="sticky top-0 mb-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void form.handleSubmit();
+      }}
+    >
       <h3 className="mb-2">Filters</h3>
       <h5 className="mb-1">Field of Science</h5>
-      <div className="mb-3 h-[200px] overflow-x-auto border p-0.5">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="toggle_all"
-            checked={filters.allFosToggled}
-            onCheckedChange={() => toggleAllFos()}
-          />
-          <Label htmlFor="toggle_all" className="font-normal">
-            (Toggle All)
-          </Label>
-        </div>
-        {typeLists.fosTypes.map((fos) => (
-          <div className="flex items-center gap-2" key={`fos_${fos.fosTypeId}`}>
-            <Checkbox
-              id={`fos_${fos.fosTypeId}`}
-              checked={fos.checked}
-              onCheckedChange={() => toggleFos(fos)}
-            />
-            <Label htmlFor={`fos_${fos.fosTypeId}`} className="font-normal">
-              {fos.fosName}
-            </Label>
+      <form.Field name="fosTypeIds">
+        {(field) => (
+          <div className="mb-3 h-[200px] overflow-x-auto border p-0.5">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="toggle_all"
+                checked={field.state.value.length === allFosIds.length}
+                onCheckedChange={() =>
+                  field.handleChange(field.state.value.length === allFosIds.length ? [] : allFosIds)
+                }
+              />
+              <Label htmlFor="toggle_all" className="font-normal">
+                (Toggle All)
+              </Label>
+            </div>
+            {typeLists.fosTypes.map((fos) => (
+              <div className="flex items-center gap-2" key={`fos_${fos.fosTypeId}`}>
+                <Checkbox
+                  id={`fos_${fos.fosTypeId}`}
+                  checked={field.state.value.includes(fos.fosTypeId)}
+                  onCheckedChange={() =>
+                    field.handleChange(
+                      field.state.value.includes(fos.fosTypeId)
+                        ? field.state.value.filter((id) => id !== fos.fosTypeId)
+                        : [...field.state.value, fos.fosTypeId],
+                    )
+                  }
+                />
+                <Label htmlFor={`fos_${fos.fosTypeId}`} className="font-normal">
+                  {fos.fosName}
+                </Label>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        )}
+      </form.Field>
 
       <h5 id="org_select_label" className="mb-1">
         Organization
       </h5>
       <div className="mb-3">
-        <Select
-          key="org_select"
-          options={orgList}
-          openMenuOnClick={true}
-          name="org"
-          inputId="orgs_filter"
-          closeMenuOnSelect={true}
-          onChange={updateOrgs}
-          value={orgValue}
-          aria-labelledby="org_select_label"
-        />
+        <form.AppField name="org">
+          {(field) => (
+            <field.FieldReactSelect
+              options={typeLists.orgs.map((org) => ({ label: org, value: org }))}
+              openMenuOnClick
+              closeMenuOnSelect
+              aria-labelledby="org_select_label"
+            />
+          )}
+        </form.AppField>
       </div>
 
       <h5 id="project_type_label" className="mb-1">
@@ -117,66 +143,55 @@ const Filters = () => {
         </abbr>
       </h5>
       <div className="mb-3">
-        <select
-          name="allocationType"
-          id="project_type_select"
-          value={filters.allocationType}
-          className="w-full border border-input bg-transparent px-3 py-1 shadow-sm"
-          aria-labelledby="project_type_label"
-          onChange={handleFilterChange}
-        >
-          <option value="">-- All --</option>
-          {typeLists.allocationTypes.map((a, i) => (
-            <option value={a} key={`allocation_type_${i}`}>
-              {a}
-            </option>
-          ))}
-        </select>
+        <form.AppField name="allocationType">
+          {(field) => (
+            <field.FieldSelect
+              placeholder="-- All --"
+              options={[
+                { value: "__all__", label: "-- All --" },
+                ...typeLists.allocationTypes.map((a) => ({ value: a, label: a })),
+              ]}
+            />
+          )}
+        </form.AppField>
       </div>
 
       <h5 id="resource_filter_label" className="mb-1">
         Resource
       </h5>
       <div className="mb-3">
-        <select
-          name="resource"
-          id="resource_select"
-          value={filters.resource}
-          className="w-full border border-input bg-transparent px-3 py-1 shadow-sm"
-          aria-labelledby="resource_filter_label"
-          onChange={handleFilterChange}
-        >
-          <option value="">-- All --</option>
-          {typeLists.resources.map((res, i) => (
-            <option value={res.resourceId} key={`resource_${i}`}>
-              {res.resourceName}
-            </option>
-          ))}
-        </select>
+        <form.AppField name="resource">
+          {(field) => (
+            <field.FieldSelect
+              placeholder="-- All --"
+              options={[
+                { value: "__all__", label: "-- All --" },
+                ...typeLists.resources.map((res) => ({
+                  value: res.resourceId.toString(),
+                  label: res.resourceName,
+                })),
+              ]}
+            />
+          )}
+        </form.AppField>
       </div>
 
       <h5 id="request_number_label" className="mb-1">
         Request Number
       </h5>
       <div className="mb-3">
-        <input
-          type="text"
-          className="w-full border border-input bg-transparent px-3 py-1 shadow-sm"
-          value={filters.requestNumber}
-          name="requestNumber"
-          id="requestNumber"
-          aria-labelledby="request_number_label"
-          onChange={handleFilterChange}
-        />
+        <form.AppField name="requestNumber">
+          {(field) => <field.FieldInput type="text" />}
+        </form.AppField>
       </div>
 
       <div className="mt-2 flex gap-2">
-        <Button onClick={handleSubmit}>Submit</Button>
-        <Button variant="outline" disabled={buttonDisabled} onClick={handleReset}>
+        <Button type="submit">Submit</Button>
+        <Button type="button" variant="outline" disabled={buttonDisabled} onClick={handleReset}>
           Reset
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
 

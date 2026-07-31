@@ -1,9 +1,10 @@
+import { useMemo } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Plus } from "lucide-react";
+import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import Grid, { type GridColumn } from "../shared/Grid";
-import { SelectInput } from "../shared/SelectInput/SelectInput";
 import { AddNewModal } from "./AddNewModal";
 import { AdvancedSettingsSection } from "./AdvancedSettingsSection";
 import {
@@ -14,13 +15,10 @@ import {
   changeCommentAtom,
   changeRequiredResourceAtom,
   isAllocationEditingAtom,
-  openAddResourceModalAtom,
   requiredResourceNamesAtom,
   resourceDetailsAtom,
   saveAllocationTypeAtom,
   saveRequiredResourcesAtom,
-  selectedNewAllocationTypeIdAtom,
-  selectedNewResourceIdsAtom,
   showAddAllocationTypeModalAtom,
   showAddResourceModalAtom,
 } from "./atoms";
@@ -47,39 +45,61 @@ const AllocationGridHeader = ({
 const AddRequiredResourceModal = () => {
   const show = useAtomValue(showAddResourceModalAtom);
   const setShow = useSetAtom(showAddResourceModalAtom);
+  return show ? <AddRequiredResourceForm onClose={() => setShow(false)} /> : null;
+};
+
+const AddRequiredResourceForm = ({ onClose }: { onClose: () => void }) => {
   const availableResources = useAtomValue(availableResourcesAtom);
-  const selected = useAtomValue(selectedNewResourceIdsAtom);
-  const setSelected = useSetAtom(selectedNewResourceIdsAtom);
+  const resourceDetails = useAtomValue(resourceDetailsAtom);
   const saveRequiredResources = useSetAtom(saveRequiredResourcesAtom);
+
+  const existingResourceIds = useMemo(
+    () =>
+      resourceDetails?.allocation_types
+        .flatMap((type) => type.required_resources ?? [])
+        .map((resource) => resource.required_resource_id) ?? [],
+    [],
+  );
+
+  const form = useAppForm({
+    defaultValues: { resourceIds: existingResourceIds },
+    onSubmit: ({ value }) => {
+      if (saveRequiredResources(value.resourceIds)) onClose();
+    },
+  });
 
   return (
     <AddNewModal
-      show={show}
-      onClose={() => setShow(false)}
+      show
+      onClose={onClose}
       title="Add Required Resource"
-      onSave={() => saveRequiredResources(selected)}
+      onSave={() => form.handleSubmit()}
       buttonText="Save"
     >
-      <div className="flex flex-col gap-2">
-        {availableResources.map((resource) => (
-          <label
-            key={resource.resource_id}
-            className="flex items-center gap-2 text-sm font-medium"
-          >
-            <Checkbox
-              checked={selected.includes(resource.resource_id)}
-              onCheckedChange={(checked) =>
-                setSelected((prev) =>
-                  checked
-                    ? [...prev, resource.resource_id]
-                    : prev.filter((id) => id !== resource.resource_id),
-                )
-              }
-            />
-            {resource.resource_name}
-          </label>
-        ))}
-      </div>
+      <form.Field name="resourceIds">
+        {(field) => (
+          <div className="flex flex-col gap-2">
+            {availableResources.map((resource) => (
+              <label
+                key={resource.resource_id}
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <Checkbox
+                  checked={field.state.value.includes(resource.resource_id)}
+                  onCheckedChange={(checked) =>
+                    field.handleChange(
+                      checked
+                        ? [...field.state.value, resource.resource_id]
+                        : field.state.value.filter((id) => id !== resource.resource_id),
+                    )
+                  }
+                />
+                {resource.resource_name}
+              </label>
+            ))}
+          </div>
+        )}
+      </form.Field>
     </AddNewModal>
   );
 };
@@ -87,31 +107,40 @@ const AddRequiredResourceModal = () => {
 const AddAllocationTypeModal = () => {
   const show = useAtomValue(showAddAllocationTypeModalAtom);
   const setShow = useSetAtom(showAddAllocationTypeModalAtom);
+  return show ? <AddAllocationTypeForm onClose={() => setShow(false)} /> : null;
+};
+
+const AddAllocationTypeForm = ({ onClose }: { onClose: () => void }) => {
   const availableAllocationTypes = useAtomValue(availableAllocationTypesAtom);
-  const selected = useAtomValue(selectedNewAllocationTypeIdAtom);
-  const setSelected = useSetAtom(selectedNewAllocationTypeIdAtom);
   const saveAllocationType = useSetAtom(saveAllocationTypeAtom);
+
+  const form = useAppForm({
+    defaultValues: { allocationTypeId: null as string | null },
+    onSubmit: ({ value }) => {
+      if (value.allocationTypeId && saveAllocationType(value.allocationTypeId)) onClose();
+    },
+  });
 
   return (
     <AddNewModal
-      show={show}
-      onClose={() => setShow(false)}
+      show
+      onClose={onClose}
       title="Add Allocation Type"
-      onSave={() => saveAllocationType(selected)}
+      onSave={() => form.handleSubmit()}
       buttonText="Save"
     >
-      <SelectInput
-        label="Select Allocation Type"
-        options={[
-          { value: "", label: "Select an allocation type to add", disabled: true },
-          ...availableAllocationTypes.map((at) => ({
-            value: at.allocation_type_id,
-            label: at.display_name,
-          })),
-        ]}
-        value={selected}
-        onChange={(e) => setSelected(e.target.value)}
-      />
+      <form.AppField name="allocationTypeId">
+        {(field) => (
+          <field.FieldSelect
+            label="Select Allocation Type"
+            placeholder="Select an allocation type to add"
+            options={availableAllocationTypes.map((at) => ({
+              value: at.allocation_type_id.toString(),
+              label: at.display_name,
+            }))}
+          />
+        )}
+      </form.AppField>
     </AddNewModal>
   );
 };
@@ -123,7 +152,7 @@ export const AllocationTypesSection = () => {
   const isEditing = useAtomValue(isAllocationEditingAtom);
   const setIsEditing = useSetAtom(isAllocationEditingAtom);
   const setShowAddAllocationTypeModal = useSetAtom(showAddAllocationTypeModalAtom);
-  const openAddResourceModal = useSetAtom(openAddResourceModalAtom);
+  const setShowAddResourceModal = useSetAtom(showAddResourceModalAtom);
   const changeAllowedAction = useSetAtom(changeAllowedActionAtom);
   const changeComment = useSetAtom(changeCommentAtom);
   const changeRequiredResource = useSetAtom(changeRequiredResourceAtom);
@@ -188,7 +217,7 @@ export const AllocationTypesSection = () => {
           <AllocationGridHeader
             isEditing={isEditing}
             onAddAllocationType={() => setShowAddAllocationTypeModal(true)}
-            onAddRequiredResource={() => openAddResourceModal()}
+            onAddRequiredResource={() => setShowAddResourceModal(true)}
           />
         }
         isEditing={isEditing}

@@ -1,37 +1,33 @@
-import { useSetAtom } from "jotai";
 import { Trash2 } from "lucide-react";
+import type { AppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { deleteAuthorAtom, updateAuthorAtom } from "./atoms";
-import type { PublicationAuthor } from "./types";
+import type { PublicationFormValues } from "./PublicationForm";
 
 const FIELDS = ["first_name", "last_name", "affiliation"] as const;
 
 export default function Author({
-  author,
-  authorKey,
+  form,
+  index,
+  showRemove,
+  onRemove,
 }: {
-  author: PublicationAuthor;
-  authorKey: number;
+  form: AppForm<PublicationFormValues>;
+  index: number;
+  showRemove: boolean;
+  onRemove: () => void;
 }) {
-  const updateAuthor = useSetAtom(updateAuthorAtom);
-  const deleteAuthor = useSetAtom(deleteAuthorAtom);
-
   return (
     <tr>
       {FIELDS.map((key) => (
         <td key={key}>
-          <Input
-            name={key}
-            id={key}
-            value={author[key] ?? ""}
-            onChange={(e) => updateAuthor({ idx: authorKey, key, value: e.target.value })}
-          />
+          <form.AppField name={`authors[${index}].${key}`}>
+            {(field) => <field.FieldInput />}
+          </form.AppField>
         </td>
       ))}
       <td>
-        {authorKey !== 0 && (
-          <Button variant="destructive" size="sm" onClick={() => deleteAuthor(authorKey)}>
+        {showRemove && (
+          <Button variant="destructive" size="sm" type="button" onClick={onRemove}>
             <Trash2 className="size-4" />
           </Button>
         )}
