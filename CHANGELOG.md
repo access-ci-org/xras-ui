@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.33.0](https://github.com/access-ci-org/xras-ui/compare/v0.32.0...v0.33.0) (2026-08-05)
+
+
+### Features
+
+* **projects:** restrict role changes based on API data ([23643c9](https://github.com/access-ci-org/xras-ui/commit/23643c9d4726423830f4ec5c60eca17c6a3a8f3e))
+
 ## [0.32.0](https://github.com/access-ci-org/xras-ui/compare/v0.31.0...v0.32.0) (2026-07-24)
 
 
