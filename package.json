@@ -34,6 +34,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "element-internals-polyfill": "^3.0.2",
     "immer": "^10.0.3",
     "jotai": "^2.20.1",
     "lucide-react": "^1.21.0",

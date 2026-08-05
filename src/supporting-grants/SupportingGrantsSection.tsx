@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Provider, createStore, useAtom, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
+import { useStore } from "@tanstack/react-form";
 import { useAppForm } from "@/components/form";
 import { RadioGroupOptions } from "@/components/form/field-wrapper";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,17 @@ function HydrateAtoms({
 function SupportingGrantsForm({
   initialGrants,
   onSubmit,
-}: Pick<SupportingGrantsProps, "initialGrants" | "onSubmit">) {
+  onChange,
+  onValidityChange,
+  setExternalSubmit,
+}: Pick<
+  SupportingGrantsProps,
+  | "initialGrants"
+  | "onSubmit"
+  | "onChange"
+  | "onValidityChange"
+  | "setExternalSubmit"
+>) {
   const [includeSupportingGrants, setIncludeSupportingGrants] = useAtom(
     includeSupportingGrantsAtom,
   );
@@ -56,6 +67,15 @@ function SupportingGrantsForm({
       grants: SupportingGrant[];
     },
     validators: {
+      // onMount + onChange (not just onSubmit) keep isValid continuously
+      // accurate from the very first render, which the form-associated
+      // custom element wrapper (element.tsx) relies on to gate the
+      // ancestor <form>'s native submit via ElementInternals.setValidity —
+      // nothing there ever calls handleSubmit(), so submit-only validation
+      // would never run, and onChange alone wouldn't cover an initial
+      // submit attempt before any field has changed.
+      onMount: supportingGrantsFormSchema,
+      onChange: supportingGrantsFormSchema,
       onSubmit: supportingGrantsFormSchema,
     },
     onSubmit: ({ value }) => {
@@ -63,23 +83,40 @@ function SupportingGrantsForm({
     },
   });
 
+  const isValid = useStore(form.store, (state) => state.isValid);
+  const grants = useStore(form.store, (state) => state.values.grants);
+
+  useEffect(() => {
+    onValidityChange?.(isValid);
+  }, [isValid, onValidityChange]);
+
+  useEffect(() => {
+    onChange?.({ grants, includeSupportingGrants });
+  }, [grants, includeSupportingGrants, onChange]);
+
+  useEffect(() => {
+    if (!setExternalSubmit) return;
+
+    if (!isValid) {
+      setExternalSubmit(null);
+      return;
+    }
+
+    setExternalSubmit(async () => {
+      // handleSubmit() skips re-running the schema if it thinks the
+      // form is already invalid from a prior attempt, which leaves
+      // stale errors in place even after the underlying issue is
+      // fixed. Force a fresh full validation first so it sees the
+      // form's true current state.
+      await form.validate("submit");
+      await form.handleSubmit();
+    });
+
+    return () => setExternalSubmit(null);
+  }, [form, isValid, setExternalSubmit]);
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        void (async () => {
-          // handleSubmit() skips re-running the schema if it thinks the
-          // form is already invalid from a prior attempt, which leaves
-          // stale errors in place even after the underlying issue is
-          // fixed. Force a fresh full validation first so it sees the
-          // form's true current state.
-          await form.validate("submit");
-          await form.handleSubmit();
-        })();
-      }}
-      className="supporting-grants-section"
-    >
+    <div className="supporting-grants-section">
       <div className="mb-4">
         <Label>Does this request include supporting grants?</Label>
         <RadioGroupOptions
@@ -127,13 +164,7 @@ function SupportingGrantsForm({
           )}
         </form.Field>
       )}
-
-      <div className="mt-4">
-        <form.AppForm>
-          <form.SubscribeButton label="Submit" />
-        </form.AppForm>
-      </div>
-    </form>
+    </div>
   );
 }
 
@@ -159,6 +190,9 @@ export function SupportingGrantsSection(
         <SupportingGrantsForm
           initialGrants={props.initialGrants}
           onSubmit={props.onSubmit}
+          onChange={props.onChange}
+          onValidityChange={props.onValidityChange}
+          setExternalSubmit={props.setExternalSubmit}
         />
       </HydrateAtoms>
     </Provider>

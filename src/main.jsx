@@ -38,6 +38,7 @@ import catalogSlice from "./resource-catalog/helpers/catalogSlice";
 import apiReducer from "./projects/helpers/apiSlice";
 
 export { supportingGrants } from "./supporting-grants";
+export { defineSupportingGrantsElement } from "./supporting-grants/element";
 
 export function shadowTarget(
   host,
