@@ -160,9 +160,7 @@ export function FieldSelect({
       ) : null}
       <FormDescription>{description}</FormDescription>
       <Select
-        value={
-          field.state.value != null ? String(field.state.value) : undefined
-        }
+        value={field.state.value != null ? String(field.state.value) : ""}
         onValueChange={(value) => field.handleChange(value)}
       >
         <SelectTrigger id={field.name} onBlur={field.handleBlur}>
