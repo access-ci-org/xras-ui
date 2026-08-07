@@ -45,11 +45,34 @@ export interface SupportingGrantsState {
   includeSupportingGrants: boolean | null;
 }
 
+/**
+ * Shape of a supporting grant as returned by Rails' `#to_json` (snake_case
+ * keys, with the grant's primary key exposed as `grant_id`). Passed in via
+ * `initialGrants` and converted to the internal camelCase `SupportingGrant`
+ * shape by parseInitialGrants().
+ */
+export interface SupportingGrantAttributes {
+  grant_id?: number | string;
+  funding_agency_id: number | string | null;
+  grant_number: string;
+  is_pending: boolean | null;
+  title: string;
+  pi_name: string;
+  begin_date: string;
+  end_date: string;
+  primary_fos_type_id: number | string | null;
+  awarded_amount: string | number | null;
+  awarded_units: string;
+  program_officer_name: string;
+  program_officer_email: string;
+  comments: string;
+}
+
 export interface SupportingGrantsProps {
   target: HTMLElement;
   fundingAgencies: FundingAgency[];
   fosTypes: FosType[];
-  initialGrants?: SupportingGrant[];
+  initialGrants?: SupportingGrantAttributes[];
   initialIncludeSupportingGrants?: boolean | null;
   onSubmit?: (grants: SupportingGrant[]) => void;
   /**

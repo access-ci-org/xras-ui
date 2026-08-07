@@ -6,7 +6,7 @@ import { SupportingGrantsSection } from "./SupportingGrantsSection";
 import type {
   FosType,
   FundingAgency,
-  SupportingGrant,
+  SupportingGrantAttributes,
   SupportingGrantsState,
 } from "./types";
 
@@ -34,7 +34,7 @@ export class SupportingGrantsElement extends HTMLElement {
 
   fundingAgencies: FundingAgency[] = [];
   fosTypes: FosType[] = [];
-  initialGrants?: SupportingGrant[];
+  initialGrants?: SupportingGrantAttributes[];
   initialIncludeSupportingGrants?: boolean | null;
   /** Overrides where stylesheet hrefs are resolved from; defaults to this bundle's own directory, matching shadowTarget(). */
   baseUrl: string | null = null;

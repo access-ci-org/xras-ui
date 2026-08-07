@@ -13,6 +13,7 @@ import {
   includeSupportingGrantsAtom,
 } from "./atoms";
 import { formatAsCurrency } from "./currency";
+import { parseInitialGrants } from "./parse-initial-grants";
 import { supportingGrantsFormSchema } from "./schema";
 import type { SupportingGrant, SupportingGrantsProps } from "./types";
 
@@ -65,7 +66,7 @@ function SupportingGrantsForm({
 
   const form = useAppForm({
     defaultValues: {
-      grants: (initialGrants ?? []).map((grant) => ({
+      grants: parseInitialGrants(initialGrants).map((grant) => ({
         ...grant,
         awardedAmount: formatAsCurrency(grant.awardedAmount),
       })),
