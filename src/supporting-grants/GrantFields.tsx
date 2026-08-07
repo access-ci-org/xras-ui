@@ -5,19 +5,9 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AppForm } from "@/components/form";
 import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
+import { formatAsCurrency } from "./currency";
 import { fetchNSFGrantDetails, nsfDateToIso } from "./nsf-lookup";
 import type { GrantFieldName, SupportingGrant } from "./types";
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
-function formatAsCurrency(value: string): string {
-  const amount = Number(value.replace(/[^0-9.-]+/g, ""));
-  if (!value || !Number.isFinite(amount)) return value;
-  return currencyFormatter.format(amount);
-}
 
 interface GrantFieldsProps {
   form: AppForm<{ grants: SupportingGrant[] }>;
