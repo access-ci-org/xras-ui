@@ -653,16 +653,15 @@ export const saveResources = createAsyncThunk(
       method: request.exchangeActionId ? "PUT" : "POST",
     });
 
-    let responseData = {};
-    let errors = [];
-    let actionId = null;
+    let errors, actionId;
 
     try {
-      responseData = await res.json();
-      errors = responseData.errors || [];
-      actionId = responseData.actionId;
+      const data = await res.json();
+      errors = data.errors;
+      actionId = data.actionId;
     } catch {
       errors = ["Unable to save exchange"];
+      actionId = null;
     }
 
     if (res.status == 200) {
@@ -672,7 +671,7 @@ export const saveResources = createAsyncThunk(
     return rejectWithValue({
       requestId,
       exchangeActionId: actionId,
-      errors: errors.length ? errors : ["Unable to save exchange"],
+      errors,
     });
   },
 );
@@ -899,7 +898,7 @@ export const apiSlice = createSlice({
 
       if (invalidResource) {
         request.exchangeErrors = [
-          `${invalidResource.name} is decommissioned. Its balance can only be decreased.`,
+          `${invalidResource.name} is decommissioned. Its balance can only be decreased`,
         ];
         request.exchangeStatus = statuses.error;
       } else {
