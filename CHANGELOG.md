@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.34.0](https://github.com/access-ci-org/xras-ui/compare/v0.33.0...v0.34.0) (2026-08-11)
+
+
+### Features
+
+* Decommissioned Machines are filtered out of resource list with corresponding exchange action controls enabled ([676d732](https://github.com/access-ci-org/xras-ui/commit/676d732bb435d11a623abb1cd3cde02b88408f9b))
+
 ## [0.33.0](https://github.com/access-ci-org/xras-ui/compare/v0.32.0...v0.33.0) (2026-08-05)
 
 
