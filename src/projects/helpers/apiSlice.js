@@ -250,6 +250,9 @@ const addRequest = (
         // Add required resource IDs.
         resource.requires =
           exchangeResources[resource.resourceId].requires || [];
+        // Add negativeOnly flag to indicate if the resource is decommissioned.
+        resource.negativeOnly =
+          exchangeResources[resource.resourceId].negativeOnly ?? false;
       }
   }
 
@@ -340,6 +343,7 @@ const makeResource = ({
   endDate,
   exchangeRate,
   minimumExchange,
+  negativeOnly,
   organizationId,
   organizationFaviconUrl,
   organizationName,
@@ -379,6 +383,7 @@ const makeResource = ({
     isUnderReview: false,
     isNew: false,
     minimumExchange: minimumExchange,
+    negativeOnly: negativeOnly ?? false,
     name: displayResourceName.trim(),
     questions: (attributeSets || [])
       .filter(({ isActive }) => isActive)
@@ -892,6 +897,25 @@ export const apiSlice = createSlice({
           credit.decimalPlaces,
           "floor",
         );
+
+      const invalidResource = request.resources.find(
+        (resource) =>
+          resource.negativeOnly &&
+          Number(resource.requested) > Number(resource.allocated),
+      );
+
+      if (invalidResource) {
+        request.exchangeErrors = [
+          `${invalidResource.name} is decommissioned. Its balance can only be decreased`,
+        ];
+        request.exchangeStatus = statuses.error;
+      } else {
+        request.exchangeErrors = [];
+
+        if (request.exchangeStatus === statuses.error) {
+          request.exchangeStatus = null;
+        }
+      }
     },
     setResourcesReason: (state, action) => {
       const request = getRequest(state, action);
