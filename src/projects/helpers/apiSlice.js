@@ -890,7 +890,6 @@ export const apiSlice = createSlice({
           availableCredits -= getCost(resource, "difference");
         }
       }
-
       if (credit)
         credit.requested = roundNumber(
           availableCredits,
