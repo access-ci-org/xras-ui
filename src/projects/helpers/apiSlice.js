@@ -654,7 +654,6 @@ export const saveResources = createAsyncThunk(
     });
 
     let errors, actionId;
-
     try {
       const data = await res.json();
       errors = data.errors;
@@ -667,12 +666,7 @@ export const saveResources = createAsyncThunk(
     if (res.status == 200) {
       return { requestId, exchangeActionId: actionId };
     }
-
-    return rejectWithValue({
-      requestId,
-      exchangeActionId: actionId,
-      errors,
-    });
+    return rejectWithValue({ requestId, exchangeActionId: actionId, errors });
   },
 );
 
@@ -868,9 +862,8 @@ export const apiSlice = createSlice({
 
           // If the user is requesting a change to the resource,
           // make sure required resources are present in the request.
-          if (resource.requested != resource.allocated) {
+          if (resource.requested != resource.allocated)
             addResourceAndDeps(resource.resourceId, request);
-          }
         }
 
         if (resource.isCredit) {
@@ -882,13 +875,12 @@ export const apiSlice = createSlice({
         }
       }
 
-      if (credit) {
+      if (credit)
         credit.requested = roundNumber(
           availableCredits,
           credit.decimalPlaces,
           "floor",
         );
-      }
 
       const invalidResource = request.resources.find(
         (resource) =>
