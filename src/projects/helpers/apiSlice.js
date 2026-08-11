@@ -859,13 +859,11 @@ export const apiSlice = createSlice({
       for (let resource of request.resources) {
         if (resource.resourceId == resourceId) {
           resource.requested = requested;
-
           // If the user is requesting a change to the resource,
           // make sure required resources are present in the request.
           if (resource.requested != resource.allocated)
             addResourceAndDeps(resource.resourceId, request);
         }
-
         if (resource.isCredit) {
           credit = resource;
           availableCredits +=
