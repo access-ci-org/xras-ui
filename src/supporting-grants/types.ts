@@ -47,12 +47,13 @@ export interface SupportingGrantsState {
 
 /**
  * Shape of a supporting grant as returned by Rails' `#to_json` (snake_case
- * keys, with the grant's primary key exposed as `grant_id`). Passed in via
- * `initialGrants` and converted to the internal camelCase `SupportingGrant`
- * shape by parseInitialGrants().
+ * keys). Passed in via `initialGrants` and converted to the internal
+ * camelCase `SupportingGrant` shape by parseInitialGrants().
  */
 export interface SupportingGrantAttributes {
-  grant_id?: number | string;
+  /** Rails has serialized the primary key under both names; either is accepted. */
+  id?: number | string | null;
+  grant_id?: number | string | null;
   funding_agency_id: number | string | null;
   grant_number: string;
   is_pending: boolean | null;
