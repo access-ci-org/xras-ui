@@ -40,6 +40,11 @@ export interface SupportingGrant {
   _destroy?: boolean;
 }
 
+/**
+ * The section's complete state. Doubles as the tanstack-form values shape,
+ * since the include-supporting-grants answer is a validated form field
+ * rather than state held alongside the form.
+ */
 export interface SupportingGrantsState {
   grants: SupportingGrant[];
   includeSupportingGrants: boolean | null;

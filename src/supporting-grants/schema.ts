@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { parseCurrencyAmount } from "./currency";
+import type { SupportingGrant } from "./types";
 
 const REQUIRED_MESSAGE = "This field is required";
 
@@ -73,6 +74,32 @@ export const supportingGrantSchema = z
     }
   });
 
-export const supportingGrantsFormSchema = z.object({
-  grants: z.array(supportingGrantSchema),
-});
+export const supportingGrantsFormSchema = z
+  .object({
+    includeSupportingGrants: z
+      .boolean()
+      .nullable()
+      .refine((value) => value !== null, { message: REQUIRED_MESSAGE }),
+    // Accepted as-is here; each grant is validated conditionally below, so
+    // that answering "No" doesn't fail on hidden fields.
+    grants: z.array(z.custom<SupportingGrant>()),
+  })
+  .superRefine((value, ctx) => {
+    // Answering "No" keeps whatever grants were already entered in form
+    // state, so switching back to "Yes" doesn't lose them — but their
+    // fields are unmounted. Validating them anyway would block submission
+    // with errors the user has no way to see or fix.
+    if (value.includeSupportingGrants !== true) return;
+
+    value.grants.forEach((grant, index) => {
+      const result = supportingGrantSchema.safeParse(grant);
+      if (result.success) return;
+      for (const issue of result.error.issues) {
+        ctx.addIssue({
+          code: "custom",
+          message: issue.message,
+          path: ["grants", index, ...issue.path],
+        });
+      }
+    });
+  });

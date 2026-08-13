@@ -1,21 +1,19 @@
 import { useEffect, useMemo } from "react";
-import { Provider, createStore, useAtom, type WritableAtom } from "jotai";
+import { Provider, createStore, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 import { useStore } from "@tanstack/react-form";
 import { useAppForm } from "@/components/form";
-import { RadioGroupOptions } from "@/components/form/field-wrapper";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { GrantFields } from "./GrantFields";
-import {
-  fosTypesAtom,
-  fundingAgenciesAtom,
-  includeSupportingGrantsAtom,
-} from "./atoms";
+import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
 import { AWARDED_UNITS, formatAsCurrency } from "./currency";
 import { parseInitialGrants } from "./parse-initial-grants";
 import { supportingGrantsFormSchema } from "./schema";
-import type { SupportingGrant, SupportingGrantsProps } from "./types";
+import type {
+  SupportingGrant,
+  SupportingGrantsProps,
+  SupportingGrantsState,
+} from "./types";
 
 function emptyGrant(): SupportingGrant {
   return {
@@ -48,6 +46,7 @@ function HydrateAtoms({
 
 function SupportingGrantsForm({
   initialGrants,
+  initialIncludeSupportingGrants,
   onSubmit,
   onChange,
   onValidityChange,
@@ -55,24 +54,20 @@ function SupportingGrantsForm({
 }: Pick<
   SupportingGrantsProps,
   | "initialGrants"
+  | "initialIncludeSupportingGrants"
   | "onSubmit"
   | "onChange"
   | "onValidityChange"
   | "setExternalSubmit"
 >) {
-  const [includeSupportingGrants, setIncludeSupportingGrants] = useAtom(
-    includeSupportingGrantsAtom,
-  );
-
   const form = useAppForm({
     defaultValues: {
+      includeSupportingGrants: initialIncludeSupportingGrants ?? null,
       grants: parseInitialGrants(initialGrants).map((grant) => ({
         ...grant,
         awardedAmount: formatAsCurrency(grant.awardedAmount),
       })),
-    } as {
-      grants: SupportingGrant[];
-    },
+    } as SupportingGrantsState,
     validators: {
       // onMount + onChange (not just onSubmit) keep isValid continuously
       // accurate from the very first render, which the form-associated
@@ -92,6 +87,10 @@ function SupportingGrantsForm({
 
   const isValid = useStore(form.store, (state) => state.isValid);
   const grants = useStore(form.store, (state) => state.values.grants);
+  const includeSupportingGrants = useStore(
+    form.store,
+    (state) => state.values.includeSupportingGrants,
+  );
 
   useEffect(() => {
     onValidityChange?.(isValid);
@@ -125,28 +124,29 @@ function SupportingGrantsForm({
   return (
     <div className="supporting-grants-section">
       <div className="mb-4">
-        <Label>Does this request include supporting grants?</Label>
-        <RadioGroupOptions
-          name="include-supporting-grants"
-          value={
-            includeSupportingGrants === true
-              ? "true"
-              : includeSupportingGrants === false
-                ? "false"
-                : ""
-          }
-          onValueChange={(value) => {
-            const include = value === "true";
-            setIncludeSupportingGrants(include);
-            if (include && form.getFieldValue("grants").length === 0) {
-              form.pushFieldValue("grants", emptyGrant());
-            }
+        <form.AppField
+          name="includeSupportingGrants"
+          listeners={{
+            // Answering "Yes" with nothing to fill in should open the first
+            // grant's fields straight away.
+            onChange: ({ value }) => {
+              if (value && form.getFieldValue("grants").length === 0) {
+                form.pushFieldValue("grants", emptyGrant());
+              }
+            },
           }}
-          options={[
-            { value: "true", label: "Yes" },
-            { value: "false", label: "No" },
-          ]}
-        />
+        >
+          {(field) => (
+            <field.FieldRadio
+              required
+              label="Does this request include supporting grants?"
+              options={[
+                { value: true, label: "Yes" },
+                { value: false, label: "No" },
+              ]}
+            />
+          )}
+        </form.AppField>
       </div>
 
       {includeSupportingGrants && (
@@ -187,15 +187,12 @@ export function SupportingGrantsSection(
           new Map<WritableAtom<any, any[], any>, unknown>([
             [fundingAgenciesAtom, props.fundingAgencies],
             [fosTypesAtom, props.fosTypes],
-            [
-              includeSupportingGrantsAtom,
-              props.initialIncludeSupportingGrants ?? null,
-            ],
           ])
         }
       >
         <SupportingGrantsForm
           initialGrants={props.initialGrants}
+          initialIncludeSupportingGrants={props.initialIncludeSupportingGrants}
           onSubmit={props.onSubmit}
           onChange={props.onChange}
           onValidityChange={props.onValidityChange}

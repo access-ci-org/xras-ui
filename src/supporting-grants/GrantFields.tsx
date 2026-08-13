@@ -7,10 +7,10 @@ import type { AppForm } from "@/components/form";
 import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
 import { formatAsCurrency } from "./currency";
 import { fetchNSFGrantDetails, nsfDateToIso } from "./nsf-lookup";
-import type { GrantFieldName, SupportingGrant } from "./types";
+import type { GrantFieldName, SupportingGrantsState } from "./types";
 
 interface GrantFieldsProps {
-  form: AppForm<{ grants: SupportingGrant[] }>;
+  form: AppForm<SupportingGrantsState>;
   index: number;
   onRemove: () => void;
 }
