@@ -191,15 +191,6 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
                   />
                 )}
               </form.AppField>
-              <form.Field name={`grants[${index}].awardedUnits`}>
-                {(field) => (
-                  <input
-                    type="hidden"
-                    value="Dollars"
-                    onChange={() => field.handleChange("Dollars")}
-                  />
-                )}
-              </form.Field>
             </div>
           </>
         )}

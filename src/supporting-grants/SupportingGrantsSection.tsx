@@ -12,7 +12,7 @@ import {
   fundingAgenciesAtom,
   includeSupportingGrantsAtom,
 } from "./atoms";
-import { formatAsCurrency } from "./currency";
+import { AWARDED_UNITS, formatAsCurrency } from "./currency";
 import { parseInitialGrants } from "./parse-initial-grants";
 import { supportingGrantsFormSchema } from "./schema";
 import type { SupportingGrant, SupportingGrantsProps } from "./types";
@@ -28,7 +28,7 @@ function emptyGrant(): SupportingGrant {
     endDate: "",
     primaryFosTypeId: null,
     awardedAmount: "",
-    awardedUnits: "Dollars",
+    awardedUnits: AWARDED_UNITS,
     programOfficerName: "",
     programOfficerEmail: "",
     comments: "",

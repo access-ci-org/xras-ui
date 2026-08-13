@@ -1,3 +1,4 @@
+import { AWARDED_UNITS } from "./currency";
 import { FIELD_NAMES } from "./field-names";
 import type { SupportingGrant, SupportingGrantAttributes } from "./types";
 
@@ -45,6 +46,11 @@ export function parseInitialGrants(
         }
       },
     );
+    // No control sets this, so a record that has it null (or omits it)
+    // would otherwise post back an empty value.
+    if (!result.awardedUnits) {
+      result.awardedUnits = AWARDED_UNITS;
+    }
     return result as unknown as SupportingGrant;
   });
 }

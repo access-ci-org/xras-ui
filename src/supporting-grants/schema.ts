@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { parseCurrencyAmount } from "./currency";
+
 const REQUIRED_MESSAGE = "This field is required";
 
 const requiredIdSchema = z
@@ -49,7 +51,7 @@ export const supportingGrantSchema = z
       }
       if (!grant.awardedAmount.trim()) {
         addRequiredIssue(ctx, "awardedAmount");
-      } else if (Number.isNaN(Number(grant.awardedAmount))) {
+      } else if (!Number.isFinite(parseCurrencyAmount(grant.awardedAmount))) {
         ctx.addIssue({
           code: "custom",
           message: "Enter a valid amount",
