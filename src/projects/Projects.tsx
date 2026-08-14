@@ -30,8 +30,8 @@ function ProjectsInner({ username, openFirst = 1 }: { username: string; openFirs
 
   if (!projects.length)
     return (
-      <div className="border border-muted bg-muted/50 pb-5 pt-5">
-        <p className="mb-4 text-center text-3xl">You don&apos;t have any projects yet.</p>
+      <div className="border border-muted bg-muted/50 pb-12 pt-12">
+        <p className="mb-6 text-center text-3xl">You don&apos;t have any projects yet.</p>
         <div className="flex justify-center gap-2">
           <a className="w-1/4 bg-primary p-3 text-center text-primary-foreground" href={config.routes.project_types_path()}>
             <Boxes className="mx-auto mb-1 size-9" /> Learn about Project Types

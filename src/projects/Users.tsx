@@ -1,5 +1,6 @@
 import AsyncSelect from "react-select/async";
 import { OctagonAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Alert from "../shared/Alert";
 import Grid, { type GridColumn } from "../shared/Grid";
 import MultiStateCheckbox from "../shared/MultiStateCheckbox";
@@ -141,7 +142,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
       width: 100,
       format: (value, row) => (
         <select
-          className="absolute inset-0 border-0"
+          className="select-caret absolute inset-0 truncate border-0 bg-transparent px-3 py-1.5 disabled:bg-[#e9ecef]"
           value={value}
           onChange={(e) => setUserRole(row.username, e.target.value)}
           disabled={!canManageUsers || value == "pi" || value == "co_pi"}
@@ -182,6 +183,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
       icon: resource.icon,
       format: (_value, row) => (
         <input
+          className="size-4"
           disabled={!canManageUsers || !resource.isActive}
           onChange={(e) => toggleUsersResources(e.target.checked, row.username, resource.resourceId)}
           type="checkbox"
@@ -209,6 +211,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
         <div className="relative -mt-px" style={{ zIndex: 100 }}>
           <AsyncSelect<{ label: React.ReactNode; value: SearchedUser }>
             classNames={{ control: () => "react-select" }}
+            theme={(theme) => ({ ...theme, borderRadius: 0 })}
             loadOptions={async (value) => {
               const found = await searchUsers(value);
               return found.map((user) => ({
@@ -239,23 +242,24 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
         </div>
       ) : null}
       {canManageUsers && ((resources.length && !allInactive) || hasNonPIUsers) ? (
-        <div className="mt-3 flex">
-          <button
+        <div className="mt-4 flex">
+          <Button
             type="button"
-            className="mr-2 bg-destructive px-4 py-2 font-bold uppercase text-destructive-foreground disabled:opacity-50"
+            variant="destructive"
+            className="mr-2"
             disabled={saving || !hasChanges}
             onClick={() => resetUsers()}
           >
             Reset Form
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="bg-muted px-4 py-2 font-bold uppercase disabled:opacity-50"
+            variant="secondary"
             disabled={saving || !hasChanges}
             onClick={() => saveUsers()}
           >
             {saving ? "Saving..." : "Save Changes"}
-          </button>
+          </Button>
         </div>
       ) : null}
     </>

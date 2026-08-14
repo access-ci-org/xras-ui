@@ -77,12 +77,16 @@ export default function OverviewResources({
         const pct = (Math.max(balance, 0) * 100) / row.allocated;
         return (
           <>
+            {/* Remaining-balance bar, tinted so it reads as a background. */}
             <div
-              className="absolute inset-y-0 left-0"
+              className="absolute inset-y-0 left-0 opacity-20"
               style={{ backgroundColor: row.color, width: `${Math.min(pct, 100)}%` }}
             ></div>
-            {formatNumber(balance, { abbreviate: true })} of{" "}
-            {formatNumber(row.allocated, { abbreviate: true })} {row.unit} remaining ({Math.round(pct)}%)
+            <span className="relative">
+              {formatNumber(balance, { abbreviate: true })} of{" "}
+              {formatNumber(row.allocated, { abbreviate: true })} {row.unit} remaining (
+              {Math.round(pct)}%)
+            </span>
           </>
         );
       },
@@ -155,16 +159,17 @@ export default function OverviewResources({
       {canExchange && !hasPreviousExchange && credit && availableCredits > config.creditAlertThreshold ? (
         <button
           onClick={() => setTab("resources")}
-          className="mb-1 mt-2 flex w-full items-center justify-between border border-sky-500/50 bg-sky-50 p-3 text-sky-900"
+          className="mb-4 mt-2 flex w-full items-center justify-between rounded-md border border-[#99dced] bg-[#cceef6] p-4 text-[#004354]"
         >
           <span>
-            <span className="text-2xl">
+            <span className="text-[1.75rem]">
               {icon(config.resourceTypeIcons.credit)} {formatNumber(availableCredits)}
             </span>{" "}
             {credit.unit} available
           </span>
           <span className="flex items-center align-middle">
-            Exchange credits for resources! <span className="text-2xl">{icon("chevron-right")}</span>
+            Exchange credits for resources!{" "}
+            <span className="text-[1.75rem]">{icon("chevron-right")}</span>
           </span>
         </button>
       ) : null}

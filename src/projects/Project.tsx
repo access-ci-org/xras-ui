@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import Alert from "../shared/Alert";
 import StatusBadge from "../shared/StatusBadge";
 import { formatRequestName } from "../shared/helpers/utils";
@@ -7,6 +6,26 @@ import Request from "./Request";
 import RequestActionButtons from "./RequestActionButtons";
 import { useProject } from "./helpers/hooks";
 import type { RequestListItem } from "./types";
+
+// lucide has no filled caret, and the solid triangle is what the Bootstrap
+// build drew here (Bootstrap Icons' `caret-down-fill`/`caret-right-fill`).
+function Caret({ down }: { down: boolean }) {
+  return (
+    <svg
+      className="size-[1em] shrink-0 fill-current"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+    >
+      <path
+        d={
+          down
+            ? "M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"
+            : "m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"
+        }
+      />
+    </svg>
+  );
+}
 
 export default function Project({
   open = false,
@@ -41,7 +60,7 @@ export default function Project({
         <>
           <div className="flex">
             <select
-              className="h-9 w-full rounded-none border border-input bg-transparent px-3 py-1 shadow-sm"
+              className="select-caret w-full rounded-none border border-input bg-background px-3 py-1.5 disabled:bg-[#e9ecef]"
               aria-label="Select a request to display"
               onChange={(e) => setRequest(parseInt(e.target.value, 10))}
               value={project.selectedRequestId}
@@ -60,16 +79,20 @@ export default function Project({
   }
 
   return (
-    <div className="mb-3 border">
-      <div className={`flex justify-between p-3 ${expanded ? "border-b" : ""}`}>
+    <div className="mb-4 border border-border-translucent">
+      <div
+        className={`flex justify-between bg-teal-200 px-4 py-2 text-primary ${
+          expanded ? "border-b border-border-translucent" : ""
+        }`}
+      >
         <button
           aria-expanded={expanded}
           aria-controls={elementId}
-          className="border-0 bg-transparent p-0"
+          className="border-0 bg-transparent p-0 text-left"
           onClick={() => setExpanded(!expanded)}
         >
-          <h2 className="mb-1 mt-1 flex items-center gap-1 text-start">
-            {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          <h2 className="my-1 flex items-center gap-1 text-left text-lg font-bold leading-[1.2]">
+            <Caret down={expanded} />
             {/^[A-Z]/.test(grantNumber) ? (
               <>
                 <span className="grant-number">{grantNumber}:</span>{" "}
@@ -80,7 +103,7 @@ export default function Project({
         </button>
         <StatusBadge status={status || project?.status || ""} />
       </div>
-      <div className="p-3" id={elementId} hidden={!expanded || !project}>
+      <div className="p-4" id={elementId} hidden={!expanded || !project}>
         {body}
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -26,20 +27,22 @@ export default function ConfirmModal({
 
   return (
     <Dialog open={request.showConfirmModal} onOpenChange={() => toggleConfirmModal()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Consider Requesting an Exchange</DialogTitle>
         </DialogHeader>
-        <p>
-          <strong>{Math.round(unusedPercent)}% of your allocation is unused.</strong> Are you sure you
-          want to request more {unitName}? You can exchange{" "}
-          {request.usesCredits ? "credits for resources or " : ""} one resource for another by changing
-          the <strong>balance</strong> numbers in the table on the previous screen.
-        </p>
+        <DialogBody>
+          <p>
+            <strong>{Math.round(unusedPercent)}% of your allocation is unused.</strong> Are you sure
+            you want to request more {unitName}? You can exchange{" "}
+            {request.usesCredits ? "credits for resources or " : ""} one resource for another by
+            changing the <strong>balance</strong> numbers in the table on the previous screen.
+          </p>
+        </DialogBody>
         <DialogFooter>
           <Button onClick={() => toggleConfirmModal()}>Return to Exchange</Button>
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               toggleConfirmModal();
               toggleActionsModal();

@@ -1,5 +1,11 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import PublicationEdit from "./PublicationEdit";
 import { publicationIdAtom, showEditModalAtom } from "./atoms";
 
@@ -10,11 +16,13 @@ export default function PublicationEditModal() {
 
   return (
     <Dialog open={show} onOpenChange={(open) => !open && setShow(false)}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-[1140px]">
         <DialogHeader>
           <DialogTitle>{publicationId ? "Edit" : "Add"} Publication</DialogTitle>
         </DialogHeader>
-        <PublicationEdit />
+        <DialogBody>
+          <PublicationEdit />
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

@@ -16,7 +16,7 @@ export default function StatusBadge({ status, title }: { status: string; title?:
     <span
       title={title}
       className={cn(
-        "inline-flex items-center self-center rounded-full px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center self-center whitespace-nowrap rounded-md px-[0.65em] py-[0.35em] text-[0.75em] font-bold leading-none",
         badgeColorClasses[color],
       )}
     >

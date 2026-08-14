@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -37,10 +38,11 @@ export default function DeleteModal({
         <DialogHeader>
           <DialogTitle>Confirm Deletion</DialogTitle>
         </DialogHeader>
-        {error && (
-          <Alert color="danger">Deletion of the {isRequest ? "request" : "action"} failed.</Alert>
-        )}
-        <p>
+        <DialogBody>
+          {error && (
+            <Alert color="danger">Deletion of the {isRequest ? "request" : "action"} failed.</Alert>
+          )}
+          <p>
           Are you sure you want to delete{" "}
           {!isRequest && (
             <>
@@ -51,8 +53,9 @@ export default function DeleteModal({
               on{" "}
             </>
           )}
-          request <strong>{formatRequestName(request)}</strong>? Deletions cannot be undone.
-        </p>
+            request <strong>{formatRequestName(request)}</strong>? Deletions cannot be undone.
+          </p>
+        </DialogBody>
         <DialogFooter>
           <Button onClick={toggle} disabled={pending}>
             Cancel

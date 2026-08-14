@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Table } from "lucide-react";
 import Select from "react-select";
+import { Button } from "@/components/ui/button";
 import Alert from "../shared/Alert";
 import Grid, { type GridColumn } from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
@@ -315,7 +316,7 @@ export default function Resources({
       {
         key: "requested",
         name: "Balance",
-        class: "relative",
+        class: "text-right",
         rowClass: (row) =>
           exchangeEditable && exchangeActionResourceIds.includes((row as Resource).resourceId)
             ? gridStyle.input
@@ -327,6 +328,7 @@ export default function Resources({
             <span className="flex">
               <span className="w-full">
                 <input
+                  className="size-4"
                   type="checkbox"
                   checked={value == 1}
                   disabled={!editable}
@@ -339,7 +341,7 @@ export default function Resources({
             <span className="flex">
               {editable ? (
                 <BlurInput
-                  classes="text-right w-full"
+                  classes="h-auto w-full rounded-none bg-background text-right"
                   clean={(balanceString) => cleanBalance(balanceString, typedRow).toString()}
                   format={(value) => formatNumber(Number(value))}
                   label={`Balance for ${typedRow.name}`}
@@ -361,6 +363,7 @@ export default function Resources({
             {name}
             {exchangeEditable ? (
               <InfoTip
+                variant="secondary"
                 initial="myprojects.requestedAllocation"
                 placement="top-end"
                 visible={project.tab == "resources"}
@@ -381,7 +384,7 @@ export default function Resources({
           const cost = -1 * transfer * typedRow.exchangeRates.current.unitCost;
           return cost !== 0 ? (
             <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium text-white ${
+              className={`inline-flex items-center whitespace-nowrap rounded-full px-[0.65em] py-[0.35em] text-[0.75em] font-bold leading-none text-white ${
                 cost > 0 ? "bg-primary" : "bg-destructive"
               }`}
             >
@@ -399,21 +402,17 @@ export default function Resources({
     <div>
       {resources.length ? <ResourcesDiagram requestId={requestId} /> : null}
       {credit && (canExchange || canRenew || canSupplement) ? (
-        <h2 className="mb-1 mt-2 flex justify-between">
+        <h2 className="mb-1 mt-2 flex items-center justify-between text-2xl font-bold">
           <span>
             {icon(config.resourceTypeIcons.credit)}{" "}
             {formatNumber(credit.requested, { decimalPlaces: credit.decimalPlaces })} {credit.unit} available
             to exchange
           </span>
           {canRenew || canSupplement ? (
-            <button
-              type="button"
-              className="ml-2 bg-primary px-3 py-1 text-sm font-bold uppercase text-primary-foreground"
-              onClick={requestMore}
-            >
+            <Button type="button" size="sm" className="ml-2" onClick={requestMore}>
               {icon(config.resourceTypeIcons.credit)} Request More{" "}
               {request.usesCredits ? "Credits" : "Units"}
-            </button>
+            </Button>
           ) : null}
         </h2>
       ) : null}
@@ -429,13 +428,14 @@ export default function Resources({
           minWidth="800px"
         />
       ) : (
-        <div className="border bg-muted p-3">This project does not have any resources.</div>
+        <div className="rounded-md border bg-muted p-4">This project does not have any resources.</div>
       )}
       {availableResourceGroups.length ? (
         <>
-          <div className="-mt-px border p-2" style={{ backgroundColor: "var(--teal-200)" }} ref={resourceSearch}>
+          <div className="-mt-px border border-[#cccccc] bg-teal-200 p-2" ref={resourceSearch}>
             <Select
               classNames={{ control: () => "react-select mb-1" }}
+              theme={(theme) => ({ ...theme, borderRadius: 0 })}
               options={availableResourceGroups}
               onChange={(option) => option && addResource(option.value)}
               placeholder={resourceAddMessage}
@@ -456,6 +456,7 @@ export default function Resources({
           </div>
           {!rows.length ? (
             <InfoTip
+              variant="secondary"
               visible={project.tab == "resources"}
               initial={true}
               target={resourceSearch}
@@ -463,22 +464,25 @@ export default function Resources({
               Ready to get started? Search for a resource to add it to your project.
             </InfoTip>
           ) : null}
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[0.9rem] text-black/50">
             Need help choosing a resource? Visit our{" "}
-            <a href={config.routes.resources_path()}>Resource Catalog</a>.
+            <a className="font-bold" href={config.routes.resources_path()}>
+              Resource Catalog
+            </a>
+            .
           </p>
         </>
       ) : null}
 
       {canExchange && exchangeEditable ? (
         <>
-          <div className="mb-3">
-            <label htmlFor="resources-reason" className="required">
+          <div className="mb-4">
+            <label htmlFor="resources-reason" className="mb-2 inline-block font-bold">
               Please briefly explain how the requested resources and amounts will contribute to your
-              research.
+              research. <span className="text-destructive">*</span>
             </label>
             <textarea
-              className="min-h-[3rem] w-full rounded-none border border-input bg-transparent px-3 py-1 shadow-sm"
+              className="min-h-[3rem] w-full rounded-none border border-input bg-transparent px-3 py-1.5"
               id="resources-reason"
               rows={2}
               value={reason}
@@ -487,26 +491,28 @@ export default function Resources({
           </div>
 
           <div className="flex">
-            <button
+            <Button
               type="button"
-              className="mr-2 bg-destructive px-4 py-2 font-bold uppercase text-destructive-foreground disabled:opacity-50"
+              variant="destructive"
+              className="mr-2"
               disabled={saving || (!hasRequested && !hasReason && !hasAddedResources)}
               onClick={() => resetResources()}
             >
               Reset Form
-            </button>
-            <button
+            </Button>
+            <Button
               ref={submitButton}
               type="button"
-              className="bg-muted px-4 py-2 font-bold uppercase disabled:opacity-50"
+              variant="secondary"
               disabled={saving || !hasRequested || !hasReason || hasUnmetDeps || anyBelowMinimum}
               onClick={() => toggleResourcesModal()}
             >
               {saving ? "Submitting..." : "Submit for Approval"}
-            </button>
+            </Button>
           </div>
           {hasRequested && !hasUnmetDeps ? (
             <InfoTip
+              variant="secondary"
               initial="myprojects.submitExchange"
               maxWidth="390px"
               placement="right"

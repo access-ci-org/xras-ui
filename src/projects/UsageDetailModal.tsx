@@ -1,5 +1,6 @@
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -90,11 +91,11 @@ export default function UsageDetailModal({
 
   return (
     <Dialog open onOpenChange={() => closeUsageDetailModal()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[800px]">
         <DialogHeader>
           <DialogTitle>{modalTitle}</DialogTitle>
         </DialogHeader>
-        {modalBody}
+        <DialogBody>{modalBody}</DialogBody>
       </DialogContent>
     </Dialog>
   );

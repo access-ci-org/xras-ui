@@ -49,7 +49,7 @@ export default function Request({
           <div className="rounded border-l-[20px] border-l-[#a70000] bg-white p-2.5 text-base whitespace-pre-wrap">
             {request.returnedForCorrectionsNotes}
           </div>
-          <p className="mt-3">
+          <p className="mt-4">
             Please address these issues by clicking the Edit button to edit your request.
           </p>
         </Alert>
@@ -90,7 +90,12 @@ export default function Request({
           </ul>
         </Alert>
       )}
-      <Tabs value={project.tab} onValueChange={setTab} className="mb-3 mt-3">
+      {/*
+        react-bootstrap put this element's `mt-3 mb-3` on the tab *bar*, so the
+        bottom margin sat between the bar and the panel (see `TabsContent`),
+        not below the panel.
+      */}
+      <Tabs value={project.tab} onValueChange={setTab} className="mt-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="resources" disabled={disabledTabs.includes("resources")}>

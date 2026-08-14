@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { GridColumn, GridRow } from "./Grid";
+import { cellClasses, type GridColumn, type GridRow } from "./Grid";
 
 export default function GridText({
   column,
@@ -13,7 +13,7 @@ export default function GridText({
   const value = column.format ? column.format(row[column.key], row) : row[column.key];
 
   return (
-    <td className={cn("p-2", column.class, column.rowClass?.(row))} style={style}>
+    <td className={cn(cellClasses, column.class, column.rowClass?.(row))} style={style}>
       {value}
     </td>
   );

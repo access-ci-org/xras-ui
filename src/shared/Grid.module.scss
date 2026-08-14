@@ -1,7 +1,11 @@
+/*
+ * No `margin-bottom` here: this file is unlayered, so it would beat the
+ * `mb-*` utilities callers pass in `classes` (Tailwind puts those in a
+ * cascade layer). Grid applies the default margin as a utility instead.
+ */
 .grid {
   border: 1px solid #cccccc;
   max-width: 100%;
-  margin-bottom: 1rem;
   position: relative;
   table {
     border-collapse: separate;

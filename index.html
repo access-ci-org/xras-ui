@@ -12,14 +12,6 @@
             supportingGrants({
                 target: shadowTarget(
                     document.getElementById("supporting-grants-react"),
-                    {
-                        // `?direct` forces Vite's dev server to serve the fully
-                        // processed CSS with a `text/css` content type, instead of
-                        // the JS-module wrapper it normally uses for stylesheets
-                        // pulled into the import graph. Only needed for `npm run dev`;
-                        // production builds reference the real dist/tailwind.css asset.
-                        stylesheets: ["/src/tailwind.css?direct"],
-                    },
                 ),
                 fundingAgencies: [
                     { id: 1, name: "National Science Foundation", abbr: "NSF" },

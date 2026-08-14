@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Info, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import gridStyle from "./Grid.module.scss";
 import { SelectInput } from "./SelectInput/SelectInput";
@@ -30,6 +31,9 @@ export type GridColumn = {
 
 type CellProps = { column: GridColumn; row: GridRow; style: React.CSSProperties };
 
+/** Matches the cell metrics of Bootstrap's `.table`. */
+export const cellClasses = "p-2 align-top";
+
 const handleChange = (row: GridRow, column: GridColumn, value: any) => {
   // check if column has onChange handler
   if (column.onChange) {
@@ -47,7 +51,7 @@ const handleChange = (row: GridRow, column: GridColumn, value: any) => {
 const columnTypeComponents: Record<string, (props: CellProps) => ReactNode> = {
   text: GridText,
   select: ({ column, row, style }) => (
-    <td style={style}>
+    <td className={cellClasses} style={style}>
       <SelectInput
         label=""
         options={row[column.key].options}
@@ -58,7 +62,7 @@ const columnTypeComponents: Record<string, (props: CellProps) => ReactNode> = {
     </td>
   ),
   input: ({ column, row, style }) => (
-    <td style={style}>
+    <td className={cellClasses} style={style}>
       <TextInput
         label=""
         type="text"
@@ -70,8 +74,9 @@ const columnTypeComponents: Record<string, (props: CellProps) => ReactNode> = {
     </td>
   ),
   checkbox: ({ column, row, style }) => (
-    <td style={style}>
+    <td className={cellClasses} style={style}>
       <input
+        className="size-4"
         type="checkbox"
         checked={row[column.key].checked}
         onChange={(e) => handleChange(row, column, e.target.checked)}
@@ -81,11 +86,15 @@ const columnTypeComponents: Record<string, (props: CellProps) => ReactNode> = {
   date: ({ column, row, style }) => {
     const cellData = row[column.key];
     if (!cellData?.value && typeof cellData !== "object") {
-      return <td style={style}>{cellData || ""}</td>;
+      return (
+        <td className={cellClasses} style={style}>
+          {cellData || ""}
+        </td>
+      );
     }
 
     return (
-      <td style={style}>
+      <td className={cellClasses} style={style}>
         <DatePicker
           value={cellData.value}
           onChange={(value) => handleChange(row, column, value)}
@@ -100,7 +109,7 @@ const columnTypeComponents: Record<string, (props: CellProps) => ReactNode> = {
   },
   action: ({ column, row, style }) => {
     return (
-      <td style={style}>
+      <td className={cellClasses} style={style}>
         {row.rate_type === "Discount" && (
           <button
             className="text-destructive hover:text-destructive/80"
@@ -163,7 +172,11 @@ export default function Grid({
       : {};
 
   const th = columns.map((column, i) => (
-    <th key={column.key} className={column.headerClass || column.class || ""} style={getStyle(i, 100)}>
+    <th
+      key={column.key}
+      className={cn("p-2 text-left align-bottom", column.headerClass || column.class)}
+      style={getStyle(i, 100)}
+    >
       {column.formatHeader ? column.formatHeader(column.name, column) : column.name}
       {column.tooltip && (
         <Tooltip>
@@ -193,7 +206,7 @@ export default function Grid({
 
   return (
     <div
-      className={`${gridStyle.grid} ${scroll ? gridStyle.scroll : ""} ${classes || ""}`}
+      className={cn(gridStyle.grid, scroll && gridStyle.scroll, "mb-4", classes)}
       ref={container}
     >
       <table className="w-full border-collapse" style={style}>

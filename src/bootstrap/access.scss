@@ -1,7 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,70,400;0,100,400;0,100,600;0,100,800;1,100,400&#038;display=swap");
 
+/* `:host` so the variables also land when this sheet is linked into a shadow root. */
 body,
-:root {
+:root,
+:host {
   --contrast: #232323;
   --contrast-2: #3f3f3f;
   --contrast-3: #707070;

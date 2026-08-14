@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -35,7 +36,7 @@ export const AddNewModal = ({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div>{children}</div>
+        <DialogBody>{children}</DialogBody>
         <DialogFooter>
           <Button variant="destructive" onClick={onClose}>
             {cancelText}

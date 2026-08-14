@@ -2,15 +2,20 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/*
+ * Bootstrap builds `.alert-*` from each theme color: text is a 60% shade, the
+ * background an 80% tint and the border a 60% tint. These are those values for
+ * the ACCESS palette.
+ */
 const colorClasses: Record<string, string> = {
-  primary: "border-primary/50 bg-primary/10 text-primary",
-  secondary: "border-muted-foreground/30 bg-muted text-muted-foreground",
-  success: "border-emerald-600/50 bg-emerald-50 text-emerald-800",
-  danger: "border-destructive/50 bg-destructive/10 text-destructive",
-  warning: "border-amber-400/60 bg-amber-50 text-amber-900",
-  info: "border-sky-500/50 bg-sky-50 text-sky-900",
-  light: "border-muted-foreground/20 bg-muted/50 text-foreground",
-  dark: "border-foreground/30 bg-foreground/5 text-foreground",
+  primary: "border-[#a3bdc5] bg-[#d1dee2] text-[#0a242c]",
+  secondary: "border-[#ffe7ab] bg-[#fff3d5] text-[#664e12]",
+  success: "border-[#a3cfbb] bg-[#d1e7dd] text-[#0a3622]",
+  danger: "border-[#dc9999] bg-[#edcccc] text-[#430000]",
+  warning: "border-[#ffe7ab] bg-[#fff3d5] text-[#664e12]",
+  info: "border-[#99dced] bg-[#cceef6] text-[#004354]",
+  light: "border-[#fdfdfe] bg-[#fefefe] text-[#636464]",
+  dark: "border-[#a6a8a9] bg-[#d3d3d4] text-[#0d0e0f]",
 };
 
 type AlertProps = {
@@ -29,7 +34,7 @@ export default function Alert({ children, color, dismissable = false, onDismiss 
     <div
       role="alert"
       className={cn(
-        "relative mt-3 border p-3",
+        "relative mb-4 mt-4 rounded-md border p-4",
         dismissable && "pr-9",
         colorClasses[color] ?? colorClasses.secondary,
       )}

@@ -11,7 +11,12 @@ const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn("flex flex-wrap gap-1 border-b", className)}
+    className={cn(
+      // The strip darkens slightly toward the bottom border; the active tab's
+      // own background paints over it, exactly as in the Bootstrap build.
+      "flex flex-wrap border-b border-border bg-[linear-gradient(to_top,rgba(0,0,0,0.032),rgba(0,0,0,0)_16px)]",
+      className,
+    )}
     {...props}
   />
 ));
@@ -24,7 +29,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "-mb-px border border-b-2 border-transparent px-4 py-2 font-bold text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-primary data-[state=active]:text-foreground",
+      "-mb-px rounded-t-md border border-transparent px-4 py-2 font-semibold text-teal-600 transition-colors hover:border-[#e9ecef] hover:border-b-transparent disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-border data-[state=active]:border-b-background data-[state=active]:bg-background data-[state=active]:text-[#212529]",
       className,
     )}
     {...props}
@@ -36,7 +41,7 @@ const TabsContent = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
 >(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content ref={ref} className={cn("mt-3", className)} {...props} />
+  <TabsPrimitive.Content ref={ref} className={cn("mt-4", className)} {...props} />
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 

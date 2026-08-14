@@ -123,8 +123,8 @@ export default function ResourcesDiagram({
   });
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row">
-      <div className="mb-3 flex flex-row items-center justify-center lg:w-1/4">
+    <div className="flex flex-col gap-5 lg:flex-row">
+      <div className="mb-4 flex flex-row items-center justify-center lg:w-1/4">
         <svg
           version="1.1"
           viewBox="-100 -100 200 200"
@@ -136,7 +136,7 @@ export default function ResourcesDiagram({
           {svgLabels}
         </svg>
       </div>
-      <div className="mb-3 flex flex-col justify-center lg:w-3/4">
+      <div className="mb-4 flex flex-col justify-center lg:w-3/4">
         <ul className="m-0 list-none p-0">{lis}</ul>
       </div>
     </div>

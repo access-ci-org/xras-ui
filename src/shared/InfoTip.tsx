@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode, type RefObject } from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Info, X } from "lucide-react";
 import { usePortalContainer } from "@/lib/portal-container";
+import { cn } from "@/lib/utils";
 
 type Placement =
   | "top"
@@ -26,12 +27,18 @@ function parsePlacement(placement?: Placement) {
   return { side, align: alignPart ?? ("center" as const) };
 }
 
+const variantClasses = {
+  dark: "border-[#212529] bg-[#212529] text-white",
+  secondary: "border-secondary bg-secondary text-secondary-foreground",
+};
+
 type InfoTipProps = {
   children: ReactNode;
   initial?: boolean | string;
   maxWidth?: string;
   placement?: Placement;
   target?: RefObject<HTMLElement | null>;
+  variant?: keyof typeof variantClasses;
   visible?: boolean;
 };
 
@@ -41,6 +48,7 @@ export default function InfoTip({
   maxWidth = "200px",
   placement,
   target,
+  variant = "dark",
   visible = true,
 }: InfoTipProps) {
   const hasKey = typeof initial === "string";
@@ -70,7 +78,10 @@ export default function InfoTip({
         side={side}
         align={align}
         style={{ maxWidth }}
-        className="z-50 border border-foreground bg-foreground p-2.5 text-sm font-bold text-background shadow-md"
+        className={cn(
+          "z-[1080] rounded-md border p-2.5 text-sm font-bold shadow-md",
+          variantClasses[variant],
+        )}
       >
         <button
           type="button"
@@ -79,7 +90,7 @@ export default function InfoTip({
             recordSeen();
             setShow(false);
           }}
-          className="float-right border-0 bg-transparent text-background"
+          className="float-right border-0 bg-transparent text-current"
         >
           <X className="size-4" />
         </button>
@@ -105,8 +116,14 @@ export default function InfoTip({
       }}
     >
       <PopoverPrimitive.Trigger asChild>
-        <button type="button" className="border-0 bg-transparent p-0 text-current">
-          <Info className="size-4" aria-label="Info" />
+        {/* Bootstrap's `.btn` box: the padding around the icon is what spaces
+            it from whatever it annotates, and its 1.5 line box is what sets
+            the height. */}
+        <button
+          type="button"
+          className="inline-block border-0 bg-transparent px-3 py-1.5 leading-normal text-current"
+        >
+          <Info className="inline size-4 align-text-bottom" aria-label="Info" />
         </button>
       </PopoverPrimitive.Trigger>
       {content}

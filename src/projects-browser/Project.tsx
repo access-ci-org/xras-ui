@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "lucide-react";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -167,15 +168,15 @@ const Project = ({ project }: { project: ProjectType }) => {
         <DialogHeader>
           <DialogTitle>{project.requestTitle}</DialogTitle>
         </DialogHeader>
-        <div>
+        <DialogBody>
           {project?.publications?.map((p, i) => (
             <div key={`publication_${i}`}>
               <Publication publication={{ ...p, projects: [] }} index={i} />
             </div>
           ))}
-        </div>
+        </DialogBody>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowModal(false)}>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
             Close
           </Button>
         </DialogFooter>

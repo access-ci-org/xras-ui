@@ -54,6 +54,9 @@ export default function ResourceQuestion({
     setResourceQuestionValues(resourceId, attributeSetId, newValues);
   };
 
+  /* `.form-check-label`: the option text keeps the body's size and weight. */
+  const checkLabel = "text-base font-normal leading-normal";
+
   let field;
 
   if (["calendar", "integer_only", "text"].includes(fieldType)) {
@@ -118,17 +121,25 @@ export default function ResourceQuestion({
     }
   } else if (fieldType == "single_sel") {
     field = (
+      /* Bootstrap's `.form-check` rows: a 1.5rem-tall line with the input in
+         its 1.5em indent, and 2px between rows. */
       <RadioGroup
         id={id}
+        className="gap-0.5"
         value={values[0] != null ? String(values[0]) : undefined}
         onValueChange={(value) => intChange(value)}
       >
         {attributes.map((attr) => {
           const raId = `resource-attribute-${attr.resourceAttributeId}`;
           return (
-            <div className="flex items-center gap-2" key={attr.resourceAttributeId}>
+            <div
+              className="flex min-h-6 items-center gap-2"
+              key={attr.resourceAttributeId}
+            >
               <RadioGroupItem value={String(attr.resourceAttributeId)} id={raId} />
-              <Label htmlFor={raId}>{attr.label}</Label>
+              <Label htmlFor={raId} className={checkLabel}>
+                {attr.label}
+              </Label>
             </div>
           );
         })}
@@ -140,13 +151,18 @@ export default function ResourceQuestion({
         {attributes.map((attr) => {
           const raId = `resource-attribute-${attr.resourceAttributeId}`;
           return (
-            <div className="flex items-center gap-2" key={attr.resourceAttributeId}>
+            <div
+              className="mb-0.5 flex min-h-6 items-center gap-2"
+              key={attr.resourceAttributeId}
+            >
               <Checkbox
                 id={raId}
                 checked={values.includes(attr.resourceAttributeId)}
                 onCheckedChange={(checked) => checkChange(attr.resourceAttributeId, checked === true)}
               />
-              <Label htmlFor={raId}>{attr.label}</Label>
+              <Label htmlFor={raId} className={checkLabel}>
+                {attr.label}
+              </Label>
             </div>
           );
         })}
@@ -155,8 +171,10 @@ export default function ResourceQuestion({
   }
 
   return (
-    <div className="mb-3">
-      <Label htmlFor={id}>
+    <div className="mb-4">
+      {/* `.form-label`, which the ACCESS theme renders a size down from the
+          body, in bold, and a little tighter to its field. */}
+      <Label htmlFor={id} className="mb-[0.3rem] block text-sm font-bold leading-normal">
         {label}
         {first.required && <span className="ml-0.5 text-destructive">*</span>}
       </Label>

@@ -6,17 +6,28 @@
 
   --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
 
+  /* ACCESS palette (see src/bootstrap/access.scss). */
+  --color-teal-200: #ecf9f8;
+  --color-teal-300: #cee8e9;
+  --color-teal-400: #48c0b9;
+  --color-teal-600: #107180;
+  --color-teal-700: #1a5b6e;
+
   --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-foreground: #232323;
 
   --color-primary: #1a5b6e;
   --color-primary-foreground: #ffffff;
 
-  --color-destructive: #e7000b;
+  --color-secondary: #fec42d;
+  /* Bootstrap picks the contrasting text color for `.btn-secondary`'s yellow. */
+  --color-secondary-foreground: #000000;
+
+  --color-destructive: #a70000;
   --color-destructive-foreground: #ffffff;
 
-  --color-muted: hsl(210 40% 96.1%);
-  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-muted: #f8f9fa;
+  --color-muted-foreground: #6c757d;
 
   --color-accent: var(--color-primary);
   --color-accent-foreground: var(--color-primary-foreground);
@@ -24,8 +35,10 @@
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(222.2 84% 4.9%);
 
-  --color-border: #dadada;
-  --color-input: #dadada;
+  --color-border: #dee2e6;
+  /* Bootstrap's `--bs-border-color-translucent`, used by cards and accordions. */
+  --color-border-translucent: rgba(0, 0, 0, 0.175);
+  --color-input: #dee2e6;
   --color-ring: hsl(222.2 84% 4.9%);
 }
 
@@ -45,4 +58,62 @@
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+}
+
+@layer components {
+  /* The X Bootstrap's `.btn-close` draws, at half opacity like the original. */
+  .close-button {
+    background: transparent
+      url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e")
+      center/1em auto no-repeat;
+    opacity: 0.5;
+  }
+
+  /* The chevron Bootstrap's `.form-select` draws in place of the native arrow. */
+  .select-caret {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    padding-right: 2.25rem;
+  }
+}
+
+@layer base {
+  /*
+   * Preflight leaves `border-color` at `currentColor`, so a bare `border`
+   * paints in the text color. Bootstrap defaults it to `--bs-border-color`.
+   */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  /*
+   * Preflight zeroes paragraph margins, and the shadow root cuts off the
+   * ACCESS site's body-copy rule, which sizes and spaces paragraphs like this.
+   */
+  p {
+    font-size: 1.125rem;
+    line-height: 1.75;
+    margin-bottom: 1.125rem;
+  }
+
+  /*
+   * Preflight strips link decoration, but the ACCESS theme renders links bold
+   * and underlined in the body text color unless a component says otherwise.
+   */
+  a {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  /* Checkboxes and radios pick up the primary color when checked. */
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-primary);
+  }
 }

@@ -29,7 +29,7 @@ export const MultiStateCheckbox = ({
   return (
     <>
       <input
-        className="size-4 rounded border-input"
+        className="size-4"
         disabled={disabled}
         id={id}
         onChange={(e) => onChange(e.target.checked)}

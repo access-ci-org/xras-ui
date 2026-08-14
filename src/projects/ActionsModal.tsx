@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -170,7 +171,8 @@ export default function ActionsModal({
     ),
   });
 
-  actions.sort((a, b) => (a.isEnabled < b.isEnabled ? 1 : -1));
+  // Enabled actions first, each group in the order they were added.
+  actions.sort((a, b) => Number(b.isEnabled) - Number(a.isEnabled));
 
   // Put the help option at the bottom.
   actions.push({
@@ -190,17 +192,27 @@ export default function ActionsModal({
     ),
   });
 
+  /*
+   * Bootstrap's `.btn.btn-secondary` as a full-height block: `.d-grid` on the
+   * column stretched the button to the row, and the row is as tall as the
+   * description beside it.
+   */
+  const actionButton =
+    "flex grow flex-col justify-center bg-secondary px-4 py-[9px] text-center font-semibold uppercase leading-normal text-secondary-foreground no-underline";
+
   const rows = actions.map(({ id, action, isEnabled, button, enabled, disabled, method }) => (
-    <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-3" key={id}>
-      <div className="flex sm:col-span-1">
+    /* Bootstrap's `.row`/`.col-sm-*`: the 20px gutter is padding inside the
+       columns, which the row's negative margins pull back off its edges. */
+    <div className="-mx-2.5 mb-2 grid grid-cols-1 sm:grid-cols-3" key={id}>
+      <div className="flex px-2.5 sm:col-span-1">
         {Array.isArray(action) && action.length && isEnabled ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="flex grow flex-col justify-center rounded-none bg-muted px-4 py-3 text-center font-bold uppercase"
-              >
-                <span>{button}</span>
+              <button type="button" className={actionButton}>
+                {/* `.dropdown-toggle`'s caret. */}
+                <span className="after:ml-1 after:inline-block after:border-x-[0.3em] after:border-t-[0.3em] after:border-x-transparent after:align-[0.255em] after:content-['']">
+                  {button}
+                </span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -215,9 +227,7 @@ export default function ActionsModal({
           </DropdownMenu>
         ) : (
           <a
-            className={`flex grow flex-col justify-center rounded-none bg-muted px-4 py-3 text-center font-bold uppercase ${
-              isEnabled ? "" : "pointer-events-none opacity-50"
-            }`}
+            className={`${actionButton} ${isEnabled ? "" : "pointer-events-none opacity-65"}`}
             href={isEnabled ? (action as string) : ""}
             data-method={method}
           >
@@ -225,24 +235,26 @@ export default function ActionsModal({
           </a>
         )}
       </div>
-      <div className="mb-2 sm:col-span-2">{isEnabled ? enabled : disabled}</div>
+      <div className="px-2.5 sm:col-span-2">{isEnabled ? enabled : disabled}</div>
     </div>
   ));
 
   return (
     <Dialog open={request.showActionsModal} onOpenChange={() => toggleActionsModal()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Manage Your Project</DialogTitle>
         </DialogHeader>
-        <p>
-          Please select an action to manage your project{" "}
-          <strong>
-            {project.grantNumber}: {project.title}
-          </strong>
-          .
-        </p>
-        {rows}
+        <DialogBody>
+          <p>
+            Please select an action to manage your project{" "}
+            <strong>
+              {project.grantNumber}: {project.title}
+            </strong>
+            .
+          </p>
+          {rows}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

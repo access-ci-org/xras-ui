@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -29,10 +30,15 @@ export default function ResourcesModal({
       const transfer = res.requested - res.allocated;
       if (res.questions) questions.push(...res.questions);
       return (
-        <li key={res.resourceId} className="mb-0 flex items-center justify-between border-b py-2">
+        <li
+          key={res.resourceId}
+          className="flex items-center justify-between border-b px-4 py-2 last:border-b-0"
+        >
           {res.name}
+          {/* Bootstrap's `.badge.rounded-pill`, whose metrics are all relative
+              to the surrounding text. */}
           <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium text-white ${
+            className={`rounded-full px-[0.65em] py-[0.35em] text-[0.75em] font-bold leading-none text-white ${
               transfer > 0 ? "bg-primary" : "bg-destructive"
             }`}
           >
@@ -55,36 +61,45 @@ export default function ResourcesModal({
 
   return (
     <Dialog open={request.showResourcesModal} onOpenChange={() => toggleResourcesModal()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Complete Your Exchange</DialogTitle>
         </DialogHeader>
-        <p>
-          Please review your exchange to make sure it includes all the resources you need. Once you
-          submit it, you will not be able to request another exchange until this one has been processed
-          by the resource providers.
-        </p>
-        <ul className="mb-3">{changes}</ul>
-        {questions.length ? (
-          <>
-            <h2>Resource Questions</h2>
-            <p>
-              Some of the resources you selected have associated questions. Please answer the questions
-              below.
-            </p>
-            {questions.map((question) => (
-              <ResourceQuestion
-                key={question.attributeSetId}
-                question={question}
-                requestId={requestId}
-                grantNumber={grantNumber}
-              />
-            ))}
-          </>
-        ) : null}
+        <DialogBody>
+          <p>
+            Please review your exchange to make sure it includes all the resources you need. Once you
+            submit it, you will not be able to request another exchange until this one has been
+            processed by the resource providers.
+          </p>
+          {/* Bootstrap's `.list-group`: a bordered box whose items are divided
+              by their own bottom borders. */}
+          <ul className="mb-4 border">{changes}</ul>
+          {questions.length ? (
+            <>
+              {/* The ACCESS theme's `h2`, which the shadow root cuts off. */}
+              <h2 className="mb-4 mt-7 text-2xl font-bold leading-normal">Resource Questions</h2>
+              <p>
+                Some of the resources you selected have associated questions. Please answer the
+                questions below.
+              </p>
+              {questions.map((question) => (
+                <ResourceQuestion
+                  key={question.attributeSetId}
+                  question={question}
+                  requestId={requestId}
+                  grantNumber={grantNumber}
+                />
+              ))}
+            </>
+          ) : null}
+        </DialogBody>
         <DialogFooter>
           <Button onClick={() => toggleResourcesModal()}>Continue Editing</Button>
-          <Button variant="outline" onClick={() => saveResources()} disabled={hasUnansweredQuestions}>
+          <Button
+            variant="secondary"
+            onClick={() => saveResources()}
+            disabled={hasUnansweredQuestions}
+          >
             Submit
           </Button>
         </DialogFooter>

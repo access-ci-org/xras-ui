@@ -93,4 +93,22 @@ The Bootstrap namespacing described in the previous section prevents the Bootstr
 </script>
 ```
 
-When using the shadow DOM, the stylesheets are injected into the shadow root by `shadowTarget` and do not need to be added to the document head.
+When using the shadow DOM, the stylesheets (`tailwind.css`, `xras-ui.css` and `access.css`) are injected into the shadow root by `shadowTarget` and do not need to be added to the document head. The web font is the exception: Chromium ignores `@font-face` rules declared inside a shadow tree, so `shadowTarget` adds that one link to the document head itself.
+
+The `projects` component is styled entirely with Tailwind, whose reset lives in a cascade layer and so loses to any unlayered rules on the host page. It therefore renders in the shadow DOM unconditionally — pass the host element as `target` and it attaches the shadow root for you:
+
+```html
+<div id="projects-react"></div>
+<script type="module">
+  import { projects } from "https://esm.sh/@xras/ui@0.1.3?exports=projects";
+  projects({
+    target: document.getElementById("projects-react"),
+    username: "myuser",
+    routes: { projects_path: () => "/projects" },
+  });
+</script>
+```
+
+Pass `baseUrl` or `stylesheets` to override where those sheets are loaded from, or pass a `shadowTarget(...)` as `target` to build the shadow root yourself.
+
+Against the Vite dev server there is no `dist`, so `shadowTarget` links the sources the dev server can serve (`tailwind.css` and `bootstrap/access.scss`) and copies in the `<style>` tags Vite injects into the document head — CSS modules only exist in that form during development, and a shadow tree can't see the document head.
