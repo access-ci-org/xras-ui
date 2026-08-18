@@ -5,7 +5,19 @@ import { cn } from "@/lib/utils";
 import { usePortalContainer } from "@/lib/portal-container";
 
 const TooltipProvider = TooltipPrimitive.Provider;
-const Tooltip = TooltipPrimitive.Root;
+
+// Radix requires a `Provider` above every `Root`; carry our own so call sites
+// (and shared components like `Grid`) don't each have to remember one. Nesting
+// inside an explicit `TooltipProvider` is still fine — the inner one wins.
+const Tooltip = ({
+  delayDuration,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => (
+  <TooltipPrimitive.Provider delayDuration={delayDuration}>
+    <TooltipPrimitive.Root delayDuration={delayDuration} {...props} />
+  </TooltipPrimitive.Provider>
+);
+
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
 const TooltipContent = React.forwardRef<
