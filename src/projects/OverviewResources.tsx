@@ -9,7 +9,6 @@ import {
   formatDate,
   formatManagers,
   formatNumber,
-  resourceColors,
 } from "../shared/helpers/utils";
 import { useProject, useRequest } from "./helpers/hooks";
 import type { Resource } from "./types";
@@ -45,10 +44,9 @@ export default function OverviewResources({
       }
       return res.allocated > 0;
     })
-    .map((res, i) => ({
+    .map((res) => ({
       ...res,
       userCount: userCounts[res.resourceId] || 0,
-      color: resourceColors[i % resourceColors.length],
     }));
 
   const availableCredits = credit ? credit.allocated : 0;
@@ -70,23 +68,15 @@ export default function OverviewResources({
     {
       key: "used",
       name: "Balance",
-      class: "relative",
       format: (used, row) => {
         if (row.isBoolean) return formatBoolean(row.allocated);
         const balance = row.allocated - used;
         const pct = (Math.max(balance, 0) * 100) / row.allocated;
         return (
           <>
-            {/* Remaining-balance bar, tinted so it reads as a background. */}
-            <div
-              className="absolute inset-y-0 left-0 opacity-20"
-              style={{ backgroundColor: row.color, width: `${Math.min(pct, 100)}%` }}
-            ></div>
-            <span className="relative">
-              {formatNumber(balance, { abbreviate: true })} of{" "}
-              {formatNumber(row.allocated, { abbreviate: true })} {row.unit} remaining (
-              {Math.round(pct)}%)
-            </span>
+            {formatNumber(balance, { abbreviate: true })} of{" "}
+            {formatNumber(row.allocated, { abbreviate: true })} {row.unit} remaining (
+            {Math.round(pct)}%)
           </>
         );
       },
