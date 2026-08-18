@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.35.0](https://github.com/access-ci-org/xras-ui/compare/v0.34.0...v0.35.0) (2026-08-18)
+
+
+### Features
+
+* Added Resource Description swap for AWS and Azure. ([3b3a6ee](https://github.com/access-ci-org/xras-ui/commit/3b3a6eed7543136479ed2769539295ef99b6ca4f))
+
 ## [0.34.0](https://github.com/access-ci-org/xras-ui/compare/v0.33.0...v0.34.0) (2026-08-11)
 
 
