@@ -7,26 +7,20 @@
 
   </head>
   <body>
-    <div id="resource-catalog-react"></div>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     />
+    <div id="resource-catalog-react"></div>
+
     <script type="module">
-      const baseUrl = "https://esm.sh/@xras/ui@onramps_v1/dist";
-      import {
-        onRampsResourceCatalog,
-        shadowTarget,
-      } from "/src/main.jsx";
-          onRampsResourceCatalog({
-          target: shadowTarget(
-              document.getElementById("resource-catalog-react"),
-              { accessStyles: true, baseUrl }
-          ),
-          onRamps: true,
-          baseUrl,
-          onRampsApi: "https://allocations.access-ci.org/resources.json"
+      import { resourceCatalog } from "/src/main.jsx";
+      resourceCatalog({
+        allowedCategories: ["AI Capabilities", "Resource Type", "Resource Category", "NAIRR Pilot Opportunity"],
+        apiUrl: "https://submit-nairr.xras.org/resources.json",
+        target: document.getElementById("resource-catalog-react")
       });
     </script>
+
   </body>
 </html>

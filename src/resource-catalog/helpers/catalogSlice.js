@@ -168,6 +168,7 @@ export const catalogSlice = createSlice({
         );
       }
 
+      const cloudBank = resources.find((res) => res.resourceName === 'CloudBank Research');
 
       state.resources = resources
       .sort((a, b) =>
@@ -175,7 +176,18 @@ export const catalogSlice = createSlice({
       )
       .sort((a, b) =>
         state.resourceSorting[a.sortCategory] > state.resourceSorting[b.sortCategory]
-      );
+      ).map((res) => {
+
+        if(cloudBank && ["Amazon Web Services", "Microsoft Azure"].includes(res.resourceName)){
+          return {
+            ...res,
+            resourceDescription: cloudBank.resourceDescription,
+            recommendedUse: cloudBank.recommendedUse
+          }
+        }
+
+        return res;
+      });
 
       state.filteredResources = [...state.resources];
       state.resourcesLoaded = true;
