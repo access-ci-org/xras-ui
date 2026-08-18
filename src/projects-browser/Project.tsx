@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import Publication from "./Publication";
 import type { Project as ProjectType, Resource } from "./types";
@@ -69,16 +69,14 @@ const Project = ({ project }: { project: ProjectType }) => {
     if (!requestNumber()) return <></>;
 
     return (
-      <TooltipProvider>
-        <Tooltip open={showAlert} onOpenChange={setShowAlert}>
-          <TooltipTrigger asChild>
-            <button onClick={copyRequestNumber} className="border-none bg-transparent text-white">
-              <Link className="size-5" aria-label="Direct link to project" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="left">Link Copied!</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip open={showAlert} onOpenChange={setShowAlert}>
+        <TooltipTrigger asChild>
+          <button onClick={copyRequestNumber} className="border-none bg-transparent text-white">
+            <Link className="size-5" aria-label="Direct link to project" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="left">Link Copied!</TooltipContent>
+      </Tooltip>
     );
   };
 
