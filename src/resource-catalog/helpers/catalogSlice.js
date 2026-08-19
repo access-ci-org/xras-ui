@@ -178,12 +178,13 @@ export const catalogSlice = createSlice({
         state.resourceSorting[a.sortCategory] > state.resourceSorting[b.sortCategory]
       ).map((res) => {
 
-        if(cloudBank && ["Amazon Web Services", "Microsoft Azure"].includes(res.resourceName)){
+        if(cloudBank && ["Amazon Web Services", "Microsoft Azure", "Google Cloud Platform"].includes(res.resourceName)){
           return {
-            ...res,
-            resourceDescription: cloudBank.resourceDescription,
-            recommendedUse: cloudBank.recommendedUse
-          }
+              ...cloudBank,
+              resourceName: res.resourceName,
+              displayName: res.displayName
+
+            }
         }
 
         return res;
