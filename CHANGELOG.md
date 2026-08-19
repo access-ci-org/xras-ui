@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.35.2](https://github.com/access-ci-org/xras-ui/compare/v0.35.1...v0.35.2) (2026-08-19)
+
+
+### Bug Fixes
+
+* Resource IDs will now be preserved when re-assigning to CloudBank ([39f4e9d](https://github.com/access-ci-org/xras-ui/commit/39f4e9dd85bc75f803d16b32d06beeaba1a51dce))
+
 ## [0.35.1](https://github.com/access-ci-org/xras-ui/compare/v0.35.0...v0.35.1) (2026-08-19)
 
 
