@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.35.1](https://github.com/access-ci-org/xras-ui/compare/v0.35.0...v0.35.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* Added Google to the resources to be replaced by CloudBank ([97719b5](https://github.com/access-ci-org/xras-ui/commit/97719b5a0fdf3c528b63ff5498bbef385734682e))
+
 ## [0.35.0](https://github.com/access-ci-org/xras-ui/compare/v0.34.0...v0.35.0) (2026-08-18)
 
 
