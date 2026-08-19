@@ -182,8 +182,8 @@ export const catalogSlice = createSlice({
           return {
               ...cloudBank,
               resourceName: res.resourceName,
-              displayName: res.displayName
-
+              displayName: res.displayName,
+              resourceId: res.resourceId
             }
         }
 
