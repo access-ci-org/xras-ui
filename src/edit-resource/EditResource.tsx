@@ -50,6 +50,7 @@ function EditResourceInner({ setExternalSubmit }: Pick<EditResourceProps, "setEx
 
   useEffect(() => {
     fetchResourceData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -12,6 +12,7 @@ export default function PublicationEdit() {
 
   useEffect(() => {
     getPublicationData(publicationId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicationId]);
 
   return dataLoaded ? (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "lucide-react";
 import {
   Dialog,
@@ -32,7 +32,7 @@ const Project = ({ project }: { project: ProjectType }) => {
   const abstractPreview = canExpand ? `${project.abstract.substring(0, 300)}...` : project.abstract;
 
   const formatNumber = (resource: Resource) => {
-    let units = resource.units ? resource.units : resource.resourceUnits;
+    let units: ReactNode = resource.units ? resource.units : resource.resourceUnits;
     const amount = resource.allocation ? resource.allocation : resource.amount;
 
     if (units == "[Yes = 1, No = 0]" || units == "Yes / No") {

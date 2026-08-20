@@ -11,6 +11,7 @@ function PublicationsBrowserInner() {
   useEffect(() => {
     getPublications();
     getFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

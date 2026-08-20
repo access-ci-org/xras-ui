@@ -73,6 +73,7 @@ const AddRequiredResourceForm = ({ onClose }: { onClose: () => void }) => {
       resourceDetails?.allocation_types
         .flatMap((type) => type.required_resources ?? [])
         .map((resource) => resource.required_resource_id) ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

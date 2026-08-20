@@ -31,6 +31,7 @@ function ProjectsBrowserInner() {
 
   useEffect(() => {
     initApp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

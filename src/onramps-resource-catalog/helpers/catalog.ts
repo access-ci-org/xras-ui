@@ -32,7 +32,7 @@ function formatResourceFeatures(
   resource: any,
   categories: Record<
     number,
-    FilterCategoryType & { features: Record<number, Feature> }
+    Omit<FilterCategoryType, "features"> & { features: Record<number, Feature> }
   >,
 ) {
   const featureList: Feature[] = [];
@@ -109,7 +109,7 @@ export function mergeData(apiResources: (CatalogSource & { data: any[] })[]) {
   const resources: Record<number, Resource> = {};
   let filterCategories: Record<
     number,
-    FilterCategoryType & { features: Record<number, Feature> }
+    Omit<FilterCategoryType, "features"> & { features: Record<number, Feature> }
   > = {};
 
   apiResources.forEach((catalog) => {

@@ -17,24 +17,24 @@ const AccessHeader = ({ baseUrl }: { baseUrl?: string }) => {
       <p>
         Need advanced computing and storage options for your research or
         classroom? The ACCESS program has been established and funded by the
-        U.S. National Science Foundation to help you - the nation's researchers
-        and educators - to use some of the country's most advanced computing
+        U.S. National Science Foundation to help you - the nation&apos;s researchers
+        and educators - to use some of the country&apos;s most advanced computing
         systems and services - at no cost to you.
       </p>
       <p>
         Thousands of researchers, instructors, and students from institutions
         large and small use ACCESS-integrated resources every year. With more
-        than 30 resources from more than 15 resource providers, there's bound to
+        than 30 resources from more than 15 resource providers, there&apos;s bound to
         be a resource for you, your lab, or your class.
       </p>
       <p>
         Explore the resource catalog below - filter the list to discover the
         resources that have the features or services to accelerate your
-        activities. The System Info button will take you to the resource's
+        activities. The System Info button will take you to the resource&apos;s
         documentation for all the details.
       </p>
       <p>
-        Ready to begin? Click the "Get Your First Project" button and join the
+        Ready to begin? Click the &quot;Get Your First Project&quot; button and join the
         ACCESS community!
       </p>
       <p>

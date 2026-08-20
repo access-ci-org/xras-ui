@@ -87,6 +87,7 @@ const Pagination = () => {
 
   useEffect(() => {
     buildPaginator();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageData]);
 
   const pageLink = (link: PageLink) => {

@@ -49,6 +49,7 @@ export default function AllocationsMap() {
       setGeoJSON(creditsGeoJSON);
       if (cType === "exchanged" && !creditLevels) setCreditLevels(getCreditLevels(creditsGeoJSON));
     })(creditType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creditType]);
 
   // Update map style when the state changes.
@@ -64,6 +65,7 @@ export default function AllocationsMap() {
           organizationType,
         }),
       );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeOrg, geoJSON, map, organizationType]);
 
   // Set the active organization ID on hover.

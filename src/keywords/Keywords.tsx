@@ -103,6 +103,7 @@ export default function Keywords({
 
   useEffect(() => {
     readKeywords();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

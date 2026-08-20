@@ -67,6 +67,7 @@ function ImportResourceModalInner({ onClose }: { onClose: () => void }) {
         },
       });
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCiderResourceId]);
 
   const canSave =

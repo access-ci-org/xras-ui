@@ -23,6 +23,7 @@ function ResourceCatalogInner({
 
   useEffect(() => {
     initApp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const renderCatalogDescriptions = () => {

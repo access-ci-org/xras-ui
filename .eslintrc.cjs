@@ -33,13 +33,22 @@ module.exports = {
     },
     {
       files: [
+        'src/allocations-map/Legend.tsx',
         'src/components/ui/*.tsx',
         'src/lib/*.tsx',
+        'src/main.jsx',
+        'src/projects-browser/Publication.tsx',
+        'src/publications/PublicationCitation.tsx',
+        'src/publications/PublicationForm.tsx',
         'src/supporting-grants/index.tsx',
       ],
       rules: {
         'react-refresh/only-export-components': 'off',
       },
+    },
+    {
+      files: ['vite.config.js'],
+      env: { node: true },
     },
   ],
 }

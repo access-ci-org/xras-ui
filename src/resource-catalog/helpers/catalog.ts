@@ -50,7 +50,7 @@ export function processCatalogResponse(
   const resources: Resource[] = [];
   const categories: Record<
     number,
-    FilterCategoryType & { features: Record<number, Feature> }
+    Omit<FilterCategoryType, "features"> & { features: Record<number, Feature> }
   > = {};
 
   apiResources

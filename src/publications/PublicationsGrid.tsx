@@ -42,6 +42,7 @@ export default function PublicationsGrid({
       setUsePagination(false);
       getPublications();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving]);
 
   const columns: GridColumn[] = [

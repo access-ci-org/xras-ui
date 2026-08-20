@@ -39,6 +39,7 @@ function MyPublicationsInner({ showUpdatePublications }: { showUpdatePublication
       getPublications();
       getFilters();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving]);
 
   return (
