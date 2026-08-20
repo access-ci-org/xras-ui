@@ -112,3 +112,15 @@ The `projects` component is styled entirely with Tailwind, whose reset lives in 
 Pass `baseUrl` or `stylesheets` to override where those sheets are loaded from, or pass a `shadowTarget(...)` as `target` to build the shadow root yourself.
 
 Against the Vite dev server there is no `dist`, so `shadowTarget` links the sources the dev server can serve (`tailwind.css` and `bootstrap/access.scss`) and copies in the `<style>` tags Vite injects into the document head — CSS modules only exist in that form during development, and a shadow tree can't see the document head.
+
+## Testing
+
+Tests run on [Vitest](https://vitest.dev) with [Testing Library](https://testing-library.com) and [MSW](https://mswjs.io) for mocked network requests, in a jsdom environment. They're colocated with the source they cover, as `*.test.ts`/`*.test.tsx` files next to the module under test (for example, `src/shared/helpers/utils.test.ts` next to `src/shared/helpers/utils.tsx`); shared test setup and helpers live under `src/test/`.
+
+```sh
+npm test              # run the suite once
+npm run test:watch    # re-run on file changes
+npm run test:coverage # run once and print a coverage report
+```
+
+`npm run typecheck` runs the TypeScript compiler without emitting output, which is also useful on its own while iterating. CI (`.github/workflows/ci.yml`) runs `lint`, `typecheck`, `test:coverage`, and `build` on every pull request.

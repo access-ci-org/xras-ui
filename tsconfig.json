@@ -18,7 +18,12 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    // Needed for the `node:*` imports/globals in src/test/setup.ts (polyfills
+    // sourced from Node itself). Other packages' types (react, vite/client,
+    // testing-library, ...) are picked up via normal import/reference
+    // resolution and aren't affected by this list.
+    "types": ["node"]
   },
   "include": ["src"]
 }
