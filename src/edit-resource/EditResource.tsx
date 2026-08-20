@@ -86,7 +86,7 @@ function EditResourceInner({ setExternalSubmit }: Pick<EditResourceProps, "setEx
       <div>
         <h2 className={ADMIN_H2}>Resource Properties</h2>
         <div className="mb-3">
-          <p className="m-0 text-[14px]/[20px] font-bold italic">
+          <p className="m-0 text-sm font-bold italic">
             Any modifications to these resource properties will be applied globally and impact
             resources on other all allocations process
           </p>

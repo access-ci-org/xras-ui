@@ -113,7 +113,7 @@ export const ExchangeRates = () => {
         scroll={false}
       />
       {dateErrors.length > 0 && (
-        <div className="mt-4 rounded-[4px] border border-[#f5c6cb] bg-[#f8d7da] p-4 text-[#721c24]">
+        <div className="mt-4 rounded-sm border border-[#f5c6cb] bg-[#f8d7da] p-4 text-[#721c24]">
           <ul className="m-0 list-disc pl-6">
             {dateErrors.map((error, index) => (
               <li key={index} className="mb-1">

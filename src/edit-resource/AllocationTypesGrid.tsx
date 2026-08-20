@@ -252,7 +252,7 @@ export const AllocationTypesSection = () => {
       >
         <div className="mt-4">
           <Grid columns={columns} rows={rows} classes={ADMIN_GRID} scroll={false} />
-          <p className="m-0 text-[14px]/[20px] font-bold italic">
+          <p className="m-0 text-sm font-bold italic">
             Note: You may need to contact your Allocations Coordinator if you have added this
             resource to an allocation type.
           </p>

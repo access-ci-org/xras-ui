@@ -60,7 +60,7 @@ export const AdvancedSettingsSection = ({
         )}
         <div
           className={cn(
-            "rounded-[4px] transition-[filter] duration-300",
+            "rounded-sm transition-[filter] duration-300",
             !isEditing && ADMIN_BLURRED,
           )}
         >

@@ -108,7 +108,7 @@ export default function Resources({
         <h2 className={ADMIN_H2}>Select a resource from the list to modify</h2>
         {/* `p` is one of the elements `access.scss` sizes, so the module's own
             14px/20px has to be restated here. */}
-        <p className="mb-4 text-[14px]/[20px] italic text-[#666]">
+        <p className="mb-4 text-sm italic text-[#666]">
           Drag items to reorder the list.
         </p>
 
@@ -124,8 +124,8 @@ export default function Resources({
                 key={tabName}
                 type="button"
                 className={cn(
-                  "-mb-px mr-[2px] block cursor-default rounded-t-[4px] border px-3 py-2 text-left",
-                  "bg-transparent text-[14px]/[20px] font-normal",
+                  "-mb-px mr-[2px] block cursor-default rounded-t-sm border px-3 py-2 text-left",
+                  "bg-transparent text-sm font-normal",
                   activeTab === tabName
                     ? "border-[#ddd] border-b-transparent bg-white text-[#555]"
                     : "border-transparent text-[#2fa4e7]",
@@ -138,14 +138,14 @@ export default function Resources({
           </div>
 
           <div className="m-0 list-none p-0">
-            <div className="mb-2 flex justify-between rounded-[4px] bg-[#e0e0e0] p-2 font-bold">
+            <div className="mb-2 flex justify-between rounded-sm bg-[#e0e0e0] p-2 font-bold">
               <span>Resource Name</span>
               <span>Repository Key</span>
             </div>
             {resources.map((resource, index) => (
               <div
                 key={resource.resource_id}
-                className="mb-[0.3rem] flex cursor-move items-center justify-between rounded-[4px] bg-[#f9f9f9] p-2 transition-colors last:mb-0 hover:bg-[#f0f0f0]"
+                className="mb-[0.3rem] flex cursor-move items-center justify-between rounded-sm bg-[#f9f9f9] p-2 transition-colors last:mb-0 hover:bg-[#f0f0f0]"
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}

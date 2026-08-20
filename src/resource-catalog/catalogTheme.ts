@@ -19,7 +19,7 @@ export const HOST_FONT = "font-[family-name:'Nunito_Sans',serif,sans-serif]";
  */
 export const ACCORDION_ITEM = [
   "border border-border bg-white text-[#212529]",
-  "first:rounded-t-[6px] last:rounded-b-[6px] [&:not(:first-child)]:border-t-0",
+  "first:rounded-t-md last:rounded-b-md [&:not(:first-child)]:border-t-0",
   "first:[&>h3>button]:rounded-t-[5px] last:[&>h3>button]:rounded-b-[5px]",
 ].join(" ");
 

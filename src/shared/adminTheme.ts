@@ -13,7 +13,7 @@ import adminGridStyle from "./adminGrid.module.scss";
  * they live here and not in `components/ui`: only the three xras_admin
  * subprojects import them.
  *
- * Note the explicit `rounded-[4px]` throughout: Tailwind's bare `rounded` is
+ * Note the explicit `rounded-sm` throughout: Tailwind's bare `rounded` is
  * 8px here, twice the theme's radius.
  */
 
@@ -23,10 +23,10 @@ import adminGridStyle from "./adminGrid.module.scss";
  * their font, so setting the stack here is enough for the whole subtree.
  */
 export const ADMIN_BODY =
-  "font-[family-name:'Helvetica_Neue',Helvetica,Arial,sans-serif] text-[14px]/[20px] text-[#555]";
+  "font-[family-name:'Helvetica_Neue',Helvetica,Arial,sans-serif] text-sm text-[#555]";
 
 /** `p`, which `tailwind.css` would otherwise size at 18px/30px. */
-export const ADMIN_P = "mb-[10px] text-[14px]/[20px]";
+export const ADMIN_P = "mb-[10px] text-sm";
 
 /**
  * `h2` and `h3`, which the theme sets in Telex off a 14px root. The app's own
@@ -46,8 +46,8 @@ export const ADMIN_H3 =
  * markup these components replaced was full height too.
  */
 const ADMIN_BTN = [
-  "inline-block cursor-pointer rounded-[4px] border border-black/10 border-b-black/25 px-3 py-1",
-  "text-center text-[14px]/[20px] font-normal no-underline",
+  "inline-block cursor-pointer rounded-sm border border-black/10 border-b-black/25 px-3 py-1",
+  "text-center text-sm font-normal no-underline",
   "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.05)]",
   "disabled:cursor-default disabled:opacity-65 disabled:shadow-none",
 ].join(" ");
@@ -75,7 +75,7 @@ export const ADMIN_BTN_GAP = "mr-[5px]";
  * 10px of bottom margin; a disabled one is grey.
  */
 const ADMIN_FIELD =
-  "mb-[10px] inline-block rounded-[4px] border border-[#ccc] bg-white px-[6px] py-1 text-[14px]/[20px] text-[#555] disabled:bg-[#f5f5f5]";
+  "mb-[10px] inline-block rounded-sm border border-[#ccc] bg-white px-[6px] py-1 text-sm text-[#555] disabled:bg-[#f5f5f5]";
 
 /**
  * The inset shadow and blue focus glow Bootstrap 2 gives text fields. A
@@ -112,12 +112,12 @@ export const ADMIN_SPAN4 = "w-[370px] max-w-full";
  */
 export const ADMIN_INPUT_PREPEND = "mb-[10px] inline-block text-[0px]";
 export const ADMIN_ADDON =
-  "-mr-px inline-block h-[30px] min-w-[28px] rounded-l-[4px] border border-[#ccc] bg-[#f5f5f5] px-[5px] py-1 text-center text-[14px]/[20px] text-[#555] [text-shadow:0_1px_0_#fff]";
+  "-mr-px inline-block h-[30px] min-w-7 rounded-l-sm border border-[#ccc] bg-[#f5f5f5] px-[5px] py-1 text-center text-sm text-[#555] [text-shadow:0_1px_0_#fff]";
 /** The field that follows an `.add-on`, which drops its own left corners. */
 export const ADMIN_ADDON_INPUT = "mb-0 rounded-l-none";
 
 /** `label`, a block with 5px beneath it. */
-export const ADMIN_LABEL = "mb-[5px] block text-[14px]/[20px] font-normal text-[#555]";
+export const ADMIN_LABEL = "mb-[5px] block text-sm font-normal text-[#555]";
 
 /** `.help-block`: the `small` explaining a field, at Bootstrap's 85%. */
 export const ADMIN_HELP =
@@ -136,7 +136,7 @@ export const ADMIN_TD = "border-t border-[#ddd] p-2 text-left align-top";
  * is in this app's tables, so that corner is left alone here too.
  */
 export const ADMIN_TABLE_BORDERED = [
-  "border-separate border-spacing-0 rounded-[4px] border border-l-0 border-[#ddd]",
+  "border-separate border-spacing-0 rounded-sm border border-l-0 border-[#ddd]",
   "[&_td]:border-l [&_td]:border-l-[#ddd] [&_th]:border-l [&_th]:border-l-[#ddd]",
   "[&_thead_tr:first-child_th:first-child]:rounded-tl-[4px]",
   "[&_tbody_tr:last-child_td:first-child]:rounded-bl-[4px]",
@@ -169,9 +169,9 @@ export const ADMIN_CHECKBOX_INLINE =
  * `.alert-warning`, so `alert-warning` in the markup landed here.
  */
 export const ADMIN_ALERT =
-  "mb-5 rounded-[4px] border border-[#efb99e] bg-[#f1ceab] py-2 pr-[35px] pl-[14px] text-[#dd5600] [text-shadow:0_1px_0_rgba(255,255,255,0.5)]";
+  "mb-5 rounded-sm border border-[#efb99e] bg-[#f1ceab] py-2 pr-[35px] pl-[14px] text-[#dd5600] [text-shadow:0_1px_0_rgba(255,255,255,0.5)]";
 export const ADMIN_ALERT_SUCCESS =
-  "mb-5 rounded-[4px] border border-[#d2e6ab] bg-[#d5ecbf] py-2 pr-[35px] pl-[14px] text-[#669533] [text-shadow:0_1px_0_rgba(255,255,255,0.5)]";
+  "mb-5 rounded-sm border border-[#d2e6ab] bg-[#d5ecbf] py-2 pr-[35px] pl-[14px] text-[#669533] [text-shadow:0_1px_0_rgba(255,255,255,0.5)]";
 
 /**
  * Passed to `Grid` as `classes`: the table border and the Bootstrap 2 metrics
@@ -187,7 +187,7 @@ export const ADMIN_GRID_WIDE_FIELDS = adminGridStyle["wide-fields"];
  * settings it is protecting, and the content underneath it while it shows.
  */
 export const ADMIN_WARNING_BANNER =
-  "flex items-center justify-between rounded-[4px] border border-[#ffeeba] bg-[#fff3cd] p-3 text-[#856404] shadow-[0_2px_4px_rgba(0,0,0,0.1)]";
+  "flex items-center justify-between rounded-sm border border-[#ffeeba] bg-[#fff3cd] p-3 text-[#856404] shadow-[0_2px_4px_rgba(0,0,0,0.1)]";
 export const ADMIN_WARNING_BANNER_OVERLAY =
   "absolute inset-x-4 top-1/2 z-10 -translate-y-1/2";
 /**
@@ -207,7 +207,7 @@ export const ADMIN_BLURRED = "pointer-events-none blur-[4px] brightness-[0.95]";
  * simply centered here.
  */
 export const ADMIN_MODAL =
-  "inset-0 m-auto h-fit max-h-[90%] w-[90%] max-w-[600px] rounded-[6px] border-[rgba(0,0,0,0.3)] bg-white";
+  "inset-0 m-auto h-fit max-h-[90%] w-[90%] max-w-[600px] rounded-md border-[rgba(0,0,0,0.3)] bg-white";
 export const ADMIN_MODAL_HEADER =
   "relative shrink-0 border-b border-[#eee] px-[15px] py-[9px]";
 export const ADMIN_MODAL_TITLE = `${ADMIN_H3} m-0 text-[24.5px]/[30px] normal-case`;
@@ -221,7 +221,7 @@ export const ADMIN_MODAL_CLOSE =
   "absolute top-[11px] right-[15px] cursor-pointer border-0 p-0 font-[Telex,sans-serif] text-[24.5px]/[30px] font-bold text-[#c71c22] opacity-20 outline-none [text-shadow:0_1px_0_#fff] hover:opacity-40";
 export const ADMIN_MODAL_BODY = "p-[15px]";
 export const ADMIN_MODAL_FOOTER =
-  "block rounded-b-[6px] border-t border-[#e5e5e5] bg-[#f8f9fa] p-[15px] text-right";
+  "block rounded-b-md border-t border-[#e5e5e5] bg-[#f8f9fa] p-[15px] text-right";
 
 /**
  * The wrapper the CIDeR import modal puts around `ResourceForm`. Its 770px

@@ -20,7 +20,7 @@ export const COL = "w-full px-3";
  * cannot count on overriding one the base already set.
  */
 export const BTN = [
-  "inline-block rounded-[6px] border px-3 py-1.5 text-center align-middle",
+  "inline-block rounded-md border px-3 py-1.5 text-center align-middle",
   "text-base/[1.5] no-underline",
   "focus-visible:outline-none focus-visible:ring-4",
   "disabled:pointer-events-none disabled:opacity-65",
