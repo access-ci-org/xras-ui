@@ -1,7 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   Dialog,
-  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -20,9 +19,7 @@ export default function PublicationEditModal() {
         <DialogHeader>
           <DialogTitle>{publicationId ? "Edit" : "Add"} Publication</DialogTitle>
         </DialogHeader>
-        <DialogBody>
-          <PublicationEdit />
-        </DialogBody>
+        <PublicationEdit />
       </DialogContent>
     </Dialog>
   );

@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  ADMIN_BLURRED,
+  ADMIN_BTN_DANGER,
+  ADMIN_WARNING_BANNER,
+  ADMIN_WARNING_BANNER_COMPACT,
+  ADMIN_WARNING_BANNER_OVERLAY,
+} from "../shared/adminTheme";
 
 type AdvancedSettingsSectionProps = {
   headerText?: ReactNode;
@@ -28,9 +34,7 @@ export const AdvancedSettingsSection = ({
         <div className="flex items-center justify-between">
           {headerText}
           {header && (
-            <div className={cn(!isEditing && "pointer-events-none blur-sm brightness-95")}>
-              {header}
-            </div>
+            <div className={cn(!isEditing && ADMIN_BLURRED)}>{header}</div>
           )}
         </div>
       )}
@@ -38,24 +42,26 @@ export const AdvancedSettingsSection = ({
         {!isEditing && (
           <div
             className={cn(
-              "flex items-center justify-between gap-3 rounded border border-amber-300 bg-amber-50 p-3 text-amber-900 shadow-sm",
-              compactWarning
-                ? "relative mb-4 max-w-3xl"
-                : "absolute inset-x-4 top-1/2 z-10 -translate-y-1/2",
+              ADMIN_WARNING_BANNER,
+              compactWarning ? ADMIN_WARNING_BANNER_COMPACT : ADMIN_WARNING_BANNER_OVERLAY,
             )}
           >
             <span>
               <strong>CAUTION! </strong> {warningMessage}
             </span>
-            <Button variant="destructive" onClick={() => onEditingChange(true)}>
+            <button
+              type="button"
+              className={ADMIN_BTN_DANGER}
+              onClick={() => onEditingChange(true)}
+            >
               I understand the risks
-            </Button>
+            </button>
           </div>
         )}
         <div
           className={cn(
-            "transition-[filter] duration-300",
-            !isEditing && "pointer-events-none blur-sm brightness-95",
+            "rounded-[4px] transition-[filter] duration-300",
+            !isEditing && ADMIN_BLURRED,
           )}
         >
           {children}

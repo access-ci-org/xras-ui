@@ -27,7 +27,7 @@ const DatePicker = ({
         type="date"
         style={style}
         className={cn(
-          "h-9 w-full rounded-none border border-input bg-transparent px-3 py-1 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          "h-9 w-full rounded-none border border-input bg-transparent px-3 py-1 focus-visible:outline-none focus-visible:border-ring-border focus-visible:ring-4 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
           error && "border-destructive bg-destructive/10 text-destructive",
         )}
         value={value || ""}

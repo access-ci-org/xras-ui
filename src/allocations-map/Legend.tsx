@@ -28,7 +28,10 @@ export default function Legend({
 }) {
   if (activeOrg || !creditLevels) return null;
   const levels = creditLevels.points.map((level, i) => (
-    <div className="relative px-1 text-center text-xs font-bold [&_svg]:h-[42px]" key={level[0]}>
+    <div
+      className="relative px-1 text-center text-[0.7rem] font-bold [&_svg]:inline [&_svg]:h-[42px]"
+      key={level[0]}
+    >
       {makeCircleSVG(5 * (i + 1), organizationTypes[organizationType].colors[i])}
       <br />
       <span className="label">{level[0]}</span>
@@ -36,8 +39,9 @@ export default function Legend({
   ));
   return (
     <div className="pointer-events-none absolute bottom-[25px] left-[25px] bg-white/50 p-2.5">
-      <h2 className="mb-0 mt-0 text-base">
-        ACCESS Credits <small className="block text-xs font-normal italic">or credit equivalents</small>
+      <h2 className="mb-0 mt-0 text-base/[1.2]">
+        ACCESS Credits{" "}
+        <small className="block text-[0.8rem] font-normal italic">or credit equivalents</small>
       </h2>
       <div className="flex flex-row justify-between">{levels}</div>
     </div>

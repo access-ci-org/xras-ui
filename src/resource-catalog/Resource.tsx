@@ -3,6 +3,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  ACCORDION_BODY,
+  ACCORDION_BUTTON,
+  ACCORDION_ITEM,
+  COL,
+  ROW,
+  TABLE,
+  TD,
+  TD_LABEL,
+} from "./catalogTheme";
 import type { Resource as ResourceType } from "./types";
 
 const renderFeatures = (resourceId: number, features: string[]) => {
@@ -22,50 +32,68 @@ const renderDescription = (title: string, content: string) => {
 
   return (
     <>
-      <div className="font-bold">{title}</div>
-      <div className="mb-3" dangerouslySetInnerHTML={{ __html: content }} />
+      <div className={ROW}>
+        <div className={`${COL} font-bold`}>{title}</div>
+      </div>
+      <div className={`${ROW} mb-4`}>
+        <div className={COL} dangerouslySetInnerHTML={{ __html: content }} />
+      </div>
     </>
   );
 };
 
 const Resource = ({ resource }: { resource: ResourceType }) => {
   return (
-    <AccordionItem value={String(resource.resourceId)}>
-      <AccordionTrigger>{resource.resourceName}</AccordionTrigger>
-      <AccordionContent>
-        <table className="w-full border-collapse">
+    <AccordionItem
+      className={ACCORDION_ITEM}
+      value={String(resource.resourceId)}
+    >
+      <AccordionTrigger className={ACCORDION_BUTTON}>
+        {resource.resourceName}
+      </AccordionTrigger>
+      <AccordionContent className={ACCORDION_BODY}>
+        <table className={TABLE}>
           <tbody>
             <tr>
-              <td className="pr-2 font-bold">Resource Type:</td>
-              <td>{resource.resourceType}</td>
+              <td className={TD_LABEL}>Resource Type:</td>
+              <td className={TD}>{resource.resourceType}</td>
             </tr>
             <tr>
-              <td className="pr-2 font-bold">Organization:</td>
-              <td>{resource.organization}</td>
+              <td className={TD_LABEL}>Organization:</td>
+              <td className={TD}>{resource.organization}</td>
             </tr>
             <tr>
-              <td className="pr-2 font-bold">Units:</td>
-              <td>{resource.units}</td>
+              <td className={TD_LABEL}>Units:</td>
+              <td className={TD}>{resource.units}</td>
             </tr>
             <tr>
-              <td className="pr-2 font-bold">User Guide:</td>
-              <td>
+              <td className={TD_LABEL}>User Guide:</td>
+              <td className={TD}>
                 {resource.userGuideUrl == "" ? (
                   ""
                 ) : (
-                  <a href={resource.userGuideUrl} target="_blank" rel="noreferrer">
+                  <a
+                    href={resource.userGuideUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     Link to User Guide
                   </a>
                 )}
               </td>
             </tr>
             <tr>
-              <td className="pr-2 font-bold">Features Available:</td>
-              <td>{renderFeatures(resource.resourceId, resource.features)}</td>
+              <td className={TD_LABEL}>Features Available:</td>
+              <td className={TD}>
+                {renderFeatures(resource.resourceId, resource.features)}
+              </td>
             </tr>
           </tbody>
         </table>
-        {renderDescription("Resource Description", resource.resourceDescription)}
+        {renderDescription(
+          "Resource Description",
+          resource.resourceDescription,
+        )}
         {renderDescription("Allocations Description", resource.description)}
         {renderDescription("Recommended Use", resource.recommendedUse)}
       </AccordionContent>

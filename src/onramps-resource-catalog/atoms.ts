@@ -22,8 +22,10 @@ export const filteredResourcesAtom = atom((get) => {
 
 const dataUrl =
   "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
-const resourcesUrl = "https://operations-api.access-ci.org/wh2/cider/v1/access-allocated/";
-const featuresUrl = "https://operations-api.access-ci.org/wh2/cider/v1/features/";
+const resourcesUrl =
+  "https://operations-api.access-ci.org/wh2/cider/v1/access-allocated/";
+const featuresUrl =
+  "https://operations-api.access-ci.org/wh2/cider/v1/features/";
 
 const getRampsResourcesAtom = atom(null, async (_get, set) => {
   const [metadataRes, resourcesRes, featuresRes] = await Promise.all([
@@ -35,7 +37,11 @@ const getRampsResourcesAtom = atom(null, async (_get, set) => {
   const rampsResources = (await resourcesRes.json()).results;
   const features = (await featuresRes.json()).results;
 
-  const { resources, filters } = transformRampsData(metadata, rampsResources, features);
+  const { resources, filters } = transformRampsData(
+    metadata,
+    rampsResources,
+    features,
+  );
 
   set(filtersAtom, filters);
   set(resourcesAtom, resources);
@@ -69,10 +75,17 @@ export const toggleFilterAtom = atom(null, (get, set, featureId: number) => {
 
 export const toggleCatalogAtom = atom(
   null,
-  (get, set, { catalog, selected }: { catalog: Catalog; selected: boolean }) => {
+  (
+    get,
+    set,
+    { catalog, selected }: { catalog: Catalog; selected: boolean },
+  ) => {
     set(catalogsAtom, {
       ...get(catalogsAtom),
-      [catalog.catalogLabel]: { ...get(catalogsAtom)[catalog.catalogLabel], selected },
+      [catalog.catalogLabel]: {
+        ...get(catalogsAtom)[catalog.catalogLabel],
+        selected,
+      },
     });
   },
 );

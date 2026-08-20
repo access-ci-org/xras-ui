@@ -39,7 +39,8 @@ export const featureIcons: Record<string, LucideIcon> = {
 };
 
 export const featureIconImages: Record<string, string> = {
-  "ACCESS Pegasus": "https://pegasus.isi.edu/wordpress/wp-content/uploads/2016/01/favicon.ico",
+  "ACCESS Pegasus":
+    "https://pegasus.isi.edu/wordpress/wp-content/uploads/2016/01/favicon.ico",
   "ACCESS OnDemand":
     "https://openondemand.org/themes/fire/theme/assets/media/favicons/favicon.ico",
 };

@@ -1,6 +1,8 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import type { AppForm } from "@/components/form";
+import { FormItem } from "@/components/form/field-wrapper";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import config from "../shared/helpers/config";
 import { mergeFieldsForType, type PublicationFormValues } from "./PublicationForm";
@@ -65,16 +67,30 @@ export default function DoiSearch({ form }: { form: AppForm<PublicationFormValue
   };
 
   return (
-    <div className="mb-3">
+    <FormItem>
       <Label htmlFor="doi">DOI</Label>
-      <div className="flex gap-2">
-        <form.AppField name="doi">
-          {(field) => <field.FieldInput aria-label="DOI Input and Search box" />}
-        </form.AppField>
-        <Button type="button" onClick={() => void doiLookup()}>
+      {/* Bootstrap's `.input-group`: the button abuts the control, overlapping
+          its border rather than sitting a gap away from it. */}
+      <div className="flex">
+        <form.Field name="doi">
+          {(field) => (
+            <Input
+              id="doi"
+              aria-label="DOI Input and Search box"
+              className="min-w-0 flex-1"
+              value={field.state.value ?? ""}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          )}
+        </form.Field>
+        <Button
+          type="button"
+          className="-ml-px shrink-0"
+          onClick={() => void doiLookup()}
+        >
           Lookup Publication
         </Button>
       </div>
-    </div>
+    </FormItem>
   );
 }

@@ -1,7 +1,10 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { Trash2 } from "lucide-react";
 import { useAppForm } from "@/components/form";
+import { FormItem } from "@/components/form/field-wrapper";
 import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -10,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DialogFooter } from "@/components/ui/dialog";
+import { DialogBody, DialogFooter } from "@/components/ui/dialog";
 import config from "../shared/helpers/config";
 import DoiSearch from "./DoiSearch";
 import Authors from "./Authors";
@@ -226,162 +229,164 @@ function PublicationFormContent({ publication }: { publication: EditablePublicat
 
   return (
     <form
+      className="flex min-h-0 grow flex-col"
       onSubmit={(e) => {
         e.preventDefault();
         void form.handleSubmit();
       }}
     >
-      <div className="border">
-        <div className="border-b p-3">
-          <h2>Publication Information</h2>
-        </div>
-        <div className="p-3">
-          <p className="mb-2">
-            Enter information about this publication below. If you have a DOI, you may use the
-            &quot;Lookup Publication&quot; button to attempt to find this information
-            automatically.
-          </p>
+      <DialogBody>
+        <Card>
+          <CardHeader>
+            <CardTitle>Publication Information</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <p className="mb-2">
+              Enter information about this publication below. If you have a DOI, you may use the
+              &quot;Lookup Publication&quot; button to attempt to find this information
+              automatically.
+            </p>
 
-          <DoiSearch form={form} />
+            <DoiSearch form={form} />
 
-          <div className="mb-3">
-            <Label htmlFor="publication_type">Publication Type</Label>
-            <form.Field name="publication_type">
-              {(field) => (
-                <Select
-                  value={field.state.value || undefined}
-                  onValueChange={(value) => {
-                    field.handleChange(value);
-                    form.setFieldValue(
-                      "fields",
-                      mergeFieldsForType(value, form.getFieldValue("fields"), publicationTypes),
-                    );
-                  }}
-                >
-                  <SelectTrigger id="publication_type" className="max-w-md">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {publicationTypes.map((pt) => (
-                      <SelectItem key={pt.publication_type} value={pt.publication_type}>
-                        {pt.publication_type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+            <FormItem>
+              <Label htmlFor="publication_type">Publication Type</Label>
+              <form.Field name="publication_type">
+                {(field) => (
+                  <Select
+                    value={field.state.value || undefined}
+                    onValueChange={(value) => {
+                      field.handleChange(value);
+                      form.setFieldValue(
+                        "fields",
+                        mergeFieldsForType(value, form.getFieldValue("fields"), publicationTypes),
+                      );
+                    }}
+                  >
+                    <SelectTrigger id="publication_type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {publicationTypes.map((pt) => (
+                        <SelectItem key={pt.publication_type} value={pt.publication_type}>
+                          {pt.publication_type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </form.Field>
+            </FormItem>
+
+            <form.AppField
+              name="title"
+              validators={{
+                onChange: ({ value }) => (value.trim() === "" ? "Title is required" : undefined),
+              }}
+            >
+              {(field) => <field.FieldInput label="Title" required />}
+            </form.AppField>
+
+            <FormItem>
+              <Label htmlFor="publication_year">Year Published</Label>
+              <form.Field name="publication_year">
+                {(field) => (
+                  <Select value={field.state.value || undefined} onValueChange={field.handleChange}>
+                    <SelectTrigger id="publication_year">
+                      <SelectValue placeholder="Select a year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((year) => (
+                        <SelectItem key={year} value={`${year}`}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </form.Field>
+            </FormItem>
+
+            <FormItem>
+              <Label htmlFor="publication_month">Month Published</Label>
+              <form.Field name="publication_month">
+                {(field) => (
+                  <Select value={field.state.value || undefined} onValueChange={field.handleChange}>
+                    <SelectTrigger id="publication_month">
+                      <SelectValue placeholder="Select a month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MONTHS.map((month, idx) => (
+                        <SelectItem key={month} value={`${idx + 1}`}>
+                          {month}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </form.Field>
+            </FormItem>
+
+            <form.Field name="fields" mode="array">
+              {(fieldsField) =>
+                fieldsField.state.value.map((f, idx) => (
+                  <FormItem key={f.csl_field_name}>
+                    <Label htmlFor={`field_${f.csl_field_name}`}>{f.name}</Label>
+                    <form.Field name={`fields[${idx}].field_value`}>
+                      {(field) => (
+                        <Input
+                          id={`field_${f.csl_field_name}`}
+                          value={field.state.value || ""}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                        />
+                      )}
+                    </form.Field>
+                  </FormItem>
+                ))
+              }
             </form.Field>
-          </div>
+          </CardBody>
+        </Card>
 
-          <form.AppField
-            name="title"
-            validators={{
-              onChange: ({ value }) => (value.trim() === "" ? "Title is required" : undefined),
-            }}
-          >
-            {(field) => <field.FieldInput label="Title" required className="max-w-xl" />}
-          </form.AppField>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Authors</CardTitle>
+            <InfoTip>
+              Add authors by clicking the &quot;Add Author&quot; button below and entering the
+              author&apos;s details. You may also remove authors by clicking the{" "}
+              <Trash2 className="inline size-4 text-destructive" /> button
+            </InfoTip>
+          </CardHeader>
+          <CardBody>
+            <Authors form={form} />
+          </CardBody>
+        </Card>
 
-          <div className="mb-3">
-            <Label htmlFor="publication_year">Year Published</Label>
-            <form.Field name="publication_year">
-              {(field) => (
-                <Select value={field.state.value || undefined} onValueChange={field.handleChange}>
-                  <SelectTrigger id="publication_year" className="max-w-xs">
-                    <SelectValue placeholder="Select a year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map((year) => (
-                      <SelectItem key={year} value={`${year}`}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </form.Field>
-          </div>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Associated Projects</CardTitle>
+            <InfoTip>Click/Tap each project that this publication is related to.</InfoTip>
+          </CardHeader>
+          <CardBody>
+            <Projects />
+            <hr />
+            <ProjectSearch />
+          </CardBody>
+        </Card>
 
-          <div className="mb-3">
-            <Label htmlFor="publication_month">Month Published</Label>
-            <form.Field name="publication_month">
-              {(field) => (
-                <Select value={field.state.value || undefined} onValueChange={field.handleChange}>
-                  <SelectTrigger id="publication_month" className="max-w-xs">
-                    <SelectValue placeholder="Select a month" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map((month, idx) => (
-                      <SelectItem key={month} value={`${idx + 1}`}>
-                        {month}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </form.Field>
-          </div>
-
-          <form.Field name="fields" mode="array">
-            {(fieldsField) =>
-              fieldsField.state.value.map((f, idx) => (
-                <div key={f.csl_field_name} className="mb-3">
-                  <Label htmlFor={`field_${f.csl_field_name}`}>{f.name}</Label>
-                  <form.Field name={`fields[${idx}].field_value`}>
-                    {(field) => (
-                      <input
-                        id={`field_${f.csl_field_name}`}
-                        className="w-full max-w-xl border border-input bg-transparent px-3 py-1 shadow-sm"
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                    )}
-                  </form.Field>
-                </div>
-              ))
-            }
-          </form.Field>
-        </div>
-      </div>
-
-      <div className="mt-3 border">
-        <div className="flex items-center justify-between border-b p-3">
-          <h2>Authors</h2>
-          <InfoTip>
-            Add authors by clicking the &quot;Add Author&quot; button below and entering the
-            author&apos;s details. You may also remove authors by clicking the{" "}
-            <Trash2 className="inline size-4 text-destructive" /> button
-          </InfoTip>
-        </div>
-        <div className="p-3">
-          <Authors form={form} />
-        </div>
-      </div>
-
-      <div className="mt-3 border">
-        <div className="flex items-center justify-between border-b p-3">
-          <h2>Associated Projects</h2>
-          <InfoTip>Click/Tap each project that this publication is related to.</InfoTip>
-        </div>
-        <div className="p-3">
-          <Projects />
-          <hr className="my-3" />
-          <ProjectSearch />
-        </div>
-      </div>
-
-      <div className="mt-3 border">
-        <div className="flex items-center justify-between border-b p-3">
-          <h2>Resources</h2>
-          <InfoTip>
-            Select the resources that were used in this publication. Resources are shown from the
-            projects you selected above.
-          </InfoTip>
-        </div>
-        <div className="p-3">
-          <Resources form={form} />
-        </div>
-      </div>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Resources</CardTitle>
+            <InfoTip>
+              Select the resources that were used in this publication. Resources are shown from the
+              projects you selected above.
+            </InfoTip>
+          </CardHeader>
+          <CardBody>
+            <Resources form={form} />
+          </CardBody>
+        </Card>
+      </DialogBody>
 
       <form.Subscribe
         selector={(state) => ({
@@ -401,7 +406,7 @@ function PublicationFormContent({ publication }: { publication: EditablePublicat
             (resourceIds.length > 0 || noneSelected);
 
           return (
-            <DialogFooter className="mt-3">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="destructive"

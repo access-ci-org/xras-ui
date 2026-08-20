@@ -79,7 +79,7 @@ export default function InfoTip({
         align={align}
         style={{ maxWidth }}
         className={cn(
-          "z-[1080] rounded-md border p-2.5 text-sm font-bold shadow-md",
+          "z-[1080] rounded-md border p-2.5 text-sm font-bold",
           variantClasses[variant],
         )}
       >

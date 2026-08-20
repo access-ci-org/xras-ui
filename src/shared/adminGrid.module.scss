@@ -1,0 +1,73 @@
+/*
+ * Bootstrap 2 metrics for the controls `Grid` renders for a `select`, `input`
+ * or `date` column. The rest of xras_admin's chrome is restated as Tailwind
+ * classes in `adminTheme.ts`, but these elements belong to the shared
+ * components, whose own utilities are tuned to submit-access's Bootstrap 5
+ * theme — a CSS module is the way to reach them, since it is unlayered and so
+ * beats a utility class whatever their specificities.
+ */
+
+.admin-grid {
+    /*
+     * `.table.table-bordered`: a 4px-rounded box whose left edge and vertical
+     * rules come from the cells, so the table itself has no left border.
+     */
+    > table {
+        border: 1px solid #ddd;
+        border-left: 0;
+        border-radius: 4px;
+    }
+
+    /* Both of these grids pass every row `.vertical-align-center`. */
+    td {
+        vertical-align: middle;
+    }
+
+    /*
+     * `Grid` gives a field a percentage width, and Bootstrap 2 predates
+     * `box-sizing: border-box` for text fields — the padding and border sit
+     * outside that percentage. A `select` was border-box even then.
+     */
+    input:not([type="checkbox"]) {
+        box-sizing: content-box;
+    }
+
+    /*
+     * `Grid`'s tooltip trigger, which the theme's own markup spaced with
+     * `margin: 10px` — it decides how wide a header cell, and so its column,
+     * ends up.
+     */
+    th button {
+        margin: 0 10px;
+    }
+
+    /*
+     * The 20px height is the theme's: with the padding and border around it a
+     * text field comes to 30px. A checkbox column keeps the browser's own box.
+     */
+    input:not([type="checkbox"]),
+    select {
+        height: 20px;
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+        font-size: 14px;
+        color: #555;
+    }
+
+    input:not([type="checkbox"]) {
+        line-height: 20px;
+        box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    }
+
+    /* A `select`, being border-box, includes its padding and border. */
+    select {
+        height: 30px;
+    }
+}
+
+/* The exchange rates grid pads its own inputs a little wider. */
+.wide-fields input {
+    padding: 4px 8px;
+}

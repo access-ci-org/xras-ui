@@ -11,15 +11,19 @@ export default function Projects() {
 
   return (
     <div>
-      {!projectsSelected && <Alert color="danger">You must select at least one project</Alert>}
+      {!projectsSelected && (
+        <Alert className="mt-0" color="danger">
+          You must select at least one project
+        </Alert>
+      )}
 
       <div className="flex flex-col">
         {projects.map((p, idx) => (
           <div
             key={p.grant_number}
             className={cn(
-              "cursor-pointer border border-b-0 p-3 last:border-b hover:bg-muted",
-              p.selected && "bg-primary/10",
+              "cursor-pointer border border-b-0 px-4 py-2 last:border-b hover:bg-muted",
+              p.selected && "bg-[#d1e7dd] text-[#0a3622] hover:bg-[#bcd0c7]",
             )}
             onClick={() => toggleProjectSelected(idx)}
           >

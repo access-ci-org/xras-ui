@@ -69,18 +69,18 @@ export default function Resources({ form }: { form: AppForm<PublicationFormValue
         };
 
         return (
-          <div className="mb-4">
+          <div className="mb-6">
             <div className="mb-2 font-bold">
               Resources
               <Asterisk className="ml-1 inline size-3.5 text-destructive" />
             </div>
 
-            <div className="mb-2 text-sm text-muted-foreground">
+            <div className="mb-2 text-sm leading-normal text-muted-foreground">
               Select a project above to see available resources.
             </div>
 
             {!resourcesNoneSelected && selectedResourceIds.length === 0 && (
-              <Alert color="danger">
+              <Alert className="mt-0" color="danger">
                 Select at least one resource or choose &quot;This is an ACCESS staff
                 publication&quot;.
               </Alert>
@@ -90,14 +90,14 @@ export default function Resources({ form }: { form: AppForm<PublicationFormValue
               <>
                 {Object.entries(groupedResources).map(([providerKey, group]) => (
                   <div key={providerKey} className="mb-3">
-                    <div className="mb-2 text-sm font-semibold text-muted-foreground">
+                    <div className="mb-2 font-semibold text-muted-foreground">
                       {group.providerName || providerKey}
                     </div>
-                    <div className="ml-3 flex flex-col gap-1">
+                    <div className="ml-4 flex flex-col gap-0.5">
                       {group.resources.map((resource, optionIndex) => (
                         <label
                           key={`${resource.resource_id}_${optionIndex}`}
-                          className="flex items-center gap-2 text-sm"
+                          className="flex items-center gap-2"
                         >
                           <Checkbox
                             checked={selectedResourceIds.includes(Number(resource.resource_id))}
@@ -115,7 +115,7 @@ export default function Resources({ form }: { form: AppForm<PublicationFormValue
               </>
             )}
 
-            <label className="mt-2 flex items-center gap-2 text-sm">
+            <label className="mt-2 flex items-center gap-2">
               <Checkbox
                 checked={resourcesNoneSelected}
                 onCheckedChange={(checked) => {
@@ -124,7 +124,7 @@ export default function Resources({ form }: { form: AppForm<PublicationFormValue
                   if (noneSelected) form.setFieldValue("resourceIds", []);
                 }}
               />
-              <Label>This is an ACCESS staff publication</Label>
+              <Label className="text-base font-normal">This is an ACCESS staff publication</Label>
             </label>
           </div>
         );

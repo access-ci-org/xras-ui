@@ -1,4 +1,9 @@
-import type { CatalogParams, Feature, FilterCategoryType, Resource } from "../types";
+import type {
+  CatalogParams,
+  Feature,
+  FilterCategoryType,
+  Resource,
+} from "../types";
 
 const resourceSorting: Record<string, number> = {
   "NSF Capacity Resources": 1,
@@ -30,7 +35,10 @@ export function activeFilters(filters: FilterCategoryType[]) {
   }));
 }
 
-export function processCatalogResponse(apiResources: any[], params: CatalogParams) {
+export function processCatalogResponse(
+  apiResources: any[],
+  params: CatalogParams,
+) {
   const {
     excludedCategories,
     excludedFilters,
@@ -40,7 +48,10 @@ export function processCatalogResponse(apiResources: any[], params: CatalogParam
   } = params;
 
   const resources: Resource[] = [];
-  const categories: Record<number, FilterCategoryType & { features: Record<number, Feature> }> = {};
+  const categories: Record<
+    number,
+    FilterCategoryType & { features: Record<number, Feature> }
+  > = {};
 
   apiResources
     .filter((r) => !excludedResources.includes(r.resourceName))
@@ -57,7 +68,11 @@ export function processCatalogResponse(apiResources: any[], params: CatalogParam
           } else {
             if (
               !categories[categoryId] &&
-              useFilter(allowedCategories, excludedCategories, category.categoryName)
+              useFilter(
+                allowedCategories,
+                excludedCategories,
+                category.categoryName,
+              )
             ) {
               categories[categoryId] = {
                 categoryId: categoryId,
@@ -76,7 +91,11 @@ export function processCatalogResponse(apiResources: any[], params: CatalogParam
                 selected: false,
               };
 
-              const filterIncluded = useFilter(allowedFilters, excludedFilters, feature.name);
+              const filterIncluded = useFilter(
+                allowedFilters,
+                excludedFilters,
+                feature.name,
+              );
               if (filterIncluded) feature_list.push(feature);
 
               if (
@@ -100,33 +119,46 @@ export function processCatalogResponse(apiResources: any[], params: CatalogParam
         resourceDescription: r.resourceDescription,
         description: r.description,
         recommendedUse: r.recommendedUse,
-        features: feature_list.map((f) => f.name).sort((a, b) => (a > b ? 1 : -1)),
+        features: feature_list
+          .map((f) => f.name)
+          .sort((a, b) => (a > b ? 1 : -1)),
         featureIds: feature_list.map((f) => f.featureId),
         sortCategory,
       });
     });
 
-  let filters: FilterCategoryType[] = Object.values(categories).map((category) => ({
-    ...category,
-    features: Object.values(category.features).sort((a, b) => (a.name > b.name ? 1 : -1)),
-  }));
+  let filters: FilterCategoryType[] = Object.values(categories).map(
+    (category) => ({
+      ...category,
+      features: Object.values(category.features).sort((a, b) =>
+        a.name > b.name ? 1 : -1,
+      ),
+    }),
+  );
 
   filters =
     allowedCategories.length > 0
       ? filters.sort(
           (a, b) =>
-            allowedCategories.indexOf(a.categoryName) - allowedCategories.indexOf(b.categoryName),
+            allowedCategories.indexOf(a.categoryName) -
+            allowedCategories.indexOf(b.categoryName),
         )
       : filters.sort((a, b) => a.categoryName.localeCompare(b.categoryName));
 
   const sortedResources = resources
     .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
-    .sort((a, b) => resourceSorting[a.sortCategory] - resourceSorting[b.sortCategory]);
+    .sort(
+      (a, b) =>
+        resourceSorting[a.sortCategory] - resourceSorting[b.sortCategory],
+    );
 
   return { filters, resources: sortedResources };
 }
 
-export function computeFilteredResources(resources: Resource[], filters: FilterCategoryType[]) {
+export function computeFilteredResources(
+  resources: Resource[],
+  filters: FilterCategoryType[],
+) {
   const active = activeFilters(filters);
 
   if (active.length === 0) return [...resources];
@@ -142,7 +174,10 @@ export function computeFilteredResources(resources: Resource[], filters: FilterC
   });
 }
 
-export function toggleFeatureSelected(filters: FilterCategoryType[], filter: Feature) {
+export function toggleFeatureSelected(
+  filters: FilterCategoryType[],
+  filter: Feature,
+) {
   return filters.map((category) => {
     if (category.categoryId !== filter.categoryId) return category;
     return {

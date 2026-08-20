@@ -62,8 +62,11 @@ export default function OrgInfo({
   );
 
   return (
-    <div className="absolute bottom-[25px] left-[25px] w-96 bg-white/50 p-2.5">
-      <p className="m-0 text-base leading-normal">
+    /* The same panel the legend uses, so it doesn't take the pointer events
+       the map needs to keep tracking which organization is under it. */
+    <div className="pointer-events-none absolute bottom-[25px] left-[25px] bg-white/50 p-2.5">
+      {/* The 24rem is the paragraph's, so the panel is that wide plus padding. */}
+      <p className="m-0 w-96 text-base leading-normal">
         Researchers at {formatOrgs(orgs.user, "user", "research institution", organizationType)}{" "}
         {creditType === "allocated" ? "were " : ""}
         {creditType}{" "}

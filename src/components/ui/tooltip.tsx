@@ -23,19 +23,27 @@ const TooltipTrigger = TooltipPrimitive.Trigger;
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => {
+>(({ className, children, sideOffset = 0, ...props }, ref) => {
   const container = usePortalContainer();
   return (
     <TooltipPrimitive.Portal container={container}>
+      {/* Bootstrap's tooltip: white on black at 90% opacity, 0.25rem / 0.5rem
+          of padding around a 0.875rem line, and a 0.8rem × 0.4rem arrow. The
+          arrow is what leaves Bootstrap's 0.4rem gap to the trigger — Radix
+          draws it outside the content box, so `sideOffset` stays at 0 rather
+          than adding that distance twice. */}
       <TooltipPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-          "z-[1080] overflow-hidden border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md",
+          "z-[1080] overflow-visible rounded-md bg-black px-2 py-1 text-[14px] leading-[21px] text-white opacity-90",
           className,
         )}
         {...props}
-      />
+      >
+        {children}
+        <TooltipPrimitive.Arrow width={13} height={6} className="fill-black" />
+      </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   );
 });

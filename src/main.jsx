@@ -24,7 +24,7 @@ import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
 import ResourceCatalog from "./resource-catalog/ResourceCatalog";
 import Keywords from "./keywords/Keywords";
 
-export { supportingGrants } from "./supporting-grants";
+import { SupportingGrantsSection } from "./supporting-grants";
 
 const FONT_HREF =
   "https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,70,400;0,100,400;0,100,600;0,100,800;1,100,400&display=swap";
@@ -40,7 +40,10 @@ function addDocumentFont() {
   document.head.appendChild(link);
 }
 
-export function shadowTarget(host, { baseUrl = null, stylesheets = null } = {}) {
+export function shadowTarget(
+  host,
+  { baseUrl = null, stylesheets = null, extraStylesheets = [] } = {},
+) {
   const shadow = host.attachShadow({ mode: "open" });
   addDocumentFont();
   const target = document.createElement("div");
@@ -55,7 +58,7 @@ export function shadowTarget(host, { baseUrl = null, stylesheets = null } = {}) 
     (dev
       ? [`${baseUrl}/tailwind.css`, `${baseUrl}/bootstrap/access.scss`]
       : [`${baseUrl}/tailwind.css`, `${baseUrl}/xras-ui.css`, `${baseUrl}/access.css`]);
-  for (const href of hrefs) {
+  for (const href of [...hrefs, ...extraStylesheets]) {
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href =
@@ -67,8 +70,9 @@ export function shadowTarget(host, { baseUrl = null, stylesheets = null } = {}) 
 
   // The other half of the dev story: CSS modules (bundled into `xras-ui.css`
   // for a build) only exist in dev as `<style>` tags Vite injects into the
-  // document head, which a shadow tree can't see. Copy them in.
-  if (dev && !stylesheets)
+  // document head, which a shadow tree can't see. Copy them in — whatever the
+  // caller asked for as stylesheets, since none of them can carry the modules.
+  if (dev)
     for (const style of document.querySelectorAll("style[data-vite-dev-id]"))
       shadow.appendChild(style.cloneNode(true));
 
@@ -77,8 +81,46 @@ export function shadowTarget(host, { baseUrl = null, stylesheets = null } = {}) 
   return target;
 }
 
-export function allocationsMap({ target }) {
-  ReactDOM.createRoot(target).render(<AllocationsMap />);
+/**
+ * Renders `element` into a shadow root under `target`.
+ *
+ * These components are styled with Tailwind, whose reset is in a cascade layer
+ * and so loses to the host site's unlayered Bootstrap rules. Rendering in a
+ * shadow root means only the injected stylesheets apply. A caller that wants
+ * control over the stylesheets can pass a `shadowTarget` as `target`.
+ */
+function renderShadow(
+  element,
+  { target, baseUrl = null, stylesheets = null, extraStylesheets = [] },
+) {
+  const root =
+    target.getRootNode() instanceof ShadowRoot
+      ? target
+      : shadowTarget(target, { baseUrl, stylesheets, extraStylesheets });
+
+  ReactDOM.createRoot(root).render(
+    <ShadowRootProvider target={root}>{element}</ShadowRootProvider>,
+  );
+}
+
+/*
+ * The href of a stylesheet the host page loaded for a library that renders its
+ * own DOM — maplibre's, for the map. The shadow tree can't see the document's
+ * copy, so repeat the link inside it.
+ */
+function documentStylesheets(match) {
+  return [...document.querySelectorAll(`link[rel="stylesheet"][href*="${match}"]`)].map(
+    (link) => link.href,
+  );
+}
+
+export function allocationsMap({ target, baseUrl = null, stylesheets = null }) {
+  renderShadow(<AllocationsMap />, {
+    target,
+    baseUrl,
+    stylesheets,
+    extraStylesheets: documentStylesheets("maplibre-gl"),
+  });
 }
 
 export function resources({
@@ -87,14 +129,17 @@ export function resources({
   canAdd,
   relativeUrlRoot,
   target,
+  baseUrl = null,
+  stylesheets = null,
 }) {
-  ReactDOM.createRoot(target).render(
+  renderShadow(
     <Resources
       availableResources={availableResources}
       unavailableResources={unavailableResources}
       canAdd={canAdd}
       relativeUrlRoot={relativeUrlRoot}
     />,
+    { target, baseUrl, stylesheets },
   );
 }
 
@@ -103,42 +148,31 @@ export function editResource({
   target,
   setExternalSubmit,
   relativeUrlRoot,
+  baseUrl = null,
+  stylesheets = null,
 }) {
-  ReactDOM.createRoot(target).render(
+  renderShadow(
     <EditResource
       resourceId={resourceId}
       setExternalSubmit={setExternalSubmit}
       relativeUrlRoot={relativeUrlRoot}
     />,
+    { target, baseUrl, stylesheets },
   );
 }
 
 export function projects({ target, username, routes, baseUrl = null, stylesheets = null }) {
   addRoutes(routes);
-
-  // These components are styled with Tailwind, whose reset is in a cascade
-  // layer and so loses to the host site's unlayered Bootstrap rules. Render in
-  // a shadow root, where only the injected stylesheets apply. A caller that
-  // wants control over the stylesheets can pass a `shadowTarget` as `target`.
-  const root =
-    target.getRootNode() instanceof ShadowRoot
-      ? target
-      : shadowTarget(target, { baseUrl, stylesheets });
-
-  ReactDOM.createRoot(root).render(
-    <ShadowRootProvider target={root}>
-      <Projects username={username} />
-    </ShadowRootProvider>,
-  );
+  renderShadow(<Projects username={username} />, { target, baseUrl, stylesheets });
 }
 
-export function projectsBrowser({ target, apiUrl }) {
-  ReactDOM.createRoot(target).render(<ProjectsBrowser api_url={apiUrl} />);
+export function projectsBrowser({ target, apiUrl, baseUrl = null, stylesheets = null }) {
+  renderShadow(<ProjectsBrowser api_url={apiUrl} />, { target, baseUrl, stylesheets });
 }
 
-export function publicationsBrowser({ target, routes }) {
+export function publicationsBrowser({ target, routes, baseUrl = null, stylesheets = null }) {
   addRoutes(routes);
-  ReactDOM.createRoot(target).render(<PublicationsBrowser />);
+  renderShadow(<PublicationsBrowser />, { target, baseUrl, stylesheets });
 }
 
 function HydrateAtoms({ values, children }) {
@@ -151,11 +185,13 @@ export function publicationEdit({
   target,
   routes,
   authenticityToken,
+  baseUrl = null,
+  stylesheets = null,
 }) {
   addRoutes(routes);
   const store = createStore();
 
-  ReactDOM.createRoot(target).render(
+  renderShadow(
     <JotaiProvider store={store}>
       <HydrateAtoms
         values={
@@ -168,6 +204,7 @@ export function publicationEdit({
         <PublicationEdit />
       </HydrateAtoms>
     </JotaiProvider>,
+    { target, baseUrl, stylesheets },
   );
 }
 
@@ -177,14 +214,17 @@ export function publicationsSelect({
   selectedPublicationIds,
   target,
   usernames,
+  baseUrl = null,
+  stylesheets = null,
 }) {
   addRoutes(routes);
-  ReactDOM.createRoot(target).render(
+  renderShadow(
     <PublicationsSelect
       authenticityToken={authenticityToken}
       selectedPublicationIds={selectedPublicationIds}
       usernames={usernames}
     />,
+    { target, baseUrl, stylesheets },
   );
 }
 
@@ -192,16 +232,18 @@ export function onRampsResourceCatalog({
   target,
   catalogSources,
   onRamps,
-  baseUrl,
   onRampsApi,
+  baseUrl = null,
+  stylesheets = null,
 }) {
-  ReactDOM.createRoot(target).render(
+  renderShadow(
     <OnRampsResourceCatalog
       catalogSources={catalogSources}
       onRamps={onRamps}
       baseUrl={baseUrl}
       onRampsApi={onRampsApi}
     />,
+    { target, baseUrl, stylesheets },
   );
 }
 
@@ -211,14 +253,17 @@ export function myPublications({
   target,
   username,
   showUpdatePublications,
+  baseUrl = null,
+  stylesheets = null,
 }) {
   addRoutes(routes);
-  ReactDOM.createRoot(target).render(
+  renderShadow(
     <MyPublications
       authenticityToken={authenticityToken}
       username={username}
       showUpdatePublications={showUpdatePublications}
     />,
+    { target, baseUrl, stylesheets },
   );
 }
 
@@ -230,8 +275,10 @@ export function resourceCatalog({
   excludedResources,
   allowedCategories,
   allowedFilters,
+  baseUrl = null,
+  stylesheets = null,
 }) {
-  ReactDOM.createRoot(target).render(
+  renderShadow(
     <ResourceCatalog
       apiUrl={apiUrl}
       excludedCategories={excludedCategories}
@@ -240,9 +287,27 @@ export function resourceCatalog({
       allowedCategories={allowedCategories}
       allowedFilters={allowedFilters}
     />,
+    { target, baseUrl, stylesheets },
   );
 }
 
-export function keywords({ allocationTypes, target }) {
-  ReactDOM.createRoot(target).render(<Keywords allocationTypes={allocationTypes} />);
+export function keywords({ allocationTypes, target, baseUrl = null, stylesheets = null }) {
+  renderShadow(<Keywords allocationTypes={allocationTypes} />, {
+    target,
+    baseUrl,
+    stylesheets,
+  });
+}
+
+export function supportingGrants({
+  target,
+  baseUrl = null,
+  stylesheets = null,
+  ...props
+}) {
+  renderShadow(<SupportingGrantsSection {...props} />, {
+    target,
+    baseUrl,
+    stylesheets,
+  });
 }

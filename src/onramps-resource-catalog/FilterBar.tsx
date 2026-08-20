@@ -3,6 +3,7 @@ import { useAtomValue } from "jotai";
 import { Filter as FilterIcon } from "lucide-react";
 import Filters from "./Filters";
 import styles from "./ResourceCatalog.module.scss";
+import { BADGE, BADGE_PILL, BTN_DEFAULT, ICON } from "./catalogTheme";
 import { selectedFiltersAtom } from "./atoms";
 
 const FilterBar = () => {
@@ -28,27 +29,34 @@ const FilterBar = () => {
   };
 
   return (
-    <div className={styles.filterBar} style={{ position: "sticky", top: "0px" }}>
+    <div
+      className={styles.filterBar}
+      style={{ position: "sticky", top: "0px" }}
+    >
       <div className="mb-2 py-2">
         <div className="bg-white p-1 pb-0">
           <div>
             <button
-              className="mb-1 mt-1 flex items-center gap-1 border px-3 py-1.5"
+              className={`${BTN_DEFAULT} mb-1 mt-1`}
               style={{ borderColor: "#48c0b9" }}
               type="button"
               onClick={toggleMenu}
             >
-              <FilterIcon className="size-4" /> Filters
+              <FilterIcon className={ICON} /> Filters
               {selectedFilters.length > 0 && (
                 <span
-                  className="rounded-full px-2 py-0.5 text-xs text-white"
+                  className={`${BADGE} ${BADGE_PILL} ml-1 text-white`}
                   style={{ backgroundColor: "rgb(26, 91, 110)" }}
                 >
                   {selectedFilters.length}
                 </span>
               )}
             </button>
-            <div className={`${styles.filtersHidden} px-2`} id="filtersList" ref={menuRef}>
+            <div
+              className={`${styles.filtersHidden} px-2`}
+              id="filtersList"
+              ref={menuRef}
+            >
               <Filters onReset={toggleMenu} />
             </div>
           </div>

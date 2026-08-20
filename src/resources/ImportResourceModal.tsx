@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Provider, createStore, useAtomValue, useSetAtom } from "jotai";
-import Alert from "../shared/Alert";
-import { SelectInput } from "../shared/SelectInput/SelectInput";
+import { cn } from "@/lib/utils";
+import AdminAlert from "../shared/AdminAlert";
+import {
+  ADMIN_H2,
+  ADMIN_MODAL_FORM,
+  ADMIN_P,
+  ADMIN_SELECT,
+} from "../shared/adminTheme";
 import { AddNewModal } from "../edit-resource/AddNewModal";
 import { ResourceForm } from "../edit-resource/ResourceForm";
 import { resourceDataAtom, resourceDetailsAtom } from "../edit-resource/atoms";
@@ -96,11 +102,11 @@ function ImportResourceModalInner({ onClose }: { onClose: () => void }) {
 
   let modalContent: ReactNode = null;
   if (loading) {
-    modalContent = <p>Loading&hellip;</p>;
+    modalContent = <p className={ADMIN_P}>Loading&hellip;</p>;
   } else if (errorMessage !== null) {
-    modalContent = <Alert color="danger">{errorMessage}</Alert>;
+    modalContent = <AdminAlert color="danger">{errorMessage}</AdminAlert>;
   } else if (addableResources.length === 0) {
-    modalContent = <Alert color="info">There are currently no resources available to add.</Alert>;
+    modalContent = <AdminAlert>There are currently no resources available to add.</AdminAlert>;
   }
 
   // Create an array of resource options.
@@ -114,21 +120,33 @@ function ImportResourceModalInner({ onClose }: { onClose: () => void }) {
   if (modalContent === null) {
     modalContent = (
       <>
-        <h2>Select a Resource to Add</h2>
-        <SelectInput
-          options={resourceOptions}
-          value={selectedCiderResourceId}
-          onChange={(e) => setSelectedCiderResourceId(parseInt(e.target.value))}
-        />
-        {!resourceData && selectedCiderResourceId !== -1 && <p>Loading&hellip;</p>}
+        <h2 className={ADMIN_H2}>Select a Resource to Add</h2>
+        <div>
+          <select
+            className={ADMIN_SELECT}
+            value={selectedCiderResourceId}
+            onChange={(e) => setSelectedCiderResourceId(parseInt(e.target.value))}
+          >
+            {resourceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {!resourceData && selectedCiderResourceId !== -1 && (
+          <p className={ADMIN_P}>Loading&hellip;</p>
+        )}
         {resourceData && (
           <>
-            <h2 className="mt-4">Resource Properties</h2>
-            <p className="mb-3 font-bold italic">
+            <h2 className={ADMIN_H2}>Resource Properties</h2>
+            <p className={cn(ADMIN_P, "font-bold italic")}>
               Any modifications to these resource properties will be applied globally and impact
               resources on other all allocations process
             </p>
-            <ResourceForm showResourceId={false} showDollarValue={false} />
+            <div className={ADMIN_MODAL_FORM}>
+              <ResourceForm showResourceId={false} showDollarValue={false} />
+            </div>
           </>
         )}
       </>

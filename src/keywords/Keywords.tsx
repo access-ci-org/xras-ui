@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  ADMIN_ALERT,
+  ADMIN_ALERT_SUCCESS,
+  ADMIN_BODY,
+  ADMIN_H3,
+  ADMIN_P,
+  ADMIN_TABLE,
+  ADMIN_TABLE_BORDERED,
+  ADMIN_TH,
+} from "../shared/adminTheme";
 import AddKeyword from "./AddKeyword";
 import Keyword from "./Keyword";
 import type { AllocationType, Keyword as KeywordType } from "./types";
@@ -29,7 +39,10 @@ export default function Keywords({
     setValidStatus(res.ok);
   };
 
-  const createKeyword = async (keywordValues: string, keywordTypes: number[]) => {
+  const createKeyword = async (
+    keywordValues: string,
+    keywordTypes: number[],
+  ) => {
     const res = await fetch(`/keywords`, {
       method: "POST",
       headers: {
@@ -93,32 +106,27 @@ export default function Keywords({
   }, []);
 
   return (
-    <>
-      <p>
-        Type new keywords separated by semicolons, select the desired
-        allocation types, and then submit.
+    <div className={ADMIN_BODY}>
+      <p className={ADMIN_P}>
+        Type new keywords separated by semicolons, select the desired allocation
+        types, and then submit.
       </p>
       {statusMessage.length !== 0 && (
         <div
           role="alert"
-          className={cn(
-            "mt-3 rounded-none border p-3",
-            validStatus
-              ? "border-green-600 bg-green-50 text-green-800"
-              : "border-yellow-600 bg-yellow-50 text-yellow-800",
-          )}
+          className={validStatus ? ADMIN_ALERT_SUCCESS : ADMIN_ALERT}
         >
           {statusMessage}
         </div>
       )}
       <AddKeyword key="add-keywords" types={types} createData={createKeyword} />
-      <h3>Current Keywords</h3>
-      <table className="w-full border-collapse border">
+      <h3 className={ADMIN_H3}>Current Keywords</h3>
+      <table className={cn(ADMIN_TABLE, ADMIN_TABLE_BORDERED)}>
         <thead>
-          <tr className="border-b">
-            <th className="p-2 text-left">Keyword</th>
-            <th className="p-2 text-left">Allocation Types</th>
-            <td></td>
+          <tr>
+            <th className={ADMIN_TH}>Keyword</th>
+            <th className={ADMIN_TH}>Allocation Types</th>
+            <td className="p-2"></td>
           </tr>
         </thead>
         <tbody>
@@ -136,6 +144,6 @@ export default function Keywords({
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   );
 }

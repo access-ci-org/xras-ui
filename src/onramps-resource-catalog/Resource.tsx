@@ -1,6 +1,17 @@
-import { ArrowUpRight } from "lucide-react";
+import { SquareArrowOutUpRight } from "lucide-react";
 import styles from "./ResourceCatalog.module.scss";
 import Features from "./Features";
+import {
+  CARD,
+  CARD_BODY,
+  CARD_FOOTER,
+  CARD_HEADER,
+  COL,
+  ICON,
+  LIST_GROUP,
+  LIST_GROUP_ITEM,
+  ROW,
+} from "./catalogTheme";
 import type { Resource as ResourceType } from "./types";
 
 const Resource = ({ resource }: { resource: ResourceType }) => {
@@ -20,8 +31,11 @@ const Resource = ({ resource }: { resource: ResourceType }) => {
       return (
         <>
           <div className="font-bold">Recommended Use</div>
-          <div className="mb-3">
-            <div className={styles.description} dangerouslySetInnerHTML={{ __html: resource.recommendedUse }} />
+          <div className="mb-4">
+            <div
+              className={styles.description}
+              dangerouslySetInnerHTML={{ __html: resource.recommendedUse }}
+            />
           </div>
         </>
       );
@@ -31,13 +45,14 @@ const Resource = ({ resource }: { resource: ResourceType }) => {
 
   const renderHeader = () => {
     const headerStyle = {
-      background: "linear-gradient(90deg,rgba(255, 255, 255, 1) 0%, rgba(26, 91, 110, 1) 50%)",
+      background:
+        "linear-gradient(90deg,rgba(255, 255, 255, 1) 0%, rgba(26, 91, 110, 1) 50%)",
       display: "flex",
       justifyContent: "space-between",
     };
 
     return (
-      <div className="border-b p-3" style={headerStyle}>
+      <div className={CARD_HEADER} style={headerStyle}>
         <span className="font-bold">
           {renderLogo()}
           {resource.resourceName}
@@ -47,16 +62,17 @@ const Resource = ({ resource }: { resource: ResourceType }) => {
   };
 
   const renderRelatedResources = () => {
-    if (!resource.relatedResources || resource.relatedResources.length == 0) return "";
+    if (!resource.relatedResources || resource.relatedResources.length == 0)
+      return "";
 
     return (
       <>
         <div className="font-bold">Related Resources</div>
-        <ul className="flex flex-col">
+        <ul className={LIST_GROUP}>
           {resource.relatedResources.map((rr) => (
             <a
               key={`rr_${resource.resourceId}_${rr.cider_resource_id}`}
-              className="border px-3 py-2 hover:bg-accent hover:text-accent-foreground"
+              className={LIST_GROUP_ITEM}
               href={`https://allocations.access-ci.org/resources/${resource.groupId}`}
               target="_blank"
               rel="noreferrer"
@@ -72,30 +88,38 @@ const Resource = ({ resource }: { resource: ResourceType }) => {
   const renderLogo = () => {
     if (!resource.icon) return;
 
-    return <img style={{ width: "20px", marginRight: "5px" }} src={resource.icon} alt="" />;
+    return (
+      /* Preflight makes images block-level, which breaks the name onto a second line. */
+      <img
+        className="inline"
+        style={{ width: "20px", marginRight: "5px" }}
+        src={resource.icon}
+        alt=""
+      />
+    );
   };
 
   return (
-    <div className="mb-3 border">
+    <div className={`${CARD} mb-4`}>
       {renderHeader()}
-      <div className="p-3">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 basis-full md:basis-2/3">
+      <div className={CARD_BODY}>
+        <div className={ROW}>
+          <div className={`${COL} md:w-2/3`}>
             {renderUse()}
             {renderFeatures()}
           </div>
-          <div className="flex-1 basis-full md:basis-1/3">{renderRelatedResources()}</div>
+          <div className={`${COL} md:w-1/3`}>{renderRelatedResources()}</div>
         </div>
       </div>
-      <div className="border-t p-3">
+      <div className={CARD_FOOTER}>
         <a
           target="_blank"
           rel="noreferrer"
           href={`https://allocations.access-ci.org/resources/${resource.groupId}`}
-          className="inline-flex items-center gap-2 font-bold text-black"
+          className="font-bold text-black underline"
         >
           Learn more about {resource.displayResourceName}
-          <ArrowUpRight className="size-4" />
+          <SquareArrowOutUpRight className={`${ICON} ml-2`} />
         </a>
       </div>
     </div>

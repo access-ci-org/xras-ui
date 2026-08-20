@@ -1,8 +1,19 @@
-import type { Catalog, CatalogSource, Feature, FilterCategoryType, Resource } from "../types";
+import type {
+  Catalog,
+  CatalogSource,
+  Feature,
+  FilterCategoryType,
+  Resource,
+} from "../types";
 
-function useFilter(allowed: string[] | undefined, excluded: string[] | undefined, item: string) {
+function useFilter(
+  allowed: string[] | undefined,
+  excluded: string[] | undefined,
+  item: string,
+) {
   if (!allowed && !excluded) return true;
-  if ((allowed && allowed.length == 0) && (excluded && excluded.length == 0)) return true;
+  if (allowed && allowed.length == 0 && excluded && excluded.length == 0)
+    return true;
 
   // If users specified both allow and exclude lists
   // just use the allow list. Otherwise there's unresolvable conflicts.
@@ -19,7 +30,10 @@ function useFilter(allowed: string[] | undefined, excluded: string[] | undefined
 function formatResourceFeatures(
   catalog: CatalogSource,
   resource: any,
-  categories: Record<number, FilterCategoryType & { features: Record<number, Feature> }>,
+  categories: Record<
+    number,
+    FilterCategoryType & { features: Record<number, Feature> }
+  >,
 ) {
   const featureList: Feature[] = [];
   let sortCategory = "";
@@ -34,7 +48,11 @@ function formatResourceFeatures(
       } else {
         if (
           !categories[categoryId] &&
-          useFilter(catalog.allowedCategories, catalog.excludedCategories, category.categoryName)
+          useFilter(
+            catalog.allowedCategories,
+            catalog.excludedCategories,
+            category.categoryName,
+          )
         ) {
           categories[categoryId] = {
             categoryId: categoryId,
@@ -53,7 +71,11 @@ function formatResourceFeatures(
             selected: false,
           };
 
-          const filterIncluded = useFilter(catalog.allowedFilters, catalog.excludedFilters, feature.name);
+          const filterIncluded = useFilter(
+            catalog.allowedFilters,
+            catalog.excludedFilters,
+            feature.name,
+          );
           if (filterIncluded) featureList.push(feature);
 
           if (
@@ -67,7 +89,9 @@ function formatResourceFeatures(
       }
     });
 
-  const featureNames = featureList.map((f) => f.name).sort((a, b) => (a > b ? 1 : -1));
+  const featureNames = featureList
+    .map((f) => f.name)
+    .sort((a, b) => (a > b ? 1 : -1));
 
   const formattedResource: Resource = {
     ...resource,
@@ -83,7 +107,10 @@ function formatResourceFeatures(
 export function mergeData(apiResources: (CatalogSource & { data: any[] })[]) {
   const catalogs: Record<string, Catalog> = {};
   const resources: Record<number, Resource> = {};
-  let filterCategories: Record<number, FilterCategoryType & { features: Record<number, Feature> }> = {};
+  let filterCategories: Record<
+    number,
+    FilterCategoryType & { features: Record<number, Feature> }
+  > = {};
 
   apiResources.forEach((catalog) => {
     catalogs[catalog.catalogLabel] = {
@@ -95,8 +122,18 @@ export function mergeData(apiResources: (CatalogSource & { data: any[] })[]) {
     delete (catalogs[catalog.catalogLabel] as any).data;
 
     catalog.data.forEach((resource) => {
-      if (useFilter(catalog.allowedResources, catalog.excludedResources, resource.resourceName)) {
-        const { categories, formattedResource } = formatResourceFeatures(catalog, resource, filterCategories);
+      if (
+        useFilter(
+          catalog.allowedResources,
+          catalog.excludedResources,
+          resource.resourceName,
+        )
+      ) {
+        const { categories, formattedResource } = formatResourceFeatures(
+          catalog,
+          resource,
+          filterCategories,
+        );
         resources[resource.resourceId] = formattedResource;
         catalogs[catalog.catalogLabel].resourceIds.push(resource.resourceId);
         filterCategories = categories;
@@ -118,7 +155,11 @@ const rampsResourceTypes: Record<string, string> = {
   Storage: "Storage",
 };
 
-export function transformRampsData(metadata: any, rampsResources: any[], features: any[]) {
+export function transformRampsData(
+  metadata: any,
+  rampsResources: any[],
+  features: any[],
+) {
   const featureCategories: Record<number, any> = {};
   const formattedFeatures: Record<number, any> = {};
   const groups = metadata.active_groups;
@@ -139,7 +180,8 @@ export function transformRampsData(metadata: any, rampsResources: any[], feature
         categoryName: feat.feature_category_name,
         categoryDescription: feat.feature_category_description,
         features: feat.features.map((f: any) => f.id),
-        categoryIsFilter: feat?.other_attributes?.is_allocations_filter || false,
+        categoryIsFilter:
+          feat?.other_attributes?.is_allocations_filter || false,
       };
 
       feat.features.forEach((ff: any) => {
@@ -156,16 +198,23 @@ export function transformRampsData(metadata: any, rampsResources: any[], feature
     const organization = metadata.organizations.find(
       (o: any) => o.organization_name == r.organization_name,
     );
-    const originalResourceType = r.features.find((f: any) => f.feature_category == "Resource Type");
-    const resourceType = rampsResourceTypes[originalResourceType?.name] || "other";
+    const originalResourceType = r.features.find(
+      (f: any) => f.feature_category == "Resource Type",
+    );
+    const resourceType =
+      rampsResourceTypes[originalResourceType?.name] || "other";
     const rfc: Record<number, any> = {};
-    const resourceGroup = groups.find((g: any) => g.rollup_info_resourceids.includes(r.info_resourceid));
+    const resourceGroup = groups.find((g: any) =>
+      g.rollup_info_resourceids.includes(r.info_resourceid),
+    );
     let relatedResources: any[] = [];
 
     if (resourceGroup) {
       relatedResources = resourceGroup.rollup_info_resourceids
         .filter((id: number) => id != r.info_resourceid)
-        .map((id: number) => rampsResources.find((rr) => rr.info_resourceid == id))
+        .map((id: number) =>
+          rampsResources.find((rr) => rr.info_resourceid == id),
+        )
         .map((rr: any) => ({
           info_resourceid: rr.info_resourceid,
           cider_resource_id: rr.cider_resource_id,
@@ -181,7 +230,8 @@ export function transformRampsData(metadata: any, rampsResources: any[], feature
       const ff = formattedFeatures[f.id];
       if (ff) {
         const category = featureCategories[ff.categoryId];
-        if (!rfc[ff.categoryId]) rfc[ff.categoryId] = { ...category, features: [] };
+        if (!rfc[ff.categoryId])
+          rfc[ff.categoryId] = { ...category, features: [] };
         rfc[ff.categoryId].features.push(ff);
       }
     });
@@ -212,7 +262,11 @@ export function transformRampsData(metadata: any, rampsResources: any[], feature
       allowedCategories: [],
       allowedFilters: [],
       allowedResources: [],
-      excludedCategories: ["Resource Category", "**DELETED** ACCESS Integration Roadmap", "Resource Status"],
+      excludedCategories: [
+        "Resource Category",
+        "**DELETED** ACCESS Integration Roadmap",
+        "Resource Status",
+      ],
       excludedFilters: ["Resource Status"],
       excludedResources: ["ACCESS Credits"],
       data: formattedResources,
@@ -224,11 +278,15 @@ export function transformRampsData(metadata: any, rampsResources: any[], feature
   const filters: FilterCategoryType[] = Object.values(categories)
     .map((category) => ({
       ...category,
-      features: Object.values(category.features).sort((a, b) => (a.name > b.name ? 1 : -1)),
+      features: Object.values(category.features).sort((a, b) =>
+        a.name > b.name ? 1 : -1,
+      ),
     }))
     .sort((a, b) => a.categoryName.localeCompare(b.categoryName));
 
-  const sortedResources = [...resources].sort((a, b) => a.resourceName.localeCompare(b.resourceName));
+  const sortedResources = [...resources].sort((a, b) =>
+    a.resourceName.localeCompare(b.resourceName),
+  );
 
   return { resources: sortedResources, catalogs, filters };
 }

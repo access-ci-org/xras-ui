@@ -12,13 +12,16 @@ export default function ProjectSearch() {
     <div>
       If your project isn&apos;t listed above, you can manually add it by entering the grant
       number below.
-      <div className="mt-1 flex gap-2">
+      <div className="mt-1 flex">
         <Input
+          className="min-w-0 flex-1"
           value={grantNumber}
           onChange={(e) => setGrantNumber(e.target.value)}
           placeholder="Enter a grant number"
         />
-        <Button onClick={() => grantSearch()}>Find Project</Button>
+        <Button className="-ml-px shrink-0" onClick={() => grantSearch()}>
+          Find Project
+        </Button>
       </div>
     </div>
   );

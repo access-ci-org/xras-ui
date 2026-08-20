@@ -21,9 +21,9 @@ export default function Publication({
   const grantNumbers = projects.map((project) => project.grant_number);
 
   return (
-    <div className={cn("mb-2 pb-2", !last && "border-b")}>
-      <div className="border-none py-2">
-        <div className="ml-[50px] indent-[-50px] text-lg leading-8">
+    <div className={cn("mb-2", !last && "border-b")}>
+      <div className="px-4 pb-4 pt-2">
+        <div className="ml-[50px] indent-[-50px] text-lg leading-[1.875rem]">
           <PublicationCitation publication={publication} />
           {allowEdit && publication.can_edit && (
             <InlineButton
@@ -33,13 +33,17 @@ export default function Publication({
             />
           )}
         </div>
+        {/* The tag row: inline items, each an icon beside its label. The old
+            markup left them `inline-block` with inline content, whose baseline
+            lands on the line's; `align-bottom` keeps these `inline-flex` items
+            from adding a few pixels of descender below it instead. */}
         <ul className="m-0 list-none py-0 pl-[50px] pt-2.5">
-          <li className="mr-4 inline-flex items-center text-base">
+          <li className="mr-4 inline-flex items-center align-bottom text-base">
             <FileText className="mr-1 size-4" />
             {pubType === "Other" ? "Publication" : pubType}
           </li>
           {grantNumbers.map((grant, index) => (
-            <li key={index} className="mr-4 inline-block text-base">
+            <li key={index} className="mr-4 inline-flex items-center align-bottom text-base">
               <a
                 href={`https://allocations.access-ci.org/current-projects?_requestNumber=${grant}`}
                 target="_blank"
@@ -55,7 +59,7 @@ export default function Publication({
           {resources.map((resource) => {
             const { full, short } = parseResourceName(resource);
             return (
-              <li key={resource} className="mr-4 inline-flex items-center text-base">
+              <li key={resource} className="mr-4 inline-flex items-center align-bottom text-base">
                 <Server className="mr-1 size-4" />
                 {short ? <abbr title={full}>{short}</abbr> : full}
               </li>

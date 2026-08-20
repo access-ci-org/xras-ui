@@ -5,7 +5,24 @@ import { getProjectsAtom, pageDataAtom, updatePageDataAtom } from "./atoms";
 
 type PageLink = number | "spacer" | ["current", number];
 
-const linkClass = "flex h-10 w-[50px] items-center justify-center border text-center";
+/*
+ * Bootstrap's `.page-link`, at the 50px width the old markup set inline: a
+ * block with 0.375rem / 0.75rem of padding around one body-copy line — 38px
+ * tall in all — the theme's link teal on white, and a 1px border it shares
+ * with its neighbour (see the `-ml-px` in `LIST` below).
+ */
+const linkClass = "block w-[50px] border bg-background px-3 py-1.5 text-center leading-6 text-teal-600";
+
+/* Bootstrap greys a disabled `.page-item` out with `--bs-secondary-bg`. */
+const disabledClass = "bg-[#e9ecef] text-[#212529]/75";
+
+/*
+ * `.pagination` is a flex `ul` — one that keeps the reboot's bottom margin —
+ * whose links overlap by their shared border, leaving only the two ends of the
+ * strip rounded.
+ */
+const LIST =
+  "mb-4 flex flex-wrap [&>li:first-child>*]:rounded-l-md [&>li:last-child>*]:rounded-r-md [&>li:not(:first-child)>*]:-ml-px";
 
 const Pagination = () => {
   const pageData = useAtomValue(pageDataAtom);
@@ -74,13 +91,15 @@ const Pagination = () => {
 
   const pageLink = (link: PageLink) => {
     if (link === "spacer") {
-      return (
-        <span className={cn(linkClass, "cursor-default text-muted-foreground")}>. . .</span>
-      );
+      return <span className={cn(linkClass, disabledClass)}>. . .</span>;
     }
 
     if (Array.isArray(link)) {
-      return <span className={cn(linkClass, "bg-primary text-primary-foreground")}>{link[1]}</span>;
+      return (
+        <span className={cn(linkClass, "border-primary bg-primary text-primary-foreground")}>
+          {link[1]}
+        </span>
+      );
     }
 
     return (
@@ -92,11 +111,11 @@ const Pagination = () => {
 
   return (
     <nav aria-label="Pages for the table">
-      <ul className="flex flex-wrap">
+      <ul className={LIST}>
         <li>
           <button
             type="button"
-            className={cn(linkClass, "disabled:cursor-not-allowed disabled:opacity-50")}
+            className={cn(linkClass, "disabled:pointer-events-none disabled:bg-[#e9ecef] disabled:text-[#212529]/75")}
             onClick={prevPage}
             disabled={pageData.current_page == 1}
             aria-label="Previous Page Button"
@@ -111,7 +130,7 @@ const Pagination = () => {
         {pageData.last_page > pageBreak && (
           <li>
             <select
-              className={cn(linkClass, "h-10")}
+              className={cn(linkClass, "h-[38px]")}
               value={manualPage}
               onChange={(e) => goToPage(e.target.value)}
             >
@@ -128,7 +147,10 @@ const Pagination = () => {
         <li>
           <button
             type="button"
-            className={cn(linkClass, "disabled:cursor-not-allowed disabled:opacity-50")}
+            className={cn(
+              linkClass,
+              "disabled:pointer-events-none disabled:bg-[#e9ecef] disabled:text-[#212529]/75",
+            )}
             onClick={nextPage}
             disabled={pageData.current_page == pageData.last_page}
             aria-label="Next Page Button"

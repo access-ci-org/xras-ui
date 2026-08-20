@@ -30,17 +30,17 @@ export default function Authors({ form }: { form: AppForm<PublicationFormValues>
         return (
           <div>
             {!authorsExist && (
-              <Alert color="danger">
+              <Alert className="mt-0" color="danger">
                 You must add at least one author and each author must have a first and last name
               </Alert>
             )}
-            <table className="w-full border-collapse text-sm">
+            <table className="mb-4 w-full">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="p-2">First Name</th>
-                  <th className="p-2">Last Name</th>
-                  <th className="p-2">Affiliation</th>
-                  <th className="p-2"></th>
+                <tr>
+                  <th className="border-b p-2 text-left font-bold text-black">First Name</th>
+                  <th className="border-b p-2 text-left font-bold text-black">Last Name</th>
+                  <th className="border-b p-2 text-left font-bold text-black">Affiliation</th>
+                  <th className="border-b p-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -57,7 +57,7 @@ export default function Authors({ form }: { form: AppForm<PublicationFormValues>
             </table>
             <Button
               type="button"
-              className="mt-3"
+              className="mt-4"
               onClick={() => authorsField.pushValue(emptyAuthor())}
             >
               Add Author

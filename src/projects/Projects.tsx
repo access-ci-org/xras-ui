@@ -1,11 +1,24 @@
 import { useMemo } from "react";
 import { Provider, createStore } from "jotai";
 import { Boxes, Cpu, UserPlus } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Alert from "../shared/Alert";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import config from "../shared/helpers/config";
 import Project from "./Project";
 import { useProjectsList } from "./helpers/hooks";
+
+/*
+ * The three panels are `.btn`s in the original — uppercase, undecorated, and
+ * turning white on hover — but laid out as blocks: the label wraps to two
+ * lines below the icon, so `Button`'s `inline-flex` and `whitespace-nowrap`
+ * both have to give way. The icon stands in for a `fs-1` Bootstrap glyph, a
+ * 40px character in a 60px line box, which is why it overrides `Button`'s 16px
+ * `svg` sizing — from a parent selector, so only `!` can outrank it.
+ */
+const TILE = "block w-1/4 whitespace-normal text-center";
+const TILE_ICON = "mx-auto my-[10px] block size-10!";
 
 function ProjectsInner({ username, openFirst = 1 }: { username: string; openFirst?: number }) {
   const { error, loading, projects } = useProjectsList(username);
@@ -30,21 +43,26 @@ function ProjectsInner({ username, openFirst = 1 }: { username: string; openFirs
 
   if (!projects.length)
     return (
-      <div className="border border-muted bg-muted/50 pb-12 pt-12">
-        <p className="mb-6 text-center text-3xl">You don&apos;t have any projects yet.</p>
+      /* `text-black` and the border: Bootstrap's `.text-bg-light` and
+         `--bs-light-border-subtle`, which the panel carried as
+         `text-bg-light border border-light-subtle`. */
+      <div className="border border-[#e9ecef] bg-muted py-12 text-black">
+        {/* `.fs-2`, which sets only a size — the line height stays the 30px
+            the base paragraph rule gives it. */}
+        <p className="mb-6 text-center text-[2rem]">You don&apos;t have any projects yet.</p>
         <div className="flex justify-center gap-2">
-          <a className="w-1/4 bg-primary p-3 text-center text-primary-foreground" href={config.routes.project_types_path()}>
-            <Boxes className="mx-auto mb-1 size-9" /> Learn about Project Types
+          <a className={cn(buttonVariants(), TILE)} href={config.routes.project_types_path()}>
+            <Boxes className={TILE_ICON} /> Learn about Project Types
           </a>
           <a
-            className="w-1/4 bg-muted-foreground p-3 text-center text-white"
+            className={cn(buttonVariants({ variant: "secondary" }), TILE)}
             href={config.routes.get_your_first_project_path()}
           >
-            <Cpu className="mx-auto mb-1 size-9" /> Learn How to Get Your{" "}
-            <br className="hidden xl:inline" /> First Project
+            <Cpu className={TILE_ICON} /> Learn How to Get Your{" "}
+            <br className="hidden 2xl:inline" /> First Project
           </a>
-          <a className="w-1/4 bg-primary p-3 text-center text-primary-foreground" href={config.routes.how_to_path()}>
-            <UserPlus className="mx-auto mb-1 size-9" /> Learn How to Join an Existing Project
+          <a className={cn(buttonVariants(), TILE)} href={config.routes.how_to_path()}>
+            <UserPlus className={TILE_ICON} /> Learn How to Join an Existing Project
           </a>
         </div>
       </div>

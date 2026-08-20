@@ -129,7 +129,9 @@ const Publication = ({ publication, index, fontSize = "18px" }: PublicationProps
 
   return (
     <div className="mb-2 border-b">
-      <div className={cn("p-4 pt-2", bgColor)}>
+      {/* The `.card-body` this replaces carried its own `mb-2`, held inside the
+          bordered wrapper rather than collapsing through it. */}
+      <div className={cn("mb-2 p-4 pt-2", bgColor)}>
         <p style={citationStyle}>{buildCitation()}</p>
         {projects.length > 0 && (
           <>

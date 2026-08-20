@@ -11,13 +11,21 @@ const CatalogList = ({ catalogs }: { catalogs: Catalog[] }) => {
     <div>
       <div className="mb-1 mt-1 font-bold">Catalogs</div>
       {catalogs.map((catalog) => (
-        <div className="flex items-center gap-2" key={`catalog_${catalog.catalogId}`}>
+        <div
+          className="flex items-center gap-2"
+          key={`catalog_${catalog.catalogId}`}
+        >
           <Checkbox
             id={`catalog_${catalog.catalogId}`}
             checked={catalog.selected}
-            onCheckedChange={(checked) => toggleCatalog({ catalog, selected: checked === true })}
+            onCheckedChange={(checked) =>
+              toggleCatalog({ catalog, selected: checked === true })
+            }
           />
-          <Label htmlFor={`catalog_${catalog.catalogId}`} className="font-normal">
+          <Label
+            htmlFor={`catalog_${catalog.catalogId}`}
+            className="font-normal"
+          >
             {catalog.catalogLabel}
           </Label>
         </div>

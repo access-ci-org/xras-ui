@@ -12,7 +12,7 @@ export function FormItem({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("mb-3 flex flex-col gap-1.5", className)}>
+    <div className={cn("mb-4 flex flex-col gap-1", className)}>
       {children}
     </div>
   );

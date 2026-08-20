@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { ADMIN_BODY, ADMIN_BTN_PRIMARY, ADMIN_H2 } from "../shared/adminTheme";
 import { updateBackend } from "./helpers/actions";
 import { sortResources, startScrolling, stopScrolling } from "./helpers/utils";
 import ImportResourceModal from "./ImportResourceModal";
@@ -59,7 +59,8 @@ export default function Resources({
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (draggedIndexRef.current === null || draggedIndexRef.current === index) return;
+    if (draggedIndexRef.current === null || draggedIndexRef.current === index)
+      return;
 
     const newResources = [...resources];
     const draggedItem = newResources[draggedIndexRef.current];
@@ -94,26 +95,40 @@ export default function Resources({
 
   return (
     <>
-      <div className="mx-auto">
+      <div className={cn("mx-auto", ADMIN_BODY)}>
         {canAdd && (
-          <Button className="float-right" onClick={() => setShowImportModal(true)}>
+          <button
+            type="button"
+            className={cn("float-right block", ADMIN_BTN_PRIMARY)}
+            onClick={() => setShowImportModal(true)}
+          >
             Add a Resource from CIDeR
-          </Button>
+          </button>
         )}
-        <h2>Select a resource from the list to modify</h2>
-        <p className="mb-4 italic text-muted-foreground">Drag items to reorder the list.</p>
+        <h2 className={ADMIN_H2}>Select a resource from the list to modify</h2>
+        {/* `p` is one of the elements `access.scss` sizes, so the module's own
+            14px/20px has to be restated here. */}
+        <p className="mb-4 text-[14px]/[20px] italic text-[#666]">
+          Drag items to reorder the list.
+        </p>
 
-        <div className="mx-auto w-full max-w-md p-4">
-          <div className="flex border-b">
+        {/* `w-full max-w-md mx-auto p-4` used to be inert — xras_admin never
+            loaded Tailwind — so the list ran the full width of the page. */}
+        <div>
+          {/* `.nav.nav-tabs`: tabs overlapping the container's bottom border,
+              4px rounded at the top only, and `cursor: default` because the
+              theme's tabs are not links to anywhere. */}
+          <div className="mb-5 flex border-b border-[#ddd]">
             {[ACTIVE_TAB, INACTIVE_TAB].map((tabName) => (
               <button
                 key={tabName}
                 type="button"
                 className={cn(
-                  "-mb-px border border-b-0 px-4 py-2",
+                  "-mb-px mr-[2px] block cursor-default rounded-t-[4px] border px-3 py-2 text-left",
+                  "bg-transparent text-[14px]/[20px] font-normal",
                   activeTab === tabName
-                    ? "border-border bg-background font-bold"
-                    : "border-transparent text-muted-foreground",
+                    ? "border-[#ddd] border-b-transparent bg-white text-[#555]"
+                    : "border-transparent text-[#2fa4e7]",
                 )}
                 onClick={(e) => handleTabChange(tabName, e)}
               >
@@ -122,33 +137,33 @@ export default function Resources({
             ))}
           </div>
 
-          <div className="list-none p-0">
-            <div className="mb-2 flex justify-between rounded bg-muted p-2 font-bold">
+          <div className="m-0 list-none p-0">
+            <div className="mb-2 flex justify-between rounded-[4px] bg-[#e0e0e0] p-2 font-bold">
               <span>Resource Name</span>
               <span>Repository Key</span>
             </div>
             {resources.map((resource, index) => (
               <div
                 key={resource.resource_id}
-                className="mb-1 flex cursor-move items-center justify-between rounded bg-muted/50 p-2 transition-colors last:mb-0 hover:bg-muted"
+                className="mb-[0.3rem] flex cursor-move items-center justify-between rounded-[4px] bg-[#f9f9f9] p-2 transition-colors last:mb-0 hover:bg-[#f0f0f0]"
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={handleDrop}
               >
                 <span
-                  className="mr-4 inline-block h-4 w-[15px] shrink-0 bg-[linear-gradient(to_bottom,#999_20%,transparent_20%,transparent_40%,#999_40%,#999_60%,transparent_60%,transparent_80%,#999_80%)]"
+                  className="mr-[15px] inline-block h-4 w-[15px] shrink-0 bg-[linear-gradient(to_bottom,#999_20%,transparent_20%,transparent_40%,#999_40%,#999_60%,transparent_60%,transparent_80%,#999_80%)]"
                   aria-hidden
                 />
                 <span className="grow-[2]">
                   <a
                     href={`${relativeUrlRoot}/resources/${resource.resource_id}`}
-                    className="text-[#0066cc] hover:underline"
+                    className="font-normal text-[#0066cc] no-underline hover:underline"
                   >
                     {resource.display_resource_name}
                   </a>
                 </span>
-                <span className="grow text-right text-muted-foreground">
+                <span className="grow text-right text-[#808080]">
                   {resource.resource_repository_key || "N/A"}
                 </span>
               </div>
@@ -156,7 +171,9 @@ export default function Resources({
           </div>
         </div>
       </div>
-      {showImportModal && <ImportResourceModal onClose={() => setShowImportModal(false)} />}
+      {showImportModal && (
+        <ImportResourceModal onClose={() => setShowImportModal(false)} />
+      )}
     </>
   );
 }

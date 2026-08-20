@@ -14,12 +14,22 @@ function PublicationsBrowserInner() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 sm:flex-row">
-      <div className="sm:w-1/4">
-        <Filters />
-      </div>
-      <div className="sm:w-3/4">
-        <PublicationsList allowEdit={false} />
+    /* Bootstrap's `.container-fluid > .row > .col-sm-3 / .col-sm-9`. The host
+       app builds Bootstrap with a 1.25rem grid gutter, halved into the padding
+       of each column and cancelled again by the row's negative margin, so the
+       columns sit a full gutter apart but flush with the container's edges. */
+    <div className="px-2.5">
+      <div className="-mx-2.5 flex flex-wrap">
+        <div className="w-full px-2.5 sm:w-1/4">
+          <Filters />
+        </div>
+        <div className="w-full px-2.5 sm:w-3/4">
+          <div className="-mx-2.5 flex flex-wrap">
+            <div className="w-full px-2.5">
+              <PublicationsList allowEdit={false} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useAppForm } from "@/components/form";
-import { Button } from "@/components/ui/button";
+import {
+  ADMIN_BTN_DANGER,
+  ADMIN_BTN_GAP,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_BTN_SUCCESS,
+  ADMIN_BTN_WARNING,
+  ADMIN_TD,
+} from "../shared/adminTheme";
+import { cn } from "@/lib/utils";
 import { AllocationTypeCheckboxes, KeywordInputField } from "./KeywordFields";
 import type { AllocationType, Keyword as KeywordType } from "./types";
 
@@ -34,36 +42,42 @@ const Keyword = ({
         onCancel={() => setIsEditing(false)}
         onSave={async (updatedKeyword, updatedAllocationTypes) => {
           setIsEditing(false);
-          await saveData(keyword.keyword_id, updatedKeyword, updatedAllocationTypes);
+          await saveData(
+            keyword.keyword_id,
+            updatedKeyword,
+            updatedAllocationTypes,
+          );
         }}
       />
     );
   }
 
   return (
-    <tr className="border-b">
-      <td className="p-2 align-top">{keyword.keyword}</td>
-      <td className="p-2 align-top">
-        <div className="flex flex-wrap items-center gap-4">
-          {types
-            .filter((type) => keywordAllocationTypeIds.includes(type.allocation_type_id))
-            .map((type) => type.display_allocation_type)
-            .join(", ")}
-        </div>
+    <tr>
+      <td className={ADMIN_TD}>{keyword.keyword}</td>
+      <td className={ADMIN_TD}>
+        {types
+          .filter((type) =>
+            keywordAllocationTypeIds.includes(type.allocation_type_id),
+          )
+          .map((type) => type.display_allocation_type)
+          .join(", ")}
       </td>
-      <td className="w-[150px] p-2 align-top">
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => setIsEditing(true)}>
-            Edit
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => deleteData(keyword.keyword_id)}
-          >
-            Delete
-          </Button>
-        </div>
+      <td className={cn("box-content w-[150px]", ADMIN_TD)}>
+        <button
+          type="button"
+          className={cn(ADMIN_BTN_PRIMARY, ADMIN_BTN_GAP)}
+          onClick={() => setIsEditing(true)}
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          className={ADMIN_BTN_DANGER}
+          onClick={() => deleteData(keyword.keyword_id)}
+        >
+          Delete
+        </button>
       </td>
     </tr>
   );
@@ -93,26 +107,32 @@ const KeywordEditRow = ({
   });
 
   return (
-    <tr className="border-b">
-      <td className="p-2 align-top">
+    <tr>
+      <td className={ADMIN_TD}>
         <KeywordInputField form={form} />
       </td>
-      <td className="p-2 align-top">
+      <td className={ADMIN_TD}>
         <AllocationTypeCheckboxes
           form={form}
           types={types}
           idPrefix={`keyword_${keyword.keyword_id}`}
         />
       </td>
-      <td className="w-[150px] p-2 align-top">
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => form.handleSubmit()}>
-            Save
-          </Button>
-        </div>
+      <td className={cn("box-content w-[150px]", ADMIN_TD)}>
+        <button
+          type="button"
+          className={cn(ADMIN_BTN_WARNING, ADMIN_BTN_GAP)}
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={ADMIN_BTN_SUCCESS}
+          onClick={() => form.handleSubmit()}
+        >
+          Save
+        </button>
       </td>
     </tr>
   );

@@ -1,7 +1,14 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Grid, { type GridColumn } from "../shared/Grid";
+import {
+  ADMIN_BTN_ICON,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_GRID,
+  ADMIN_GRID_WIDE_FIELDS,
+  ADMIN_H2,
+} from "../shared/adminTheme";
 import { conversionLabel } from "./helpers/exchangeRates";
 import {
   addExchangeRateAtom,
@@ -92,19 +99,26 @@ export const ExchangeRates = () => {
   ];
 
   return (
-    <div className="my-6">
+    <div className="mt-[12.8px] mb-[25.6px]">
       <div className="mb-4 flex items-center justify-between">
-        <h2>Exchange Rates</h2>
-        <Button onClick={() => addExchangeRate()}>
-          <Plus className="size-4" /> Add Discount Rate
-        </Button>
+        <h2 className={ADMIN_H2}>Exchange Rates</h2>
+        <button type="button" className={ADMIN_BTN_PRIMARY} onClick={() => addExchangeRate()}>
+          <Plus className={cn(ADMIN_BTN_ICON, "mr-2")} /> Add Discount Rate
+        </button>
       </div>
-      <Grid columns={columns} rows={rows} scroll={false} />
+      <Grid
+        columns={columns}
+        rows={rows}
+        classes={cn(ADMIN_GRID, ADMIN_GRID_WIDE_FIELDS)}
+        scroll={false}
+      />
       {dateErrors.length > 0 && (
-        <div className="mt-4 rounded border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-          <ul className="list-disc pl-6">
+        <div className="mt-4 rounded-[4px] border border-[#f5c6cb] bg-[#f8d7da] p-4 text-[#721c24]">
+          <ul className="m-0 list-disc pl-6">
             {dateErrors.map((error, index) => (
-              <li key={index}>{error}</li>
+              <li key={index} className="mb-1">
+                {error}
+              </li>
             ))}
           </ul>
         </div>

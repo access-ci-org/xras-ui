@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { Provider, createStore, useAtomValue, useSetAtom, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
-import Alert from "../shared/Alert";
+import { cn } from "@/lib/utils";
+import AdminAlert from "../shared/AdminAlert";
+import { ADMIN_BODY, ADMIN_H2 } from "../shared/adminTheme";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import { AllocationTypesSection } from "./AllocationTypesGrid";
 import { ExchangeRates } from "./ExchangeRates";
@@ -62,31 +64,33 @@ function EditResourceInner({ setExternalSubmit }: Pick<EditResourceProps, "setEx
 
   if (errors.length > 0) {
     return (
-      <div>
+      <div className={ADMIN_BODY}>
         {errors.map((error, index) => (
-          <Alert key={index} color="danger" dismissable>
+          <AdminAlert key={index} color="danger" dismissable>
             {error}
-          </Alert>
+          </AdminAlert>
         ))}
       </div>
     );
   }
 
-  if (!resourceData) return <div>No resource data available.</div>;
+  if (!resourceData) return <div className={ADMIN_BODY}>No resource data available.</div>;
 
   return (
-    <div className="edit-resource">
+    <div className={cn("edit-resource", ADMIN_BODY)}>
       {successMessage.message && (
-        <Alert color={successMessage.color} dismissable>
+        <AdminAlert color={successMessage.color} dismissable>
           {successMessage.message}
-        </Alert>
+        </AdminAlert>
       )}
       <div>
-        <h2>Resource Properties</h2>
-        <p className="mb-3 font-bold italic">
-          Any modifications to these resource properties will be applied globally and impact
-          resources on other all allocations process
-        </p>
+        <h2 className={ADMIN_H2}>Resource Properties</h2>
+        <div className="mb-3">
+          <p className="m-0 text-[14px]/[20px] font-bold italic">
+            Any modifications to these resource properties will be applied globally and impact
+            resources on other all allocations process
+          </p>
+        </div>
         <ResourceForm />
       </div>
       {usesExchangeRates && <ExchangeRates />}

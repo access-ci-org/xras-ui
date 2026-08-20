@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+  ADMIN_ADDON,
+  ADMIN_ADDON_INPUT,
+  ADMIN_HELP,
+  ADMIN_INPUT,
+  ADMIN_INPUT_PREPEND,
+  ADMIN_LABEL,
+  ADMIN_SELECT,
+  ADMIN_SPAN4,
+  ADMIN_SPAN8,
+  ADMIN_TEXTAREA,
+} from "../shared/adminTheme";
 import { AdvancedSettingsSection } from "./AdvancedSettingsSection";
 import {
   resourceDetailsAtom,
@@ -39,40 +42,42 @@ export const ResourceForm = ({
 
   const dollarValueLabel = "Dollar Value per SUs";
   const dollarValueInput = showDollarValue ? (
-    <div className="mb-3">
-      {!useAdvancedSettings && <Label>{dollarValueLabel}</Label>}
-      <div className="flex items-center gap-2">
-        <span>$</span>
-        <Input
+    <>
+      {!useAdvancedSettings && <label className={ADMIN_LABEL}>{dollarValueLabel}</label>}
+      <div className={ADMIN_INPUT_PREPEND}>
+        <span className={ADMIN_ADDON}>$</span>
+        <input
           type="number"
+          className={cn(ADMIN_INPUT, ADMIN_SPAN4, ADMIN_ADDON_INPUT)}
           value={resourceDetails.dollar_value}
           onChange={(e) => updateResourceField({ field: "dollar_value", value: e.target.value })}
-          className="max-w-xs"
         />
       </div>
-    </div>
+    </>
   ) : null;
 
   return (
     <>
-      <div className="mb-3">
-        <Label>Resource Name</Label>
-        <Input
-          value={resourceDetails.resource_name}
-          onChange={(e) => updateResourceField({ field: "resource_name", value: e.target.value })}
-          className="max-w-xl"
-        />
-      </div>
+      <label className={ADMIN_LABEL}>Resource Name</label>
+      <input
+        className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
+        value={resourceDetails.resource_name}
+        onChange={(e) => updateResourceField({ field: "resource_name", value: e.target.value })}
+      />
 
       {showResourceId && (
-        <div className="mb-3">
-          <Label>Resource Repository Key</Label>
-          <Input value={resourceDetails.resource_repository_key} disabled className="max-w-xl" />
-        </div>
+        <>
+          <label className={ADMIN_LABEL}>Resource Repository Key</label>
+          <input
+            className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
+            value={resourceDetails.resource_repository_key}
+            disabled
+          />
+        </>
       )}
       {useAdvancedSettings && showDollarValue ? (
         <AdvancedSettingsSection
-          headerText={<Label>{dollarValueLabel}</Label>}
+          headerText={<label className={ADMIN_LABEL}>{dollarValueLabel}</label>}
           compactWarning
           isEditing={isDollarValueEditing}
           onEditingChange={setIsDollarValueEditing}
@@ -83,70 +88,58 @@ export const ResourceForm = ({
       ) : (
         dollarValueInput
       )}
-      <div className="mb-3">
-        <Label>Allocations Description</Label>
-        <p className="text-sm text-muted-foreground">
-          Appears below the resource name in the form when making a new request, as well as under
-          the header Allocations Description in resource catalogs
-        </p>
-        <Textarea
-          value={resourceDetails.description}
-          onChange={(e) => updateResourceField({ field: "description", value: e.target.value })}
-          rows={6}
-          className="max-w-xl"
-        />
-      </div>
-      <div className="mb-3 max-w-xl">
-        <Label>Resource Type</Label>
-        <Select
-          value={resourceDetails.resource_type_id?.toString()}
-          onValueChange={(value) => updateResourceField({ field: "resource_type_id", value })}
+      <label className={ADMIN_LABEL}>Allocations Description</label>
+      <small className={ADMIN_HELP}>
+        Appears below the resource name in the form when making a new request, as well as under the
+        header Allocations Description in resource catalogs
+      </small>
+      <textarea
+        className={cn(ADMIN_TEXTAREA, ADMIN_SPAN8)}
+        value={resourceDetails.description}
+        rows={6}
+        onChange={(e) => updateResourceField({ field: "description", value: e.target.value })}
+      />
+      <div>
+        <label className={ADMIN_LABEL}>Resource Type</label>
+        <select
+          className={cn(ADMIN_SELECT, ADMIN_SPAN8)}
+          value={resourceDetails.resource_type_id ?? ""}
+          onChange={(e) => updateResourceField({ field: "resource_type_id", value: e.target.value })}
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {resourceTypesOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value.toString()}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {resourceTypesOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
-      <div className="mb-3 max-w-xl">
-        <Label>Unit Type</Label>
-        <Select
-          value={resourceDetails.unit_type_id?.toString()}
-          onValueChange={(value) => updateResourceField({ field: "unit_type_id", value })}
+      <div>
+        <label className={ADMIN_LABEL}>Unit Type</label>
+        <select
+          className={cn(ADMIN_SELECT, ADMIN_SPAN8)}
+          value={resourceDetails.unit_type_id ?? ""}
+          onChange={(e) => updateResourceField({ field: "unit_type_id", value: e.target.value })}
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {unitTypesOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value.toString()}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {unitTypesOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
-      <div className="mb-3">
-        <Label>
-          Minimum exchange amount, in{" "}
-          {
-            unitTypesOptions.find(
-              (option) => option.value.toString() === resourceDetails.unit_type_id.toString(),
-            )?.label
-          }
-        </Label>
-        <Input
-          value={resourceDetails.min_exchange}
-          onChange={(e) => updateResourceField({ field: "min_exchange", value: e.target.value })}
-          className="max-w-xl"
-        />
-      </div>
+      <label className={ADMIN_LABEL}>
+        Minimum exchange amount, in{" "}
+        {
+          unitTypesOptions.find(
+            (option) => option.value.toString() === resourceDetails.unit_type_id.toString(),
+          )?.label
+        }
+      </label>
+      <input
+        className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
+        value={resourceDetails.min_exchange}
+        onChange={(e) => updateResourceField({ field: "min_exchange", value: e.target.value })}
+      />
     </>
   );
 };

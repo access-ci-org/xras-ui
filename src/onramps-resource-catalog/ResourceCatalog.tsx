@@ -2,10 +2,19 @@ import { useEffect, useMemo } from "react";
 import { Provider, createStore, useAtomValue, useSetAtom } from "jotai";
 import AccessHeader from "./AccessHeader";
 import ResourceList from "./ResourceList";
-import { catalogsAtom, hasErrorsAtom, initAppAtom, resourcesLoadedAtom } from "./atoms";
+import bs from "@/shared/bootstrap5.module.scss";
+import {
+  catalogsAtom,
+  hasErrorsAtom,
+  initAppAtom,
+  resourcesLoadedAtom,
+} from "./atoms";
 import type { ResourceCatalogProps } from "./types";
 
-function ResourceCatalogInner({ onRamps = false, baseUrl }: ResourceCatalogProps) {
+function ResourceCatalogInner({
+  onRamps = false,
+  baseUrl,
+}: ResourceCatalogProps) {
   const resourcesLoaded = useAtomValue(resourcesLoadedAtom);
   const hasErrors = useAtomValue(hasErrorsAtom);
   const stateCatalogs = useAtomValue(catalogsAtom);
@@ -23,9 +32,11 @@ function ResourceCatalogInner({ onRamps = false, baseUrl }: ResourceCatalogProps
           {catalogs
             .filter((c) => c.catalogLabel != "ACCESS")
             .map((c, i) => (
-              <div className="mb-3" key={`catalog_${i}`}>
+              <div className="mb-4" key={`catalog_${i}`}>
                 <h4 className="border-b">About {c.catalogLabel}</h4>
-                <div dangerouslySetInnerHTML={{ __html: c.description ?? "" }}></div>
+                <div
+                  dangerouslySetInnerHTML={{ __html: c.description ?? "" }}
+                ></div>
               </div>
             ))}
         </>
@@ -47,7 +58,7 @@ function ResourceCatalogInner({ onRamps = false, baseUrl }: ResourceCatalogProps
     return (
       <div
         role="status"
-        className="size-8 animate-spin rounded-full border-4 border-gray-300 border-t-primary"
+        className="inline-block size-8 animate-spin rounded-full border-4 border-current border-r-transparent align-[-0.125em] [animation-duration:0.75s]"
       >
         <span className="sr-only">Loading...</span>
       </div>
@@ -55,7 +66,12 @@ function ResourceCatalogInner({ onRamps = false, baseUrl }: ResourceCatalogProps
   }
 
   return (
-    <div className="mt-3" style={{ fontFamily: "Archivo, sans-serif" }}>
+    /*
+     * `.container`, less the max-widths: the on-ramps page's content column is
+     * narrower than the max-width for its breakpoint at every width, so they
+     * never bound the catalog.
+     */
+    <div className={`${bs.reboot} mx-auto mt-4 w-full px-3`}>
       {onRamps ? <AccessHeader baseUrl={baseUrl} /> : ""}
       {renderCatalogDescriptions()}
       <ResourceList />

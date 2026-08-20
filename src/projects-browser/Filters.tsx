@@ -14,6 +14,12 @@ import {
   updatePageDataAtom,
 } from "./atoms";
 
+/*
+ * A `.form-check-label` is plain body copy rather than a `.form-label`, which
+ * the theme draws small and heavy — the size the `Label` component defaults to.
+ */
+const CHECK_LABEL = "text-base font-normal leading-6";
+
 const Filters = () => {
   const filtersLoaded = useAtomValue(filtersLoadedAtom);
   return filtersLoaded ? <FiltersForm /> : <p>Loading filters...</p>;
@@ -86,22 +92,24 @@ const FiltersForm = () => {
       <h5 className="mb-1">Field of Science</h5>
       <form.Field name="fosTypeIds">
         {(field) => (
-          <div className="mb-3 h-[200px] overflow-x-auto border p-0.5">
-            <div className="flex items-center gap-2">
+          <div className="mb-4 h-[200px] overflow-x-auto border p-0.5">
+            <div className="mb-0.5 flex min-h-6 gap-2">
               <Checkbox
+                className="mt-1"
                 id="toggle_all"
                 checked={field.state.value.length === allFosIds.length}
                 onCheckedChange={() =>
                   field.handleChange(field.state.value.length === allFosIds.length ? [] : allFosIds)
                 }
               />
-              <Label htmlFor="toggle_all" className="font-normal">
+              <Label htmlFor="toggle_all" className={CHECK_LABEL}>
                 (Toggle All)
               </Label>
             </div>
             {typeLists.fosTypes.map((fos) => (
-              <div className="flex items-center gap-2" key={`fos_${fos.fosTypeId}`}>
+              <div className="mb-0.5 flex min-h-6 gap-2" key={`fos_${fos.fosTypeId}`}>
                 <Checkbox
+                  className="mt-1"
                   id={`fos_${fos.fosTypeId}`}
                   checked={field.state.value.includes(fos.fosTypeId)}
                   onCheckedChange={() =>
@@ -112,7 +120,7 @@ const FiltersForm = () => {
                     )
                   }
                 />
-                <Label htmlFor={`fos_${fos.fosTypeId}`} className="font-normal">
+                <Label htmlFor={`fos_${fos.fosTypeId}`} className={CHECK_LABEL}>
                   {fos.fosName}
                 </Label>
               </div>
@@ -124,7 +132,7 @@ const FiltersForm = () => {
       <h5 id="org_select_label" className="mb-1">
         Organization
       </h5>
-      <div className="mb-3">
+      <div className="mb-4">
         <form.AppField name="org">
           {(field) => (
             <field.FieldReactSelect
@@ -142,7 +150,7 @@ const FiltersForm = () => {
           Project Type
         </abbr>
       </h5>
-      <div className="mb-3">
+      <div className="mb-4">
         <form.AppField name="allocationType">
           {(field) => (
             <field.FieldSelect
@@ -159,7 +167,7 @@ const FiltersForm = () => {
       <h5 id="resource_filter_label" className="mb-1">
         Resource
       </h5>
-      <div className="mb-3">
+      <div className="mb-4">
         <form.AppField name="resource">
           {(field) => (
             <field.FieldSelect
@@ -179,7 +187,7 @@ const FiltersForm = () => {
       <h5 id="request_number_label" className="mb-1">
         Request Number
       </h5>
-      <div className="mb-3">
+      <div className="mb-4">
         <form.AppField name="requestNumber">
           {(field) => <field.FieldInput type="text" />}
         </form.AppField>
@@ -187,7 +195,7 @@ const FiltersForm = () => {
 
       <div className="mt-2 flex gap-2">
         <Button type="submit">Submit</Button>
-        <Button type="button" variant="outline" disabled={buttonDisabled} onClick={handleReset}>
+        <Button type="button" variant="secondary" disabled={buttonDisabled} onClick={handleReset}>
           Reset
         </Button>
       </div>

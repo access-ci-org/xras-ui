@@ -20,13 +20,20 @@ const colorClasses: Record<string, string> = {
 
 type AlertProps = {
   children: React.ReactNode;
+  className?: string;
   color: string;
   dismissable?: boolean;
   /** Called when the dismiss button is clicked, in addition to hiding the alert locally. */
   onDismiss?: () => void;
 };
 
-export default function Alert({ children, color, dismissable = false, onDismiss }: AlertProps) {
+export default function Alert({
+  children,
+  className,
+  color,
+  dismissable = false,
+  onDismiss,
+}: AlertProps) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
 
@@ -37,6 +44,7 @@ export default function Alert({ children, color, dismissable = false, onDismiss 
         "relative mb-4 mt-4 rounded-md border p-4",
         dismissable && "pr-9",
         colorClasses[color] ?? colorClasses.secondary,
+        className,
       )}
     >
       {children}

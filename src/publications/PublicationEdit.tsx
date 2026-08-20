@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { DialogBody } from "@/components/ui/dialog";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import PublicationForm from "./PublicationForm";
 import { dataLoadedAtom, getPublicationDataAtom, publicationIdAtom } from "./atoms";
@@ -13,5 +14,11 @@ export default function PublicationEdit() {
     getPublicationData(publicationId);
   }, [publicationId]);
 
-  return dataLoaded ? <PublicationForm /> : <LoadingSpinner />;
+  return dataLoaded ? (
+    <PublicationForm />
+  ) : (
+    <DialogBody>
+      <LoadingSpinner />
+    </DialogBody>
+  );
 }

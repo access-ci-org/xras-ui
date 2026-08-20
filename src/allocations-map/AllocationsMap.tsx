@@ -81,6 +81,20 @@ export default function AllocationsMap() {
     if (map) map.resize();
   }, [fullscreen, map]);
 
+  /*
+   * The stylesheets are linked into the shadow root as this renders, so the
+   * container is still zero-height when the map initializes below and maplibre
+   * falls back to centering the view in a 400 by 300 one. Resize it again as
+   * soon as the container has dimensions of its own.
+   */
+  useEffect(() => {
+    const node = container.current;
+    if (!map || !node) return;
+    const observer = new ResizeObserver(() => map.resize());
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [map]);
+
   // Set the organization type to user when allocations is selected.
   useEffect(() => {
     if (creditType === "allocated") setOrganizationType("user");
@@ -121,7 +135,8 @@ export default function AllocationsMap() {
     <section
       className={cn(
         "relative h-[500px] w-full",
-        fullscreen ? "fixed inset-0 z-[9999] h-screen" : "border-4 border-primary",
+        // `.border.border-3`: Bootstrap's 3px border width, not Tailwind's 4.
+        fullscreen ? "fixed inset-0 z-[9999] h-screen" : "border-[3px] border-primary",
       )}
       ref={root}
     >
@@ -139,9 +154,13 @@ export default function AllocationsMap() {
         organizationMap={organizationMap}
         organizationType={organizationType}
       />
+      {/* The icon used to be a 16px glyph on a 24px line, which — with the
+          0.125rem / 0.4375rem of padding around it — made the button 30 by 28.
+          Preflight lays an `svg` out as a block, so centre it in that box
+          instead of relying on the line height. */}
       <button
         title={`${fullscreen ? "Exit" : "Enter"} Fullscreen`}
-        className="absolute right-0 top-0 border-0 bg-white/50 px-[7px] py-0.5 hover:bg-white/75 focus:bg-white/75 active:bg-white/75"
+        className="absolute right-0 top-0 flex h-7 items-center border-0 bg-white/50 px-[7px] text-black hover:bg-white/75 focus:bg-white/75 active:bg-white/75"
         onClick={() => setFullscreen(!fullscreen)}
       >
         {fullscreen ? (

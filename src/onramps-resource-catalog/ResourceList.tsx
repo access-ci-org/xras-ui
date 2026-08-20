@@ -4,6 +4,7 @@ import { filteredResourcesAtom } from "./atoms";
 import Resource from "./Resource";
 import FilterBar from "./FilterBar";
 import { categoryIcons } from "./helpers/icons";
+import { CARD, CARD_BODY, CARD_SHADOW, ICON } from "./catalogTheme";
 import type { Resource as ResourceType } from "./types";
 
 const categories = [
@@ -25,7 +26,9 @@ const ResourceList = () => {
     categoryResources.map((r) => <Resource resource={r} key={r.resourceId} />);
 
   const renderCategory = (category: { label: string; key: string }) => {
-    const categoryResources = resources.filter((r) => r.resourceCategory == category.key);
+    const categoryResources = resources.filter(
+      (r) => r.resourceCategory == category.key,
+    );
     if (categoryResources.length == 0) return "";
 
     const Icon = categoryIcons[category.key];
@@ -33,15 +36,16 @@ const ResourceList = () => {
     return (
       <Fragment key={`category_${category.key}`}>
         <h4
-          className="sticky z-10 flex items-center gap-2 border-b px-2.5 py-1.5 text-white"
+          className="sticky z-10 border-b py-[5px] pl-[10px]"
           style={{
             top: "58px",
+            color: "#fff",
             fontFamily: "Archivo, sans-serif",
             borderBottomColor: "#999",
             backgroundColor: "rgb(26, 91, 110)",
           }}
         >
-          {Icon && <Icon className="size-4" />} {category.label}
+          {Icon && <Icon className={ICON} />} {category.label}
         </h4>
         {renderResources(categoryResources)}
       </Fragment>
@@ -49,8 +53,8 @@ const ResourceList = () => {
   };
 
   return (
-    <div className="border shadow">
-      <div className="p-4">
+    <div className={`${CARD} ${CARD_SHADOW}`}>
+      <div className={CARD_BODY}>
         <FilterBar />
         {categories.map((category) => renderCategory(category))}
       </div>

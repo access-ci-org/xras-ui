@@ -12,7 +12,7 @@ const ResourceList = () => {
 
   return (
     <div>
-      <h4 className="mb-0">Resources</h4>
+      <h4 className="mb-0!">Resources</h4>
       <Accordion type="multiple">
         {resources.map((r) => (
           <Resource resource={r} key={r.resourceId} />

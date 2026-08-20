@@ -1,5 +1,10 @@
 import { useAppForm } from "@/components/form";
-import { Button } from "@/components/ui/button";
+import {
+  ADMIN_BTN_PRIMARY,
+  ADMIN_TABLE,
+  ADMIN_TD,
+  ADMIN_TH,
+} from "../shared/adminTheme";
 import { AllocationTypeCheckboxes, KeywordInputField } from "./KeywordFields";
 import type { AllocationType } from "./types";
 
@@ -18,26 +23,38 @@ const AddKeyword = ({ types, createData }: AddKeywordProps) => {
   });
 
   return (
-    <table className="w-full border-collapse">
+    <table className={ADMIN_TABLE}>
       <thead>
-        <tr className="border-b">
-          <th className="p-2 text-left">Keyword</th>
-          <th className="p-2 text-left">Allocation Type</th>
-          <td></td>
+        <tr>
+          <th className={ADMIN_TH}>Keyword</th>
+          <th className={ADMIN_TH}>Allocation Type</th>
+          <td className="p-2"></td>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td className="w-[150px] p-2 align-top">
+          {/* Bootstrap 2 predates `box-sizing: border-box`, so the widths this
+              app's markup puts on a cell size its content box. */}
+          <td className={`box-content w-[150px] ${ADMIN_TD}`}>
             <KeywordInputField form={form} />
           </td>
-          <td className="p-2 align-top">
-            <AllocationTypeCheckboxes form={form} types={types} idPrefix="create_keyword" />
+          <td className={ADMIN_TD}>
+            <AllocationTypeCheckboxes
+              form={form}
+              types={types}
+              idPrefix="create_keyword"
+              inline
+              selectAll
+            />
           </td>
-          <td className="w-[50px] p-2 align-top">
-            <Button type="button" onClick={() => form.handleSubmit()}>
+          <td className={`box-content w-[50px] ${ADMIN_TD}`}>
+            <button
+              type="button"
+              className={ADMIN_BTN_PRIMARY}
+              onClick={() => form.handleSubmit()}
+            >
               Add
-            </Button>
+            </button>
           </td>
         </tr>
       </tbody>

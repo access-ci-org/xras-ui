@@ -34,12 +34,15 @@ function ProjectsBrowserInner() {
   }, []);
 
   return (
-    <div>
-      <div className="flex flex-col gap-6 sm:flex-row">
-        <div className="sm:w-1/4">
+    /* Bootstrap's `.container-fluid > .row > .col-sm-3 / .col-sm-9`: the grid
+       gutter (1.25rem in this app's build) halved into each column's padding and
+       cancelled by the row's negative margin. */
+    <div className="px-2.5">
+      <div className="-mx-2.5 flex flex-wrap">
+        <div className="w-full px-2.5 sm:w-1/4">
           <Filters />
         </div>
-        <div className="sm:w-3/4">
+        <div className="w-full px-2.5 sm:w-3/4">
           {showPagination && <Pagination />}
 
           <div id="projectListRow">

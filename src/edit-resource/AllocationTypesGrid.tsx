@@ -2,9 +2,16 @@ import { useMemo } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Plus } from "lucide-react";
 import { useAppForm } from "@/components/form";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import Grid, { type GridColumn } from "../shared/Grid";
+import {
+  ADMIN_BTN_ICON,
+  ADMIN_BTN_PRIMARY,
+  ADMIN_GRID,
+  ADMIN_H2,
+  ADMIN_LABEL,
+  ADMIN_SELECT,
+} from "../shared/adminTheme";
 import { AddNewModal } from "./AddNewModal";
 import { AdvancedSettingsSection } from "./AdvancedSettingsSection";
 import {
@@ -33,12 +40,20 @@ const AllocationGridHeader = ({
   onAddRequiredResource: () => void;
 }) => (
   <div className="flex gap-4">
-    <Button onClick={() => isEditing && onAddAllocationType()}>
-      <Plus className="size-4" /> Add Allocation Type
-    </Button>
-    <Button onClick={() => isEditing && onAddRequiredResource()}>
-      <Plus className="size-4" /> Add Required Resource
-    </Button>
+    <button
+      type="button"
+      className={ADMIN_BTN_PRIMARY}
+      onClick={() => isEditing && onAddAllocationType()}
+    >
+      <Plus className={ADMIN_BTN_ICON} /> Add Allocation Type
+    </button>
+    <button
+      type="button"
+      className={ADMIN_BTN_PRIMARY}
+      onClick={() => isEditing && onAddRequiredResource()}
+    >
+      <Plus className={ADMIN_BTN_ICON} /> Add Required Resource
+    </button>
   </div>
 );
 
@@ -78,17 +93,19 @@ const AddRequiredResourceForm = ({ onClose }: { onClose: () => void }) => {
     >
       <form.Field name="resourceIds">
         {(field) => (
-          <div className="flex flex-col gap-2">
+          <div>
             {availableResources.map((resource) => (
               <label
                 key={resource.resource_id}
-                className="flex items-center gap-2 text-sm font-medium"
+                className={cn(ADMIN_LABEL, "flex items-center gap-2")}
               >
-                <Checkbox
+                <input
+                  type="checkbox"
+                  className="m-0 size-[13px] cursor-pointer [accent-color:auto]"
                   checked={field.state.value.includes(resource.resource_id)}
-                  onCheckedChange={(checked) =>
+                  onChange={(e) =>
                     field.handleChange(
-                      checked
+                      e.target.checked
                         ? [...field.state.value, resource.resource_id]
                         : field.state.value.filter((id) => id !== resource.resource_id),
                     )
@@ -129,18 +146,27 @@ const AddAllocationTypeForm = ({ onClose }: { onClose: () => void }) => {
       onSave={() => form.handleSubmit()}
       buttonText="Save"
     >
-      <form.AppField name="allocationTypeId">
+      <form.Field name="allocationTypeId">
         {(field) => (
-          <field.FieldSelect
-            label="Select Allocation Type"
-            placeholder="Select an allocation type to add"
-            options={availableAllocationTypes.map((at) => ({
-              value: at.allocation_type_id.toString(),
-              label: at.display_name,
-            }))}
-          />
+          <div>
+            <label className={ADMIN_LABEL}>Select Allocation Type</label>
+            <select
+              className={ADMIN_SELECT}
+              value={field.state.value ?? ""}
+              onChange={(e) => field.handleChange(e.target.value)}
+            >
+              <option value="" disabled>
+                Select an allocation type to add
+              </option>
+              {availableAllocationTypes.map((at) => (
+                <option key={at.allocation_type_id} value={at.allocation_type_id}>
+                  {at.display_name}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
-      </form.AppField>
+      </form.Field>
     </AddNewModal>
   );
 };
@@ -212,7 +238,7 @@ export const AllocationTypesSection = () => {
   return (
     <>
       <AdvancedSettingsSection
-        headerText={<h2>Allocation Types</h2>}
+        headerText={<h2 className={ADMIN_H2}>Allocation Types</h2>}
         header={
           <AllocationGridHeader
             isEditing={isEditing}
@@ -225,8 +251,8 @@ export const AllocationTypesSection = () => {
         warningMessage="Incorrect allocations process settings can make a resource unavailable for allocation. Please proceed with caution."
       >
         <div className="mt-4">
-          <Grid columns={columns} rows={rows} scroll={false} />
-          <p className="mt-4 font-bold italic">
+          <Grid columns={columns} rows={rows} classes={ADMIN_GRID} scroll={false} />
+          <p className="m-0 text-[14px]/[20px] font-bold italic">
             Note: You may need to contact your Allocations Coordinator if you have added this
             resource to an allocation type.
           </p>

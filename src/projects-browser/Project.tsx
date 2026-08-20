@@ -10,8 +10,18 @@ import {
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import Publication from "./Publication";
 import type { Project as ProjectType, Resource } from "./types";
+
+/*
+ * Bootstrap's `.row` and `.col`, at the 1.25rem grid gutter this app's build
+ * uses: half of it in each column's padding, cancelled again by the row's
+ * negative margin, so the columns sit a full gutter apart but flush with the
+ * edges of whatever contains the row.
+ */
+const ROW = "-mx-2.5 flex flex-wrap";
+const COL = "shrink-0 grow basis-0 px-2.5";
 
 const Project = ({ project }: { project: ProjectType }) => {
   const resources = project.resources;
@@ -56,7 +66,11 @@ const Project = ({ project }: { project: ProjectType }) => {
   const copyRequestNumber = () => {
     const { origin, pathname } = window.location;
     const link = `${origin}${pathname}?_requestNumber=${project.requestNumber}`;
-    navigator.clipboard.writeText(link);
+    void navigator.clipboard.writeText(link);
+    /* The old `OverlayTrigger` opened on the click itself; the tooltip is
+       controlled here, so the click has to open it as well as schedule the
+       two seconds after which it closes again. */
+    setShowAlert(true);
     setTimeout(() => setShowAlert(false), 2000);
   };
 
@@ -71,8 +85,13 @@ const Project = ({ project }: { project: ProjectType }) => {
     return (
       <Tooltip open={showAlert} onOpenChange={setShowAlert}>
         <TooltipTrigger asChild>
-          <button onClick={copyRequestNumber} className="border-none bg-transparent text-white">
-            <Link className="size-5" aria-label="Direct link to project" />
+          {/* The old markup drew Bootstrap's `bi-link-45deg` at 24px in a
+              button the UA padded; `p-1.5` stands in for that padding. */}
+          <button
+            onClick={copyRequestNumber}
+            className="cursor-pointer border-none bg-transparent p-1.5 text-white"
+          >
+            <Link className="size-6" aria-label="Direct link to project" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="left">Link Copied!</TooltipContent>
@@ -130,23 +149,28 @@ const Project = ({ project }: { project: ProjectType }) => {
     );
   };
 
+  /*
+   * Bootstrap's `.table.table-striped.table-bordered`: 0.5rem cells with a 1px
+   * border around each one, body rows aligned to the top of their cells, and
+   * rgba(0, 0, 0, .05) behind the odd ones.
+   */
   const resourceList = (
-    <table className="mb-0 mt-2 w-full border-collapse border">
-      <thead>
-        <tr className="border-b">
-          <td className="p-2">
+    <table className="mb-0 mt-2 w-full">
+      <thead className="align-bottom">
+        <tr>
+          <td className="border p-2">
             <span>Resource</span>
           </td>
-          <td className="p-2">
+          <td className="border p-2">
             <span>Allocation</span>
           </td>
         </tr>
       </thead>
-      <tbody>
+      <tbody className="align-top">
         {resources.map((r, i) => (
-          <tr key={`resource_${project.requestId}_${i}`} className="border-b">
-            <td className="p-2">{r.resourceName}</td>
-            <td className="whitespace-nowrap p-2">{formatNumber(r)}</td>
+          <tr key={`resource_${project.requestId}_${i}`} className="odd:bg-black/5">
+            <td className="border p-2">{r.resourceName}</td>
+            <td className="whitespace-nowrap border p-2">{formatNumber(r)}</td>
           </tr>
         ))}
       </tbody>
@@ -155,8 +179,12 @@ const Project = ({ project }: { project: ProjectType }) => {
 
   const resourcesRow = (
     <>
-      <div className="mt-2 border-b font-bold">Resources</div>
-      <div>{resourceList}</div>
+      <div className={`${ROW} mt-2 font-bold`}>
+        <div className="w-1/4 shrink-0 border-b px-2.5">Resources</div>
+      </div>
+      <div className={ROW}>
+        <div className={COL}>{resourceList}</div>
+      </div>
     </>
   );
 
@@ -188,7 +216,11 @@ const Project = ({ project }: { project: ProjectType }) => {
     }
     return (
       <>
-        <div className="mt-2 border-b font-bold">Abstract</div>
+        {/* The heading `span` was the `.col` itself here, so its `mb-1` counted
+            — the other headings' spans sit inside a `.col` and are inline. */}
+        <div className={`${ROW} mt-2 border-b font-bold`}>
+          <span className={`${COL} mb-1`}>Abstract</span>
+        </div>
 
         <div style={{ whiteSpace: "pre-wrap", display: "inline" }}>
           {expandAbstract ? project.abstract : abstractPreview}
@@ -196,19 +228,33 @@ const Project = ({ project }: { project: ProjectType }) => {
         {canExpand && (
           <button
             onClick={() => setExpandAbstract(!expandAbstract)}
-            className="inline border-none bg-transparent font-bold"
+            className="inline cursor-pointer border-none bg-transparent font-bold"
           >
             {expandAbstract ? "Show Less" : "Read More"}
           </button>
         )}
-        <div className="mt-2 flex flex-wrap gap-6">
-          <div className="flex-1 lg:basis-1/2">
-            <div className="border-b font-bold">Resources</div>
-            <div>{resourceList}</div>
+        {/* `.col-lg-6` twice: side by side once the viewport reaches the `lg`
+            breakpoint, stacked below it. The left one carried `.flex-fill`, so
+            it grows into the space the right one leaves when there are no
+            publications. */}
+        <div className={`${ROW} mt-2`}>
+          <div className="w-full shrink-0 grow px-2.5 lg:w-1/2">
+            <div className={`${ROW} border-b font-bold`}>
+              <div className={COL}>
+                <span className="font-bold">Resources</span>
+              </div>
+            </div>
+            <div className={ROW}>
+              <div className={COL}>{resourceList}</div>
+            </div>
           </div>
           {project?.publications?.length > 0 && (
-            <div className="flex-1 lg:basis-1/2">
-              <div className="border-b font-bold">Publications</div>
+            <div className="w-full shrink-0 px-2.5 lg:w-1/2">
+              <div className={`${ROW} border-b font-bold`}>
+                <div className={COL}>
+                  <span className="font-bold">Publications</span>
+                </div>
+              </div>
               <div className="mt-2 pb-0" key={`publication_${project.projectId}_0`}>
                 <Publication
                   publication={{ ...project.publications[0], projects: [] }}
@@ -230,29 +276,38 @@ const Project = ({ project }: { project: ProjectType }) => {
   };
 
   return (
-    <div className="mb-4 border">
-      <div className="flex justify-between bg-primary p-3 text-white">
-        <div>{requestTitle()}</div>
-        <div>{requestNumberLink()}</div>
-      </div>
-      <div className="p-3">
-        <div className="flex border-b font-bold">
-          <div className="flex-1">Field of Science</div>
-          <div className="flex-1" title='A specific level of allocation; also referred to as "Opportunity"'>
-            Project Type
+    /* `.mb-4` is 1.5rem in Bootstrap's spacing scale, not Tailwind's 1rem. */
+    <Card className="mb-6">
+      <CardHeader className="block bg-primary text-white">
+        <div className="flex justify-between">
+          <div>{requestTitle()}</div>
+          <div>{requestNumberLink()}</div>
+        </div>
+      </CardHeader>
+      <CardBody>
+        <div className={`${ROW} border-b font-bold`}>
+          <div className={COL}>
+            <span>Field of Science</span>
           </div>
-          <div className="flex-1">Dates</div>
+          <div className={COL}>
+            <span title='A specific level of allocation; also referred to as "Opportunity"'>
+              Project Type
+            </span>
+          </div>
+          <div className={COL}>
+            <span>Dates</span>
+          </div>
         </div>
 
-        <div className="flex">
-          <div className="flex-1">{project.fos}</div>
-          <div className="flex-1">{project.allocationType}</div>
-          <div className="flex-1">{projectDates()}</div>
+        <div className={ROW}>
+          <div className={COL}>{project.fos}</div>
+          <div className={COL}>{project.allocationType}</div>
+          <div className={COL}>{projectDates()}</div>
         </div>
 
         {projectContent()}
-      </div>
-    </div>
+      </CardBody>
+    </Card>
   );
 };
 

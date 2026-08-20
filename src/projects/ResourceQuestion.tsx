@@ -87,7 +87,7 @@ export default function ResourceQuestion({
       field = (
         <select
           id={id}
-          className="h-9 w-full rounded-none border border-input bg-transparent px-3 py-1 shadow-sm"
+          className="h-9 w-full rounded-none border border-input bg-transparent px-3 py-1"
           required={first.required}
           multiple
           onChange={multiChange}
