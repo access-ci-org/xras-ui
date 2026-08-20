@@ -2,6 +2,7 @@ import { useState } from "react";
 import Alert from "../shared/Alert";
 import StatusBadge from "../shared/StatusBadge";
 import { formatRequestName } from "../shared/helpers/utils";
+import type { RouteOverrides } from "../shared/routes";
 import Request from "./Request";
 import RequestActionButtons from "./RequestActionButtons";
 import { useProject } from "./helpers/hooks";
@@ -32,11 +33,13 @@ export default function Project({
   grantNumber,
   title,
   status,
+  routes,
 }: {
   open?: boolean;
   grantNumber: string;
   title?: string;
   status?: string;
+  routes?: RouteOverrides;
 }) {
   const [expanded, setExpanded] = useState(open);
   const { project, setRequest } = useProject(grantNumber, Boolean(!expanded && title && status));
@@ -71,7 +74,7 @@ export default function Project({
             <RequestActionButtons requestId={project.selectedRequestId} grantNumber={grantNumber} />
           </div>
           {selectedRequest ? (
-            <Request requestId={selectedRequest.requestId} grantNumber={grantNumber} />
+            <Request requestId={selectedRequest.requestId} grantNumber={grantNumber} routes={routes} />
           ) : null}
         </>
       );

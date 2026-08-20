@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import { produce, type Draft } from "immer";
 import { coalesce, getCost, roundNumber, sortResources, xrasRolesMap } from "../shared/helpers/utils";
-import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 import type {
   Action,
   AllowedAction,
@@ -438,9 +438,14 @@ const updateUserHasChanges = (user: Draft<User>) =>
 const getAuthToken = () =>
   document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? "";
 
-export const searchUsers = async (searchText: string): Promise<SearchedUser[]> => {
+// A write atom rather than a plain exported function so it can read the
+// caller's per-store `routesAtom` (see src/shared/routes.ts) instead of the
+// `config.routes` singleton: Users.tsx (its only caller) already renders
+// inside the projects store's `Provider`, so `useSetAtom(searchUsersAtom)`
+// there is a drop-in replacement for calling this directly.
+export const searchUsersAtom = atom(null, async (get, _set, searchText: string): Promise<SearchedUser[]> => {
   const params = new URLSearchParams({ q: searchText });
-  const res = await fetch(`${config.routes.search_people_path()}?${params}`);
+  const res = await fetch(`${get(routesAtom).search_people_path()}?${params}`);
   return (await res.json()).map(
     ({
       eligible_reason,
@@ -460,7 +465,7 @@ export const searchUsers = async (searchText: string): Promise<SearchedUser[]> =
       organization,
     }),
   );
-};
+});
 
 // ---------------------------------------------------------------------------
 // Async actions (ported from createAsyncThunk usages)
@@ -471,7 +476,7 @@ export const fetchProjectsListAtom = atom(null, async (get, set, username: strin
     draft.projectListLoading = true;
   }));
 
-  const res = await fetch(`${config.routes.projects_path()}.json`);
+  const res = await fetch(`${get(routesAtom).projects_path()}.json`);
   if (res.status != 200) {
     update(get, set, (draft) => {
       draft.error = "Failed to load project list.";
@@ -533,7 +538,7 @@ export const fetchUsageDetailAtom = atom(
       draft.requests[requestId].usageDetailStatus = statuses.pending;
     });
 
-    const res = await fetch(`${config.routes.usage_detail_path(grantNumber, resourceRepositoryKey)}.json`);
+    const res = await fetch(`${get(routesAtom).usage_detail_path(grantNumber, resourceRepositoryKey)}.json`);
     if (res.status == 200) {
       const usageDetail = (await res.json()).usage;
       update(get, set, (draft) => {
@@ -560,7 +565,7 @@ export const deleteActionAtom = atom(
       if (requestAction) requestAction.deleteStatus = statuses.pending;
     });
 
-    const url = config.routes.request_action_path(request.requestId, action.actionId);
+    const url = get(routesAtom).request_action_path(request.requestId, action.actionId);
     const data: Record<string, string> = {
       _method: "delete",
       authenticity_token: getAuthToken(),
@@ -634,9 +639,10 @@ export const saveResourcesAtom = atom(null, async (get, set, { requestId }: { re
     requested_resources,
   };
 
+  const routes = get(routesAtom);
   const url = request.exchangeActionId
-    ? config.routes.request_action_path(request.requestId, request.exchangeActionId)
-    : config.routes.request_actions_path(request.requestId);
+    ? routes.request_action_path(request.requestId, request.exchangeActionId)
+    : routes.request_actions_path(request.requestId);
 
   const res = await fetch(`${url}.json`, {
     body: JSON.stringify(data),
@@ -703,7 +709,7 @@ export const saveUsersAtom = atom(null, async (get, set, { grantNumber }: { gran
     authenticity_token: getAuthToken(),
   };
 
-  const res = await fetch(config.routes.projects_save_users_path(), {
+  const res = await fetch(get(routesAtom).projects_save_users_path(), {
     method: "POST",
     body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },

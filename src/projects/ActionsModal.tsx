@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useAtomValue } from "jotai";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 import { getUpgrade } from "./helpers/upgrades";
 import { useProject, useRequest } from "./helpers/hooks";
 import type { AllowedAction } from "./types";
@@ -38,10 +39,11 @@ export default function ActionsModal({
 }) {
   const { request, toggleActionsModal } = useRequest(requestId, grantNumber);
   const { project } = useProject(grantNumber || request?.grantNumber);
+  const routes = useAtomValue(routesAtom);
 
   if (!request || !project || request.error || project.error) return null;
 
-  const newActionPath = config.routes.request_action_path(requestId, "new");
+  const newActionPath = routes.request_action_path(requestId, "new");
   const renewalAction = request.allowedActions.Renewal;
   const renewalActions: AllowedAction[] = !renewalAction
     ? []
@@ -86,7 +88,7 @@ export default function ActionsModal({
   if (upgrade.isEnabled) {
     actions.push({
       id: "upgrade",
-      action: `${config.routes.renew_request_path(requestId)}?opportunity_id=${upgrade.opportunityId}`,
+      action: `${routes.renew_request_path(requestId)}?opportunity_id=${upgrade.opportunityId}`,
       method: "post",
       isEnabled: true,
       button: "Request an upgrade",
@@ -138,7 +140,7 @@ export default function ActionsModal({
     action: renewalActions.map(
       (action): DropdownAction => [
         action.opportunityName ?? "",
-        `${config.routes.renew_request_path(requestId)}?opportunity_id=${action.opportunityId}`,
+        `${routes.renew_request_path(requestId)}?opportunity_id=${action.opportunityId}`,
         "post",
       ],
     ),
@@ -148,7 +150,7 @@ export default function ActionsModal({
       <p>
         Your {request.allocationType} project can be renewed! The requirements for renewing your project
         depend on the{" "}
-        <a href={config.routes.project_types_path()} target="_blank" rel="noreferrer">
+        <a href={routes.project_types_path()} target="_blank" rel="noreferrer">
           new project type you select
         </a>
         .
@@ -178,7 +180,7 @@ export default function ActionsModal({
   actions.push({
     id: "help",
     action: [
-      ["Learn How to Manage Allocations", config.routes.how_to_path(), "get"],
+      ["Learn How to Manage Allocations", routes.how_to_path(), "get"],
       ["Open a Help Ticket", "https://support.access-ci.org/open-a-ticket", "get"],
     ],
     isEnabled: true,

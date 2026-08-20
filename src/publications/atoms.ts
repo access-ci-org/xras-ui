@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 import type {
   EditableProject,
   EditablePublication,
@@ -83,10 +83,11 @@ export const editPublicationAtom = atom(null, (_get, set, publicationId: number 
   set(showEditModalAtom, true);
 });
 
-export const getPublicationDataAtom = atom(null, async (_get, set, publicationId: number | string | null) => {
+export const getPublicationDataAtom = atom(null, async (get, set, publicationId: number | string | null) => {
+  const routes = get(routesAtom);
   const url = publicationId
-    ? `${config.routes.edit_publication_path(publicationId)}.json`
-    : config.routes.publication_path("new.json");
+    ? `${routes.edit_publication_path(publicationId)}.json`
+    : routes.publication_path("new.json");
   const response = await fetch(url, { headers: { accept: "application/json" } });
   const data = await response.json();
 
@@ -111,7 +112,7 @@ export const grantSearchAtom = atom(null, async (get, set) => {
   const grantNumber = get(grantNumberAtom);
   try {
     const response = await fetch(
-      config.routes.publications_find_project_path({ grant_number: grantNumber }),
+      get(routesAtom).publications_find_project_path({ grant_number: grantNumber }),
     );
     const data = await response.json();
     set(editProjectsAtom, [...get(editProjectsAtom), data]);
@@ -198,7 +199,7 @@ export const getPublicationsAtom = atom(null, async (get, set) => {
 
   set(publicationsLoadedAtom, false);
   try {
-    const response = await fetch(config.routes.search_publications_path(params), {
+    const response = await fetch(get(routesAtom).search_publications_path(params), {
       headers: { Accept: "application/json" },
     });
     const data = await response.json();
@@ -219,8 +220,8 @@ export const getPublicationsAtom = atom(null, async (get, set) => {
   }
 });
 
-export const getFiltersAtom = atom(null, async (_get, set) => {
-  const response = await fetch(config.routes.search_publications_filters_path());
+export const getFiltersAtom = atom(null, async (get, set) => {
+  const response = await fetch(get(routesAtom).search_publications_filters_path());
   const data = await response.json();
   set(filterOptionsAtom, data.filters || []);
 });
@@ -249,9 +250,9 @@ export const toggleSelectedPublicationAtom = atom(null, (get, set, publicationId
 
 export const showUpdatePublicationsAtom = atom(false);
 
-export const dismissUpdatePublicationsNoticeAtom = atom(null, async (_get, set) => {
+export const dismissUpdatePublicationsNoticeAtom = atom(null, async (get, set) => {
   try {
-    const response = await fetch(config.routes.publications_dismiss_notice_path(), {
+    const response = await fetch(get(routesAtom).publications_dismiss_notice_path(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

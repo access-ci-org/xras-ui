@@ -1,7 +1,8 @@
+import { useAtomValue } from "jotai";
 import { CalendarPlus, FileCheck, Pencil, Trash2, type LucideIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { useRequest } from "./helpers/hooks";
-import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 
 type ButtonSpec = [string, string | ((e: React.MouseEvent) => void), LucideIcon?, "destructive"?];
 
@@ -13,6 +14,7 @@ export default function RequestActionButtons({
   grantNumber: string;
 }) {
   const { request, toggleActionsModal, toggleDeleteModal } = useRequest(requestId, grantNumber);
+  const routes = useAtomValue(routesAtom);
   if (!request) return null;
 
   const { actions, allowedActions } = request;
@@ -31,7 +33,7 @@ export default function RequestActionButtons({
     if ("Final Report" in allowedActions)
       buttons.push([
         "Submit Final Report",
-        `${config.routes.request_action_path(requestId, "new")}?action_type=Final+Report`,
+        `${routes.request_action_path(requestId, "new")}?action_type=Final+Report`,
         FileCheck,
       ]);
   }
@@ -40,7 +42,7 @@ export default function RequestActionButtons({
   if (action) {
     const ops = action.allowedOperations || [];
     if (ops.includes("Edit"))
-      buttons.push(["Edit", config.routes.edit_request_path(request.requestId), Pencil]);
+      buttons.push(["Edit", routes.edit_request_path(request.requestId), Pencil]);
     if (ops.includes("Delete"))
       buttons.push([
         "Delete",

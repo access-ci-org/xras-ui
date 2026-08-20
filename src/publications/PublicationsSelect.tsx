@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Provider, createStore, useSetAtom, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
+import { mergeRoutes, routesAtom, type RouteOverrides } from "../shared/routes";
 import PublicationsAlerts from "./PublicationsAlerts";
 import PublicationsGrid from "./PublicationsGrid";
 import {
@@ -50,10 +51,12 @@ function PublicationsSelectInner() {
 
 export default function PublicationsSelect({
   authenticityToken,
+  routes,
   selectedPublicationIds,
   usernames,
 }: {
   authenticityToken: string;
+  routes?: RouteOverrides;
   selectedPublicationIds: (number | string)[];
   usernames: string[];
 }) {
@@ -65,6 +68,7 @@ export default function PublicationsSelect({
         values={
           new Map<WritableAtom<any, any[], any>, unknown>([
             [authenticityTokenAtom, authenticityToken],
+            [routesAtom, mergeRoutes(routes)],
             [selectedPublicationIdsAtom, selectedPublicationIds],
             [
               filterSelectionsAtom,

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DialogBody, DialogFooter } from "@/components/ui/dialog";
-import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 import DoiSearch from "./DoiSearch";
 import Authors from "./Authors";
 import InfoTip from "../shared/InfoTip";
@@ -131,6 +131,7 @@ function PublicationFormContent({ publication }: { publication: EditablePublicat
   const selectedProjects = useAtomValue(selectedProjectsAtom);
   const authenticityToken = useAtomValue(authenticityTokenAtom);
   const errors = useAtomValue(errorsAtom);
+  const routes = useAtomValue(routesAtom);
   const setShowEditModal = useSetAtom(showEditModalAtom);
   const setSaving = useSetAtom(savingAtom);
   const setShowSaved = useSetAtom(showSavedAtom);
@@ -194,8 +195,8 @@ function PublicationFormContent({ publication }: { publication: EditablePublicat
       };
 
       const url = value.publication_id
-        ? config.routes.publication_path(value.publication_id)
-        : config.routes.publications_path();
+        ? routes.publication_path(value.publication_id)
+        : routes.publications_path();
       const method = value.publication_id ? "PATCH" : "POST";
 
       setSaving(true);

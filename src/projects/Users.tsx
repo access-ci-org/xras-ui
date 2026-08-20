@@ -1,4 +1,5 @@
 import AsyncSelect from "react-select/async";
+import { useAtomValue, useSetAtom } from "jotai";
 import { OctagonAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Alert from "../shared/Alert";
@@ -7,9 +8,9 @@ import MultiStateCheckbox from "../shared/MultiStateCheckbox";
 import ResourceName from "../shared/ResourceName";
 import UserName from "../shared/UserName";
 import gridStyle from "../shared/Grid.module.scss";
-import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 import { formatManagers, roles } from "../shared/helpers/utils";
-import { filterResource, searchUsers } from "./atoms";
+import { filterResource, searchUsersAtom } from "./atoms";
 import { useProject, useRequest } from "./helpers/hooks";
 import type { SearchedUser } from "./types";
 
@@ -25,6 +26,8 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
     toggleUsersResources,
   } = useProject(grantNumber);
   const { request } = useRequest(requestId || project?.currentRequestId, grantNumber);
+  const routes = useAtomValue(routesAtom);
+  const searchUsers = useSetAtom(searchUsersAtom);
 
   if (!project || !project.currentRequestId || !request || project.error || request.error) return null;
 
@@ -75,7 +78,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
         This project does not have any resources.{" "}
         {canExchange ? (
           <a
-            href={config.routes.request_action_path(request.requestId, "new?action_type=Exchange")}
+            href={routes.request_action_path(request.requestId, "new?action_type=Exchange")}
             onClick={(e) => {
               e.preventDefault();
               setTab("resources");

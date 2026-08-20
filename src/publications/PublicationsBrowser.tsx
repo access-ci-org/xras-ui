@@ -1,8 +1,21 @@
 import { useEffect, useMemo } from "react";
-import { Provider, createStore, useSetAtom } from "jotai";
+import { Provider, createStore, useSetAtom, type WritableAtom } from "jotai";
+import { useHydrateAtoms } from "jotai/utils";
+import { mergeRoutes, routesAtom, type RouteOverrides } from "../shared/routes";
 import Filters from "./Filters";
 import PublicationsList from "./PublicationsList";
 import { getFiltersAtom, getPublicationsAtom } from "./atoms";
+
+function HydrateAtoms({
+  values,
+  children,
+}: {
+  values: Map<WritableAtom<any, any[], any>, unknown>;
+  children: React.ReactNode;
+}) {
+  useHydrateAtoms(values);
+  return <>{children}</>;
+}
 
 function PublicationsBrowserInner() {
   const getPublications = useSetAtom(getPublicationsAtom);
@@ -36,12 +49,20 @@ function PublicationsBrowserInner() {
   );
 }
 
-export default function PublicationsBrowser() {
+export default function PublicationsBrowser({ routes }: { routes?: RouteOverrides }) {
   const store = useMemo(() => createStore(), []);
 
   return (
     <Provider store={store}>
-      <PublicationsBrowserInner />
+      <HydrateAtoms
+        values={
+          new Map<WritableAtom<any, any[], any>, unknown>([
+            [routesAtom, mergeRoutes(routes)],
+          ])
+        }
+      >
+        <PublicationsBrowserInner />
+      </HydrateAtoms>
     </Provider>
   );
 }

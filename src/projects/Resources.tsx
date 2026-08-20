@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useAtomValue } from "jotai";
 import { Table } from "lucide-react";
 import Select from "react-select";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import StatusBadge from "../shared/StatusBadge";
 import BlurInput from "../shared/BlurInput";
 import gridStyle from "../shared/Grid.module.scss";
 import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 import {
   formatArray,
   formatExchangeRate,
@@ -47,6 +49,7 @@ export default function Resources({
   const { project } = useProject(grantNumber || request?.grantNumber);
   const resourceSearch = useRef<HTMLDivElement>(null);
   const submitButton = useRef<HTMLButtonElement>(null);
+  const routes = useAtomValue(routesAtom);
   if (!request || !project) return null;
 
   const exchangeAction = request.allowedActions.Exchange;
@@ -130,7 +133,7 @@ export default function Resources({
       <Alert color="danger">
         {project.currentUser?.role === "pi" ? (
           <>
-            Please <a href={config.routes.profile_path()}>update your academic status</a> before making an
+            Please <a href={routes.profile_path()}>update your academic status</a> before making an
             exchange request.
           </>
         ) : (
@@ -466,7 +469,7 @@ export default function Resources({
           ) : null}
           <p className="text-[0.9rem] text-black/50">
             Need help choosing a resource? Visit our{" "}
-            <a className="font-bold" href={config.routes.resources_path()}>
+            <a className="font-bold" href={routes.resources_path()}>
               Resource Catalog
             </a>
             .

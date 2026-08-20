@@ -18,12 +18,11 @@ if (!globalThis.WritableStream) globalThis.WritableStream = WritableStream as ne
 if (!globalThis.TransformStream) globalThis.TransformStream = TransformStream as never;
 if (!globalThis.BroadcastChannel) globalThis.BroadcastChannel = BroadcastChannel as never;
 
-import { afterAll, afterEach, beforeAll, beforeEach } from "vitest";
+import { afterAll, afterEach, beforeAll } from "vitest";
 import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
 import { server } from "./msw";
-import config from "@/shared/helpers/config";
 
 // --- RTL cleanup -------------------------------------------------------
 afterEach(() => cleanup());
@@ -123,19 +122,6 @@ globalWithMaplibre.maplibregl ??= {
     setStyle() {}
   } as unknown as new (options: Record<string, unknown>) => unknown,
 };
-
-// --- config.routes reset -------------------------------------------------
-//
-// `config` (src/shared/helpers/config.ts) default-exports a singleton, and
-// `addRoutes()` (src/shared/helpers/utils.tsx) mutates `config.routes` in
-// place. Every mount function in src/main.jsx calls addRoutes with
-// host-supplied overrides, so route overrides from one test file otherwise
-// leak into the next one that runs after it. Snapshot the original once, at
-// module load, and restore it before every test.
-const defaultRoutes = { ...config.routes };
-beforeEach(() => {
-  config.routes = { ...defaultRoutes };
-});
 
 // --- MSW ------------------------------------------------------------------
 //

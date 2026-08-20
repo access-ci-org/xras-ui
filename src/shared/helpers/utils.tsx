@@ -14,7 +14,6 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
-import config from "./config";
 import type { ProjectSummary, RequestSummary } from "../types";
 
 // Keyed by the same identifiers `config.resourceTypeIcons`/`config.roleIcons`
@@ -202,9 +201,4 @@ export function getCost(
   const cost = (res.requested - res.allocated) * differenceUnitCost;
   if (type != "total") return cost;
   return cost + res.allocated * res.exchangeRates.base.unitCost;
-}
-
-export function addRoutes(routes?: Record<string, (...args: any[]) => string>) {
-  // Override the default routes with the ones from Rails.
-  if (routes) config.routes = { ...config.routes, ...routes };
 }

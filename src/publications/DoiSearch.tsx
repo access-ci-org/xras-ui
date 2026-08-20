@@ -4,7 +4,7 @@ import { FormItem } from "@/components/form/field-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import config from "../shared/helpers/config";
+import { routesAtom } from "../shared/routes";
 import { mergeFieldsForType, type PublicationFormValues } from "./PublicationForm";
 import { addErrorAtom, publicationTypesAtom } from "./atoms";
 import type { PublicationAuthor } from "./types";
@@ -14,6 +14,7 @@ const KNOWN_SCALAR_KEYS = ["title", "publication_year", "publication_month", "do
 
 export default function DoiSearch({ form }: { form: AppForm<PublicationFormValues> }) {
   const publicationTypes = useAtomValue(publicationTypesAtom);
+  const routes = useAtomValue(routesAtom);
   const addError = useSetAtom(addErrorAtom);
 
   const doiLookup = async () => {
@@ -22,7 +23,7 @@ export default function DoiSearch({ form }: { form: AppForm<PublicationFormValue
       "Unable to retrieve publication. Double check your DOI, or continue entering information manually.";
 
     try {
-      const response = await fetch(config.routes.publications_lookup_path({ doi }));
+      const response = await fetch(routes.publications_lookup_path({ doi }));
       const data: Record<string, unknown> = await response.json();
 
       if (data.title === "") {

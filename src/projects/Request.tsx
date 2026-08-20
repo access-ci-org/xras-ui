@@ -1,6 +1,7 @@
+import { useAtomValue } from "jotai";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Alert from "../shared/Alert";
-import config from "../shared/helpers/config";
+import { routesAtom, type RouteOverrides } from "../shared/routes";
 import ActionsModal from "./ActionsModal";
 import ConfirmModal from "./ConfirmModal";
 import DeleteModal from "./DeleteModal";
@@ -16,11 +17,14 @@ import { useProject, useRequest } from "./helpers/hooks";
 export default function Request({
   requestId,
   grantNumber,
+  routes,
 }: {
   requestId: number;
   grantNumber: string;
+  routes?: RouteOverrides;
 }) {
   const { request } = useRequest(requestId, grantNumber);
+  const routesValue = useAtomValue(routesAtom);
   const { project, setRequest, setTab } = useProject(grantNumber || request?.grantNumber);
 
   if (!request) return null;
@@ -62,7 +66,7 @@ export default function Request({
           {disabledTabs.length ? `You cannot manage ${disabledTabs.join(" or ")} for this request.` : ""}{" "}
           {project.currentRequestId ? (
             <a
-              href={config.routes.request_path(project.currentRequestId)}
+              href={routesValue.request_path(project.currentRequestId)}
               onClick={(e) => {
                 e.preventDefault();
                 setRequest(project.currentRequestId!);
@@ -117,7 +121,7 @@ export default function Request({
           <Users grantNumber={grantNumber} />
         </TabsContent>
         <TabsContent value="publications">
-          <ProjectPublications grantNumber={grantNumber} />
+          <ProjectPublications grantNumber={grantNumber} routes={routes} />
         </TabsContent>
         <TabsContent value="history">
           <History requestId={requestId} grantNumber={grantNumber} />

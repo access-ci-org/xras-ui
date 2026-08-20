@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Provider, createStore, useAtomValue, useSetAtom, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
+import { mergeRoutes, routesAtom, type RouteOverrides } from "../shared/routes";
 import PublicationAddButton from "./PublicationAddButton";
 import PublicationDismissPublicationsNotice from "./PublicationDismissPublicationsNotice";
 import PublicationEditModal from "./PublicationEditModal";
@@ -60,10 +61,12 @@ function MyPublicationsInner({ showUpdatePublications }: { showUpdatePublication
 
 export default function MyPublications({
   authenticityToken,
+  routes,
   username,
   showUpdatePublications,
 }: {
   authenticityToken: string;
+  routes?: RouteOverrides;
   username: string;
   showUpdatePublications: boolean;
 }) {
@@ -75,6 +78,7 @@ export default function MyPublications({
         values={
           new Map<WritableAtom<any, any[], any>, unknown>([
             [authenticityTokenAtom, authenticityToken],
+            [routesAtom, mergeRoutes(routes)],
             [showUpdatePublicationsAtom, showUpdatePublications],
             [
               filterSelectionsAtom,

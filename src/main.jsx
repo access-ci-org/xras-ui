@@ -1,7 +1,6 @@
 import ReactDOM from "react-dom/client";
 import { Provider as JotaiProvider, createStore } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
-import { addRoutes } from "./shared/helpers/utils";
 import { ShadowRootProvider } from "./lib/shadow-root";
 
 import AllocationsMap from "./allocations-map/AllocationsMap";
@@ -18,6 +17,7 @@ import PublicationsBrowser from "./publications/PublicationsBrowser";
 import PublicationEdit from "./publications/PublicationEdit";
 import PublicationsSelect from "./publications/PublicationsSelect";
 import { authenticityTokenAtom, publicationIdAtom } from "./publications/atoms";
+import { routesAtom, mergeRoutes } from "./shared/routes";
 
 import OnRampsResourceCatalog from "./onramps-resource-catalog/ResourceCatalog";
 
@@ -162,8 +162,7 @@ export function editResource({
 }
 
 export function projects({ target, username, routes, baseUrl = null, stylesheets = null }) {
-  addRoutes(routes);
-  renderShadow(<Projects username={username} />, { target, baseUrl, stylesheets });
+  renderShadow(<Projects username={username} routes={routes} />, { target, baseUrl, stylesheets });
 }
 
 export function projectsBrowser({ target, apiUrl, baseUrl = null, stylesheets = null }) {
@@ -171,8 +170,7 @@ export function projectsBrowser({ target, apiUrl, baseUrl = null, stylesheets = 
 }
 
 export function publicationsBrowser({ target, routes, baseUrl = null, stylesheets = null }) {
-  addRoutes(routes);
-  renderShadow(<PublicationsBrowser />, { target, baseUrl, stylesheets });
+  renderShadow(<PublicationsBrowser routes={routes} />, { target, baseUrl, stylesheets });
 }
 
 function HydrateAtoms({ values, children }) {
@@ -188,7 +186,6 @@ export function publicationEdit({
   baseUrl = null,
   stylesheets = null,
 }) {
-  addRoutes(routes);
   const store = createStore();
 
   renderShadow(
@@ -198,6 +195,7 @@ export function publicationEdit({
           new Map([
             [publicationIdAtom, publicationId],
             [authenticityTokenAtom, authenticityToken],
+            [routesAtom, mergeRoutes(routes)],
           ])
         }
       >
@@ -217,10 +215,10 @@ export function publicationsSelect({
   baseUrl = null,
   stylesheets = null,
 }) {
-  addRoutes(routes);
   renderShadow(
     <PublicationsSelect
       authenticityToken={authenticityToken}
+      routes={routes}
       selectedPublicationIds={selectedPublicationIds}
       usernames={usernames}
     />,
@@ -256,10 +254,10 @@ export function myPublications({
   baseUrl = null,
   stylesheets = null,
 }) {
-  addRoutes(routes);
   renderShadow(
     <MyPublications
       authenticityToken={authenticityToken}
+      routes={routes}
       username={username}
       showUpdatePublications={showUpdatePublications}
     />,
