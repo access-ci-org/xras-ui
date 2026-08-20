@@ -41,9 +41,18 @@ export default defineConfig({
         "**/*.d.ts",
         "src/main.jsx",
       ],
-      // No thresholds yet: Phase 1 only adds a handful of smoke tests, so any
-      // percentage gate here would be meaningless. Revisit once Phases 2-5
-      // bring real coverage.
+      // Ratchet, not a target: Phase 5 (src/main.test.tsx plus everything the
+      // three Phase 2-4 test agents added) brought coverage to ~59/40/53/61%
+      // (stmts/branch/funcs/lines - see `npm run test:coverage`). These
+      // thresholds sit a couple of points below that so CI fails if coverage
+      // drops, not so it demands more of it; raise them opportunistically as
+      // real coverage grows, don't set them ahead of it.
+      thresholds: {
+        statements: 58,
+        branches: 39,
+        functions: 51,
+        lines: 59,
+      },
     },
   },
 });
