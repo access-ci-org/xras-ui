@@ -180,10 +180,8 @@ describe("parseResourceName", () => {
 });
 
 describe("sortResources", () => {
-  // Only exercises one field at a time: the comparator ORs together three
-  // "greater than" checks instead of a proper lexicographic chain (see the
-  // BUG note below), so combining fields makes the result depend on
-  // Array.sort's internal comparison order rather than any documented rule.
+  const resource = (over = {}) => ({ name: "A", isCredit: false, isActive: false, ...over });
+
   it("sorts alphabetically by short/full name when isCredit and isActive are equal", () => {
     const a = { name: "Zeta", isCredit: false, isActive: true };
     const b = { name: "Alpha", isCredit: false, isActive: true };
@@ -197,9 +195,7 @@ describe("sortResources", () => {
   });
 
   // Counterintuitive given the name (one might expect credits sorted last),
-  // but this is what `(a.isCredit ?? false) > (b.isCredit ?? false)` actually
-  // does: true > false, so a credit resource sorts BEFORE a non-credit one
-  // when that's the only difference.
+  // but credits-first is the long-standing intent, so it is pinned here.
   it("sorts a credit resource before a non-credit one of the same activity", () => {
     const credit = { name: "A", isCredit: true, isActive: false };
     const nonCredit = { name: "A", isCredit: false, isActive: false };
@@ -209,26 +205,59 @@ describe("sortResources", () => {
   it("treats missing isCredit/isActive as false", () => {
     const withFlags = { name: "A", isCredit: false, isActive: false };
     const withoutFlags = { name: "A" };
-    // Neither has a flag set, so they're equal on the first two clauses and
-    // the tie should fall through to the (equal) name comparison.
-    expect(sortResources(withFlags, withoutFlags)).toBe(1);
-    expect(sortResources(withoutFlags, withFlags)).toBe(1);
+    // Equal on both flags and on name, so this is a genuine tie.
+    expect(sortResources(withFlags, withoutFlags)).toBe(0);
+    expect(sortResources(withoutFlags, withFlags)).toBe(0);
   });
 
-  // BUG: src/shared/helpers/utils.tsx:104-112. The comparator is not a valid
-  // strict-weak-order - it only checks `a.field > b.field`, never
-  // `a.field < b.field`, so when a field says "a should sort first" it still
-  // falls through to compare the *next* field instead of returning +1
-  // immediately. That produces genuine 3-way cycles (a<b, b<c, c<a), which
-  // violates the contract Array.prototype.sort requires of its comparator
-  // and makes multi-field results implementation-defined. Reproduced here,
-  // not asserted as "correct" output:
-  //   x = { isCredit: false, isActive: false, name: "A" }
-  //   y = { isCredit: false, isActive: true,  name: "B" }
-  //   z = { isCredit: true,  isActive: false, name: "A" }
-  //   sortResources(x, y) === -1  (x before y)
-  //   sortResources(y, z) === -1  (y before z)
-  //   sortResources(z, x) === -1  (z before x) <- cycle
+  // The tiers have to cascade in order of precedence. The previous
+  // implementation OR-ed three `a.field > b.field` checks together, so a tier
+  // favoring `b` fell through and let a lower tier decide - these two cases
+  // are what that got wrong.
+  // Asserted on the comparator directly, in both directions, rather than
+  // through `.sort()`: a two-element sort only calls the comparator once, and
+  // which way round is up to the engine, so a `.sort()` assertion here can
+  // pass against a broken comparator by luck.
+  it("lets isCredit outrank both isActive and name", () => {
+    const credit = resource({ isCredit: true, isActive: false, name: "Zeta" });
+    const active = resource({ isCredit: false, isActive: true, name: "Alpha" });
+    expect(sortResources(credit, active)).toBeLessThan(0);
+    expect(sortResources(active, credit)).toBeGreaterThan(0);
+  });
+
+  it("lets isActive outrank name", () => {
+    const active = resource({ isActive: true, name: "Zeta" });
+    const inactive = resource({ isActive: false, name: "Alpha" });
+    expect(sortResources(active, inactive)).toBeLessThan(0);
+    expect(sortResources(inactive, active)).toBeGreaterThan(0);
+  });
+
+  // Array.prototype.sort gives implementation-defined output for a comparator
+  // that isn't a consistent ordering, so these two properties are the actual
+  // contract - not any single pairwise result. Brute-forced over every
+  // combination of the three fields rather than spot-checked, because the
+  // original bug only showed up on specific triples.
+  const permutations = [false, true].flatMap((isCredit) =>
+    [false, true].flatMap((isActive) =>
+      ["Alpha", "Zeta"].map((name) => resource({ isCredit, isActive, name })),
+    ),
+  );
+
+  it("is antisymmetric for every combination of fields", () => {
+    for (const x of permutations)
+      for (const y of permutations)
+        // Summed rather than negated-and-compared: Math.sign returns -0 for a
+        // tie, and toBe uses Object.is, which distinguishes +0 from -0.
+        expect(Math.sign(sortResources(x, y)) + Math.sign(sortResources(y, x))).toBe(0);
+  });
+
+  it("is transitive for every combination of fields", () => {
+    for (const x of permutations)
+      for (const y of permutations)
+        for (const z of permutations)
+          if (sortResources(x, y) <= 0 && sortResources(y, z) <= 0)
+            expect(sortResources(x, z)).toBeLessThanOrEqual(0);
+  });
 });
 
 describe("coalesce", () => {

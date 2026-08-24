@@ -101,15 +101,37 @@ const getSortResourceName = (res: { name: string }) => {
   return parsed.short || parsed.full;
 };
 
+// Tiered comparator: credit resources first, then active ones, then by
+// display name. Each tier returns as soon as it finds a difference and falls
+// through only on a tie.
+//
+// The previous implementation OR-ed three `a.field > b.field` checks into a
+// single `? -1 : 1`. That never returned +1 to mean "b wins this tier", so a
+// tier that favored `b` fell through and let a *later* tier decide - a
+// non-credit resource could sort ahead of a credit one on name alone. It also
+// never returned 0, so it was not antisymmetric: sortResources(x, y) and
+// sortResources(y, x) could both return -1. Array.prototype.sort requires a
+// consistent comparator and gives implementation-defined output without one,
+// so multi-field ordering was effectively undefined.
 export const sortResources = (
   a: { isCredit?: boolean; isActive?: boolean; name: string },
   b: { isCredit?: boolean; isActive?: boolean; name: string },
-) =>
-  (a.isCredit ?? false) > (b.isCredit ?? false) ||
-  (a.isActive ?? false) > (b.isActive ?? false) ||
-  getSortResourceName(a) < getSortResourceName(b)
-    ? -1
-    : 1;
+) => {
+  // Subtract b from a so that `true` (1) sorts first.
+  const byCredit = Number(b.isCredit ?? false) - Number(a.isCredit ?? false);
+  if (byCredit) return byCredit;
+
+  const byActive = Number(b.isActive ?? false) - Number(a.isActive ?? false);
+  if (byActive) return byActive;
+
+  // Kept as codepoint comparison rather than localeCompare to preserve the
+  // name ordering this has always produced; switching is a separate call.
+  const nameA = getSortResourceName(a);
+  const nameB = getSortResourceName(b);
+  if (nameA < nameB) return -1;
+  if (nameA > nameB) return 1;
+  return 0;
+};
 
 export const coalesce = <T,>(...values: (T | null | undefined)[]): T | null => {
   for (const value of values) if (value !== undefined && value !== null) return value;
