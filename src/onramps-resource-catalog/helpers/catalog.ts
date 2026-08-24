@@ -1,5 +1,4 @@
 import type {
-  Catalog,
   CatalogSource,
   Feature,
   FilterCategoryType,
@@ -36,57 +35,55 @@ function formatResourceFeatures(
   >,
 ) {
   const featureList: Feature[] = [];
-  let sortCategory = "";
 
   resource.featureCategories
     .filter((f: any) => f.categoryIsFilter)
     .forEach((category: any) => {
       const categoryId = category.categoryId;
 
-      if (category.categoryName == "ACCESS Resource Grouping") {
-        sortCategory = category.features[0].name;
-      } else {
-        if (
-          !categories[categoryId] &&
-          useFilter(
-            catalog.allowedCategories,
-            catalog.excludedCategories,
-            category.categoryName,
-          )
-        ) {
-          categories[categoryId] = {
-            categoryId: categoryId,
-            categoryName: category.categoryName,
-            categoryDescription: category.categoryDescription,
-            features: {},
-          };
-        }
+      // "ACCESS Resource Grouping" is metadata about how resources roll up,
+      // not something to filter on, so it contributes neither a category nor
+      // any features.
+      if (category.categoryName == "ACCESS Resource Grouping") return;
 
-        category.features.forEach((feat: any) => {
-          const feature: Feature = {
-            featureId: feat.featureId,
-            name: feat.name,
-            description: feat.description,
-            categoryId: categoryId,
-            selected: false,
-          };
-
-          const filterIncluded = useFilter(
-            catalog.allowedFilters,
-            catalog.excludedFilters,
-            feature.name,
-          );
-          if (filterIncluded) featureList.push(feature);
-
-          if (
-            categories[categoryId] &&
-            filterIncluded &&
-            !categories[categoryId].features[feature.featureId]
-          ) {
-            categories[categoryId].features[feature.featureId] = feature;
-          }
-        });
+      if (
+        !categories[categoryId] &&
+        useFilter(
+          catalog.allowedCategories,
+          catalog.excludedCategories,
+          category.categoryName,
+        )
+      ) {
+        categories[categoryId] = {
+          categoryId: categoryId,
+          categoryName: category.categoryName,
+          categoryDescription: category.categoryDescription,
+          features: {},
+        };
       }
+
+      category.features.forEach((feat: any) => {
+        const feature: Feature = {
+          featureId: feat.featureId,
+          name: feat.name,
+          categoryId: categoryId,
+        };
+
+        const filterIncluded = useFilter(
+          catalog.allowedFilters,
+          catalog.excludedFilters,
+          feature.name,
+        );
+        if (filterIncluded) featureList.push(feature);
+
+        if (
+          categories[categoryId] &&
+          filterIncluded &&
+          !categories[categoryId].features[feature.featureId]
+        ) {
+          categories[categoryId].features[feature.featureId] = feature;
+        }
+      });
     });
 
   const featureNames = featureList
@@ -97,53 +94,47 @@ function formatResourceFeatures(
     ...resource,
     resourceName: resource.resourceName.trim(),
     features: featureNames,
-    featureIds: featureList.map((f) => f.featureId),
-    sortCategory,
   };
 
   return { formattedResource, categories };
 }
 
-export function mergeData(apiResources: (CatalogSource & { data: any[] })[]) {
-  const catalogs: Record<string, Catalog> = {};
+/**
+ * Applies one feed's allow/exclude configuration, returning its resources and
+ * the filter categories they contribute.
+ *
+ * This used to merge an array of caller-supplied feeds into a keyed `catalogs`
+ * record, which is why resources are collected into an id-keyed map first: a
+ * later feed's resource overwrote an earlier one with the same id. There is
+ * only ever the one hardcoded feed now (see `transformRampsData`), so the map
+ * just dedupes within it.
+ */
+export function mergeData(catalog: CatalogSource & { data: any[] }) {
   const resources: Record<number, Resource> = {};
   let filterCategories: Record<
     number,
     Omit<FilterCategoryType, "features"> & { features: Record<number, Feature> }
   > = {};
 
-  apiResources.forEach((catalog) => {
-    catalogs[catalog.catalogLabel] = {
-      ...catalog,
-      resourceIds: [],
-      selected: false,
-      catalogId: catalog.catalogLabel.replace(/[^(A-z)]/, ""),
-    };
-    delete (catalogs[catalog.catalogLabel] as any).data;
-
-    catalog.data.forEach((resource) => {
-      if (
-        useFilter(
-          catalog.allowedResources,
-          catalog.excludedResources,
-          resource.resourceName,
-        )
-      ) {
-        const { categories, formattedResource } = formatResourceFeatures(
-          catalog,
-          resource,
-          filterCategories,
-        );
-        resources[resource.resourceId] = formattedResource;
-        catalogs[catalog.catalogLabel].resourceIds.push(resource.resourceId);
-        filterCategories = categories;
-      }
-    });
+  catalog.data.forEach((resource) => {
+    if (
+      useFilter(
+        catalog.allowedResources,
+        catalog.excludedResources,
+        resource.resourceName,
+      )
+    ) {
+      const { categories, formattedResource } = formatResourceFeatures(
+        catalog,
+        resource,
+        filterCategories,
+      );
+      resources[resource.resourceId] = formattedResource;
+      filterCategories = categories;
+    }
   });
 
-  const uniqueResources = Object.values(resources);
-
-  return { resources: uniqueResources, catalogs, categories: filterCategories };
+  return { resources: Object.values(resources), categories: filterCategories };
 }
 
 const rampsResourceTypes: Record<string, string> = {
@@ -189,7 +180,6 @@ export function transformRampsData(
           featureId: ff.id,
           name: ff.name,
           categoryId: ff.feature_category_id,
-          isFilter: ff.is_allocations_filter,
         };
       });
     });
@@ -216,9 +206,7 @@ export function transformRampsData(
           rampsResources.find((rr) => rr.info_resourceid == id),
         )
         .map((rr: any) => ({
-          info_resourceid: rr.info_resourceid,
           cider_resource_id: rr.cider_resource_id,
-          resourceName: rr.short_name,
           displayResourceName: rr.resource_descriptive_name,
         }));
     }
@@ -242,12 +230,9 @@ export function transformRampsData(
       resourceId: r.cider_resource_id,
       resourceName: r.short_name,
       displayResourceName: r.resource_descriptive_name,
-      resourceDescription: r.resource_description,
       recommendedUse: r.recommended_use,
       icon: organization?.organization_favicon_url || null,
-      resourceType: originalResourceType?.name,
       resourceCategory: resourceType,
-      organization: r.organization_name,
       featureCategories: Object.values(rfc),
       relatedResources,
       groupId: resourceGroup?.info_groupid,
@@ -255,25 +240,21 @@ export function transformRampsData(
     };
   });
 
-  const sources: (CatalogSource & { data: any[] })[] = [
-    {
-      apiUrl: "https://allocations.access-ci.org/resources.json",
-      catalogLabel: "ACCESS",
-      allowedCategories: [],
-      allowedFilters: [],
-      allowedResources: [],
-      excludedCategories: [
-        "Resource Category",
-        "**DELETED** ACCESS Integration Roadmap",
-        "Resource Status",
-      ],
-      excludedFilters: ["Resource Status"],
-      excludedResources: ["ACCESS Credits"],
-      data: formattedResources,
-    },
-  ];
+  const source: CatalogSource & { data: any[] } = {
+    allowedCategories: [],
+    allowedFilters: [],
+    allowedResources: [],
+    excludedCategories: [
+      "Resource Category",
+      "**DELETED** ACCESS Integration Roadmap",
+      "Resource Status",
+    ],
+    excludedFilters: ["Resource Status"],
+    excludedResources: ["ACCESS Credits"],
+    data: formattedResources,
+  };
 
-  const { resources, catalogs, categories } = mergeData(sources);
+  const { resources, categories } = mergeData(source);
 
   const filters: FilterCategoryType[] = Object.values(categories)
     .map((category) => ({
@@ -288,5 +269,5 @@ export function transformRampsData(
     a.resourceName.localeCompare(b.resourceName),
   );
 
-  return { resources: sortedResources, catalogs, filters };
+  return { resources: sortedResources, filters };
 }

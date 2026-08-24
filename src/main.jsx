@@ -228,19 +228,12 @@ export function publicationsSelect({
 
 export function onRampsResourceCatalog({
   target,
-  catalogSources,
   onRamps,
-  onRampsApi,
   baseUrl = null,
   stylesheets = null,
 }) {
   renderShadow(
-    <OnRampsResourceCatalog
-      catalogSources={catalogSources}
-      onRamps={onRamps}
-      baseUrl={baseUrl}
-      onRampsApi={onRampsApi}
-    />,
+    <OnRampsResourceCatalog onRamps={onRamps} baseUrl={baseUrl} />,
     { target, baseUrl, stylesheets },
   );
 }

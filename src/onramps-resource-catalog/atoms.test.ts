@@ -3,7 +3,6 @@ import { createStore } from "jotai";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/msw";
 import {
-  catalogsAtom,
   filteredResourcesAtom,
   filtersAtom,
   hasErrorsAtom,
@@ -12,12 +11,11 @@ import {
   resourcesAtom,
   resourcesLoadedAtom,
   selectedFiltersAtom,
-  toggleCatalogAtom,
   toggleFilterAtom,
 } from "@/onramps-resource-catalog/atoms";
-import type { Catalog, Resource } from "@/onramps-resource-catalog/types";
+import type { Resource } from "@/onramps-resource-catalog/types";
 
-// initAppAtom (src/onramps-resource-catalog/atoms.ts:51) fetches these three
+// initAppAtom (src/onramps-resource-catalog/atoms.ts:50) fetches these three
 // literal, hardcoded URLs directly - there is no routesAtom indirection to
 // override, so tests must intercept these exact strings with MSW.
 const dataUrl =
@@ -32,8 +30,6 @@ function makeResource(overrides: Partial<Resource> = {}): Resource {
     resourceId: 1,
     resourceName: "resource",
     features: [],
-    featureIds: [],
-    sortCategory: "",
     ...overrides,
   };
 }
@@ -41,7 +37,7 @@ function makeResource(overrides: Partial<Resource> = {}): Resource {
 describe("filteredResourcesAtom", () => {
   // This module's filter semantics are OR-across-selected-filters: a
   // resource is included if it matches ANY selected filter id
-  // (`selectedFilters.some(...)`, atoms.ts:19). This is deliberately
+  // (`selectedFilters.some(...)`, atoms.ts:18). This is deliberately
   // different from the sibling `resource-catalog` package's
   // `computeFilteredResources`, which requires a match in EVERY active
   // filter *category* (AND-across-categories). Do not assume the two
@@ -65,33 +61,6 @@ describe("filteredResourcesAtom", () => {
     store.set(resourcesAtom, resources);
 
     expect(store.get(filteredResourcesAtom)).toEqual(resources);
-  });
-});
-
-describe("toggleCatalogAtom", () => {
-  it("sets `selected` on the named catalog without disturbing other catalogs", () => {
-    const store = createStore();
-    const catalogA: Catalog = {
-      catalogLabel: "A",
-      catalogId: "A",
-      selected: false,
-      resourceIds: [],
-    };
-    const catalogB: Catalog = {
-      catalogLabel: "B",
-      catalogId: "B",
-      selected: false,
-      resourceIds: [1, 2],
-    };
-    store.set(catalogsAtom, { A: catalogA, B: catalogB });
-
-    store.set(toggleCatalogAtom, { catalog: catalogA, selected: true });
-
-    const catalogs = store.get(catalogsAtom);
-    expect(catalogs.A.selected).toBe(true);
-    // B's entry is untouched - same values (and reference), proving the
-    // update only spread/replaced A's entry.
-    expect(catalogs.B).toBe(catalogB);
   });
 });
 
@@ -130,9 +99,9 @@ describe("initAppAtom", () => {
   //    feature needs `id/name/feature_category_id/is_allocations_filter`.
   //
   // "Resource Type" is deliberately excluded-from-filters
-  // (is_allocations_filter: false) since it's just used to compute
-  // resourceCategory/resourceType, while "Community" is a real filter
-  // category, so this fixture exercises both branches.
+  // (is_allocations_filter: false) since it's only used to compute
+  // resourceCategory, while "Community" is a real filter category, so this
+  // fixture exercises both branches.
   it("loads resources/filters from the (mocked) three-endpoint API on success", async () => {
     server.use(
       http.get(dataUrl, () =>
@@ -215,7 +184,7 @@ describe("initAppAtom", () => {
       resourceId: 501,
       resourceName: "test.resource",
       features: ["Community A"],
-      featureIds: [20],
+      resourceCategory: "CPU",
     });
 
     const filters = store.get(filtersAtom);
@@ -232,7 +201,7 @@ describe("initAppAtom", () => {
   // terminal catch-all (src/test/msw.ts) returns HttpResponse.error() for
   // all of them, which makes `fetch` reject. `Promise.all` in
   // getRampsResourcesAtom rejects on the first one, initAppAtom's try/catch
-  // (atoms.ts:53-58) catches it, and the `finally`-style
+  // (atoms.ts:52-57) catches it, and the `finally`-style
   // `set(resourcesLoadedAtom, true)` after the try/catch still runs.
   it("catches an unhandled (network-level) failure and still marks resourcesLoaded", async () => {
     const store = createStore();

@@ -569,16 +569,11 @@ describe("myPublications", () => {
 });
 
 describe("onRampsResourceCatalog", () => {
-  // BUG: src/onramps-resource-catalog/ResourceCatalog.tsx:14 - `catalogSources`
-  // and `onRampsApi` (both required props of `onRampsResourceCatalog`, passed
-  // through by src/main.jsx:239-242) are spread into `ResourceCatalogInner`
-  // but it only destructures `onRamps`/`baseUrl`, silently dropping both. And
-  // `initAppAtom` (src/onramps-resource-catalog/atoms.ts:23-34,51-58) always
-  // fetches three hardcoded `operations-api.access-ci.org` URLs regardless of
-  // what's passed - a caller-supplied `catalogSources`/`onRampsApi` has no
-  // effect on what this widget actually loads. Not fixed here (out of scope
-  // for a test-only change); mocking the hardcoded endpoints below is what
-  // this mount function actually needs, independent of the props asserted on.
+  // This widget takes no data props: `initAppAtom` always fetches the three
+  // hardcoded `operations-api.access-ci.org` URLs, so mocking those is the
+  // whole of its input. The `catalogSources`/`onRampsApi` props it used to
+  // accept were dropped along with the caller-configured-feeds path they
+  // belonged to; nothing read either of them.
   it("mounts, renders, and tolerates omitted baseUrl/stylesheets", async () => {
     const target = makeTarget();
     server.use(
@@ -589,7 +584,7 @@ describe("onRampsResourceCatalog", () => {
       http.get(/\/features\//, () => HttpResponse.json({ results: [] })),
     );
 
-    onRampsResourceCatalog({ target, catalogSources: [], onRamps: false, onRampsApi: "" });
+    onRampsResourceCatalog({ target, onRamps: false });
 
     expect(await shadowOf(target).findByText("No Resources Match Your Filters")).toBeInTheDocument();
   });

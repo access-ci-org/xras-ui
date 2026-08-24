@@ -4,8 +4,6 @@ import type { CatalogSource } from "@/onramps-resource-catalog/types";
 
 function source(overrides: Partial<CatalogSource> = {}): CatalogSource {
   return {
-    apiUrl: "https://example.test/resources.json",
-    catalogLabel: "ACCESS",
     allowedCategories: [],
     allowedFilters: [],
     excludedCategories: [],
@@ -36,28 +34,6 @@ function rawResource(overrides: Record<string, any> = {}) {
 }
 
 describe("mergeData", () => {
-  it("keys catalogs by catalogLabel, strips the raw data array, and tracks resourceIds", () => {
-    const { catalogs } = mergeData([{ ...source(), data: [rawResource()] }]);
-    expect(Object.keys(catalogs)).toEqual(["ACCESS"]);
-    expect(catalogs.ACCESS).toMatchObject({ catalogLabel: "ACCESS", selected: false, resourceIds: [1] });
-    expect(catalogs.ACCESS).not.toHaveProperty("data");
-  });
-
-  it("computes catalogId by stripping non-letters from catalogLabel (well-formed label)", () => {
-    // Not exercising a label with more than one non-letter run here - see
-    // the BUG note below for why that would be a bad test fixture.
-    const { catalogs } = mergeData([{ ...source({ catalogLabel: "On-Ramps" }), data: [] }]);
-    expect(catalogs["On-Ramps"].catalogId).toBe("OnRamps");
-  });
-
-  // BUG: src/onramps-resource-catalog/helpers/catalog.ts:120. The catalogId
-  // regex is missing the `g` flag
-  // (`catalog.catalogLabel.replace(/[^(A-z)]/, "")`), so only the FIRST
-  // non-letter character is stripped rather than all of them. A label with
-  // two separating characters keeps the second one:
-  //   "Open Science Grid".replace(/[^(A-z)]/, "") === "OpenScience Grid"
-  // (the second space survives). Not asserted here as correct output.
-
   it("trims resourceName and dedupes shared features by featureId across resources", () => {
     const resourceA = rawResource({ resourceId: 1, resourceName: "  Bridges-2  " });
     const resourceB = rawResource({
@@ -74,59 +50,56 @@ describe("mergeData", () => {
         },
       ],
     });
-    const { resources, categories } = mergeData([{ ...source(), data: [resourceA, resourceB] }]);
+    const { resources, categories } = mergeData({ ...source(), data: [resourceA, resourceB] });
     expect(resources.find((r) => r.resourceId == 1)!.resourceName).toBe("Bridges-2");
     expect(categories[1].features[10]).toBeDefined();
     expect(Object.keys(categories[1].features)).toEqual(["10", "11"]);
   });
 
-  it("threads filterCategories across multiple catalog sources instead of resetting per source", () => {
-    const catalog1 = {
-      ...source({ catalogLabel: "ACCESS" }),
-      data: [rawResource({ resourceId: 1 })], // contributes CPU (10) and GPU (11)
-    };
-    const catalog2 = {
-      ...source({ catalogLabel: "OnRamps" }),
+  it("excludes resources not in a catalog source's allowedResources list", () => {
+    const { resources } = mergeData({
+      ...source({ allowedResources: ["Bridges-2"] }),
+      data: [rawResource({ resourceId: 1, resourceName: "Bridges-2" }), rawResource({ resourceId: 2, resourceName: "Expanse" })],
+    });
+    expect(resources.map((r) => r.resourceId)).toEqual([1]);
+  });
+
+  // Resources are collected into an id-keyed map, so a duplicate resourceId
+  // within the feed keeps the last one rather than emitting both.
+  it("a later resource with the same resourceId overwrites an earlier one", () => {
+    const { resources } = mergeData({
+      ...source(),
+      data: [
+        rawResource({ resourceId: 1, resourceName: "First" }),
+        rawResource({ resourceId: 1, resourceName: "Second" }),
+      ],
+    });
+    expect(resources).toHaveLength(1);
+    expect(resources[0].resourceName).toBe("Second");
+  });
+
+  // "ACCESS Resource Grouping" contributes neither a filter category nor any
+  // features, even though it is flagged categoryIsFilter.
+  it("skips the ACCESS Resource Grouping category entirely", () => {
+    const { resources, categories } = mergeData({
+      ...source(),
       data: [
         rawResource({
-          resourceId: 2,
-          resourceName: "Delta",
+          resourceId: 1,
           featureCategories: [
             {
-              categoryId: 1, // same categoryId as catalog1's "Resource Type"
-              categoryName: "Resource Type",
-              categoryDescription: "What kind of compute",
+              categoryId: 7,
+              categoryName: "ACCESS Resource Grouping",
+              categoryDescription: "How resources roll up",
               categoryIsFilter: true,
-              features: [{ featureId: 12, name: "TPU", description: "TPU-based" }],
+              features: [{ featureId: 70, name: "Bridges family", description: "" }],
             },
           ],
         }),
       ],
-    };
-    const { categories } = mergeData([catalog1, catalog2]);
-    // Category 1 accumulates features from BOTH sources rather than the
-    // second source clobbering the first's.
-    expect(Object.keys(categories[1].features)).toEqual(["10", "11", "12"]);
-  });
-
-  it("excludes resources not in a catalog source's allowedResources list", () => {
-    const { catalogs, resources } = mergeData([
-      {
-        ...source({ allowedResources: ["Bridges-2"] }),
-        data: [rawResource({ resourceId: 1, resourceName: "Bridges-2" }), rawResource({ resourceId: 2, resourceName: "Expanse" })],
-      },
-    ]);
-    expect(resources.map((r) => r.resourceId)).toEqual([1]);
-    expect(catalogs.ACCESS.resourceIds).toEqual([1]);
-  });
-
-  it("a later source's resource with the same resourceId overwrites an earlier one", () => {
-    const { resources } = mergeData([
-      { ...source({ catalogLabel: "ACCESS" }), data: [rawResource({ resourceId: 1, resourceName: "First" })] },
-      { ...source({ catalogLabel: "OnRamps" }), data: [rawResource({ resourceId: 1, resourceName: "Second" })] },
-    ]);
-    expect(resources).toHaveLength(1);
-    expect(resources[0].resourceName).toBe("Second");
+    });
+    expect(categories).toEqual({});
+    expect(resources[0].features).toEqual([]);
   });
 });
 
@@ -144,7 +117,7 @@ describe("transformRampsData", () => {
 
   const features = [
     // is_allocations_filter: false -> excluded from the final `filters` tree,
-    // but still drives resourceType/resourceCategory bucketing below.
+    // but still drives resourceCategory bucketing below.
     {
       feature_category_id: 1,
       feature_category_name: "Resource Type",
@@ -198,7 +171,6 @@ describe("transformRampsData", () => {
   it("maps a known Resource Type name to its short resourceCategory bucket", () => {
     const { resources } = transformRampsData(metadata, [rampsResource()], features);
     const bridges = resources.find((r) => r.resourceName == "Bridges-2")!;
-    expect(bridges.resourceType).toBe("CPU Compute");
     expect(bridges.resourceCategory).toBe("CPU");
   });
 
@@ -250,7 +222,7 @@ describe("transformRampsData", () => {
     const bridges = resources.find((r) => r.resourceName == "Bridges-2")!;
     expect(bridges.groupId).toBe(555);
     expect(bridges.relatedResources).toEqual([
-      { info_resourceid: 2, cider_resource_id: 2, resourceName: "Bridges-2 Wide", displayResourceName: "Bridges-2 Wide Memory" },
+      { cider_resource_id: 2, displayResourceName: "Bridges-2 Wide Memory" },
     ]);
   });
 

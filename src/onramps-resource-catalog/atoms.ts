@@ -1,8 +1,7 @@
 import { atom } from "jotai";
 import { transformRampsData } from "./helpers/catalog";
-import type { Catalog, FilterCategoryType, Resource } from "./types";
+import type { FilterCategoryType, Resource } from "./types";
 
-export const catalogsAtom = atom<Record<string, Catalog>>({});
 export const filtersAtom = atom<FilterCategoryType[]>([]);
 export const hasErrorsAtom = atom(false);
 export const resourcesAtom = atom<Resource[]>([]);
@@ -72,20 +71,3 @@ export const toggleFilterAtom = atom(null, (get, set, featureId: number) => {
       : [...selectedFilters, featureId],
   );
 });
-
-export const toggleCatalogAtom = atom(
-  null,
-  (
-    get,
-    set,
-    { catalog, selected }: { catalog: Catalog; selected: boolean },
-  ) => {
-    set(catalogsAtom, {
-      ...get(catalogsAtom),
-      [catalog.catalogLabel]: {
-        ...get(catalogsAtom)[catalog.catalogLabel],
-        selected,
-      },
-    });
-  },
-);

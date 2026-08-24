@@ -1,9 +1,7 @@
 export type Feature = {
   featureId: number;
   name: string;
-  description: string;
   categoryId: number;
-  selected: boolean;
 };
 
 export type FilterCategoryType = {
@@ -14,44 +12,31 @@ export type FilterCategoryType = {
 };
 
 export type RelatedResource = {
-  info_resourceid: number;
   cider_resource_id: number;
-  resourceName: string;
   displayResourceName: string;
 };
 
+/*
+ * The shape `transformRampsData` produces. The index signature is load-bearing:
+ * `formatResourceFeatures` spreads the raw API resource in, so a resource
+ * carries every field the feed happened to have alongside the named ones.
+ */
 export type Resource = {
   resourceId: number;
   resourceName: string;
   displayResourceName?: string;
-  resourceDescription?: string;
   recommendedUse?: string;
-  resourceType?: string;
   resourceCategory?: string;
-  organization?: string;
   icon?: string | null;
-  logo?: string | null;
   features: string[];
-  featureIds: number[];
   filters?: number[];
   relatedResources?: RelatedResource[];
   groupId?: number;
-  sortCategory: string;
   [key: string]: unknown;
 };
 
-export type Catalog = {
-  catalogLabel: string;
-  catalogId: string;
-  selected: boolean;
-  resourceIds: number[];
-  description?: string;
-  [key: string]: unknown;
-};
-
+/** The allow/exclude configuration `mergeData` applies to one feed. */
 export type CatalogSource = {
-  apiUrl: string;
-  catalogLabel: string;
   allowedCategories: string[];
   allowedFilters: string[];
   allowedResources?: string[];
@@ -61,8 +46,6 @@ export type CatalogSource = {
 };
 
 export type ResourceCatalogProps = {
-  catalogSources?: CatalogSource[];
   onRamps?: boolean;
   baseUrl?: string;
-  onRampsApi?: string;
 };

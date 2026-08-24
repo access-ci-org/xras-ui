@@ -3,12 +3,7 @@ import { Provider, createStore, useAtomValue, useSetAtom } from "jotai";
 import AccessHeader from "./AccessHeader";
 import ResourceList from "./ResourceList";
 import bs from "@/shared/bootstrap5.module.scss";
-import {
-  catalogsAtom,
-  hasErrorsAtom,
-  initAppAtom,
-  resourcesLoadedAtom,
-} from "./atoms";
+import { hasErrorsAtom, initAppAtom, resourcesLoadedAtom } from "./atoms";
 import type { ResourceCatalogProps } from "./types";
 
 function ResourceCatalogInner({
@@ -17,35 +12,12 @@ function ResourceCatalogInner({
 }: ResourceCatalogProps) {
   const resourcesLoaded = useAtomValue(resourcesLoadedAtom);
   const hasErrors = useAtomValue(hasErrorsAtom);
-  const stateCatalogs = useAtomValue(catalogsAtom);
-  const catalogs = Object.values(stateCatalogs);
   const initApp = useSetAtom(initAppAtom);
 
   useEffect(() => {
     initApp();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const renderCatalogDescriptions = () => {
-    if (onRamps && catalogs.length > 1) {
-      return (
-        <>
-          {catalogs
-            .filter((c) => c.catalogLabel != "ACCESS")
-            .map((c, i) => (
-              <div className="mb-4" key={`catalog_${i}`}>
-                <h4 className="border-b">About {c.catalogLabel}</h4>
-                <div
-                  dangerouslySetInnerHTML={{ __html: c.description ?? "" }}
-                ></div>
-              </div>
-            ))}
-        </>
-      );
-    }
-
-    return "";
-  };
 
   if (hasErrors) {
     return (
@@ -74,7 +46,6 @@ function ResourceCatalogInner({
      */
     <div className={`${bs.reboot} mx-auto mt-4 w-full px-3`}>
       {onRamps ? <AccessHeader baseUrl={baseUrl} /> : ""}
-      {renderCatalogDescriptions()}
       <ResourceList />
     </div>
   );
