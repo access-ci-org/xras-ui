@@ -1,7 +1,7 @@
 import config from "../shared/helpers/config";
 import Alert from "../shared/Alert";
 
-export default function InternationalUserRequest({ project, requestId }) {
+export default function InternationalUserRequest({ project }) {
   if(!project.internationalUserRequests) return <></>
 
   const viewPath = config.routes.request_international_user_request_path;
@@ -19,7 +19,7 @@ export default function InternationalUserRequest({ project, requestId }) {
     const route = canEdit ? editPath : viewPath;
     const text = canEdit ? 'View / Update' : 'View';
     return (
-      <a href={route(requestId, req.id)} type="button" className="btn btn-primary btn-sm">{text}</a>
+      <a href={route(req.requestId, req.id)} type="button" className="btn btn-primary btn-sm">{text}</a>
     );
   }
 

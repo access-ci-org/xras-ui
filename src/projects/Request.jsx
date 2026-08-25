@@ -125,7 +125,7 @@ export default function Request({ requestId, grantNumber }) {
         </Tab>
         {project.internationalUserRequests && (
           <Tab eventKey="international" title="Intl. Users">
-            <InternationalUserRequest project={project} requestId={requestId} />
+            <InternationalUserRequest project={project} />
           </Tab>
         )}
         <Tab eventKey="publications" title="Publications">
