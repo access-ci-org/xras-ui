@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.35.3](https://github.com/access-ci-org/xras-ui/compare/v0.35.2...v0.35.3) (2026-08-25)
+
+
+### Bug Fixes
+
+* InternationalUserRequests now uses the requestId from the form ([b01ef11](https://github.com/access-ci-org/xras-ui/commit/b01ef11457b1209e1e2057583e2a1a2e8736f664))
+
 ## [0.35.2](https://github.com/access-ci-org/xras-ui/compare/v0.35.1...v0.35.2) (2026-08-19)
 
 
