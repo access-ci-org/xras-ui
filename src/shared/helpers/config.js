@@ -28,6 +28,7 @@ const config = {
     usage_detail_path: (grantNumber, resourceId) =>
       `/usage/${grantNumber}/${resourceId}`,
     publications_dismiss_notice_path: () => "/publications/dismiss_notice",
+    confirmation_path: (requestId) => `${baseUrl}/requests/${requestId}/confirmation`,
   },
   roleIcons: {
     PI: "person-fill-check",
