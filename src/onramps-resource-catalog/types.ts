@@ -48,4 +48,10 @@ export type CatalogSource = {
 export type ResourceCatalogProps = {
   onRamps?: boolean;
   baseUrl?: string;
+  /**
+   * Base of the ACCESS operations API to read the catalog from. Defaults to
+   * `defaultApiUrl` in ./atoms. `baseUrl` is unrelated - that one locates this
+   * package's own assets (stylesheets, the ACCESS logo).
+   */
+  apiUrl?: string;
 };

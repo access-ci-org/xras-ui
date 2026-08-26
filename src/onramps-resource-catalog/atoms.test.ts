@@ -3,6 +3,8 @@ import { createStore } from "jotai";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/msw";
 import {
+  apiUrlAtom,
+  defaultApiUrl,
   filteredResourcesAtom,
   filtersAtom,
   hasErrorsAtom,
@@ -15,15 +17,12 @@ import {
 } from "@/onramps-resource-catalog/atoms";
 import type { Resource } from "@/onramps-resource-catalog/types";
 
-// initAppAtom (src/onramps-resource-catalog/atoms.ts:50) fetches these three
-// literal, hardcoded URLs directly - there is no routesAtom indirection to
-// override, so tests must intercept these exact strings with MSW.
-const dataUrl =
-  "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
-const resourcesUrl =
-  "https://operations-api.access-ci.org/wh2/cider/v1/access-allocated/";
-const featuresUrl =
-  "https://operations-api.access-ci.org/wh2/cider/v1/features/";
+// initAppAtom fetches three feeds off `apiUrlAtom`, which defaults to
+// `defaultApiUrl`. These are the URLs an unconfigured widget requests; the
+// last test in this file overrides the base instead.
+const dataUrl = `${defaultApiUrl}/access-active-groups/type/resource-catalog.access-ci.org/`;
+const resourcesUrl = `${defaultApiUrl}/access-allocated/`;
+const featuresUrl = `${defaultApiUrl}/features/`;
 
 function makeResource(overrides: Partial<Resource> = {}): Resource {
   return {
@@ -232,5 +231,41 @@ describe("initAppAtom", () => {
 
     expect(store.get(hasErrorsAtom)).toBe(true);
     expect(store.get(resourcesLoadedAtom)).toBe(true);
+  });
+
+  // The point of `apiUrlAtom`: all three feeds move together off one base, so
+  // the widget can be pointed at a staging or sandbox deployment. The trailing
+  // slash is deliberate - a caller-supplied base shouldn't have to know that
+  // every path below appends its own.
+  it("reads all three feeds from a caller-supplied apiUrl, tolerating a trailing slash", async () => {
+    const requested: string[] = [];
+    const record = ({ request }: { request: Request }) =>
+      void requested.push(new URL(request.url).pathname);
+
+    server.use(
+      http.get("https://ops.test/v1/access-active-groups/type/*", (info) => {
+        record(info);
+        return HttpResponse.json({ results: { active_groups: [], organizations: [] } });
+      }),
+      http.get("https://ops.test/v1/access-allocated/", (info) => {
+        record(info);
+        return HttpResponse.json({ results: [] });
+      }),
+      http.get("https://ops.test/v1/features/", (info) => {
+        record(info);
+        return HttpResponse.json({ results: [] });
+      }),
+    );
+
+    const store = createStore();
+    store.set(apiUrlAtom, "https://ops.test/v1/");
+    await store.set(initAppAtom);
+
+    expect(store.get(hasErrorsAtom)).toBe(false);
+    expect(requested.sort()).toEqual([
+      "/v1/access-active-groups/type/resource-catalog.access-ci.org/",
+      "/v1/access-allocated/",
+      "/v1/features/",
+    ]);
   });
 });

@@ -1,15 +1,21 @@
 import { useEffect, useMemo } from "react";
 import { Provider, createStore, useAtomValue, useSetAtom } from "jotai";
+import { useHydrateAtoms } from "jotai/utils";
 import AccessHeader from "./AccessHeader";
 import ResourceList from "./ResourceList";
 import bs from "@/shared/bootstrap5.module.scss";
-import { hasErrorsAtom, initAppAtom, resourcesLoadedAtom } from "./atoms";
+import { apiUrlAtom, defaultApiUrl, hasErrorsAtom, initAppAtom, resourcesLoadedAtom } from "./atoms";
 import type { ResourceCatalogProps } from "./types";
 
 function ResourceCatalogInner({
   onRamps = false,
   baseUrl,
+  apiUrl = defaultApiUrl,
 }: ResourceCatalogProps) {
+  // Hydrate before the mount effect below fires, so the first fetch already
+  // sees the caller's API base.
+  useHydrateAtoms([[apiUrlAtom, apiUrl]]);
+
   const resourcesLoaded = useAtomValue(resourcesLoadedAtom);
   const hasErrors = useAtomValue(hasErrorsAtom);
   const initApp = useSetAtom(initAppAtom);

@@ -130,7 +130,7 @@ function documentStylesheets(match) {
 }
 
 export function allocationsMap({ target, baseUrl = null, stylesheets = null }) {
-return renderShadow(<AllocationsMap />, {
+  return renderShadow(<AllocationsMap />, {
     target,
     baseUrl,
     stylesheets,
@@ -147,7 +147,7 @@ export function resources({
   baseUrl = null,
   stylesheets = null,
 }) {
-return renderShadow(
+  return renderShadow(
     <Resources
       availableResources={availableResources}
       unavailableResources={unavailableResources}
@@ -166,7 +166,7 @@ export function editResource({
   baseUrl = null,
   stylesheets = null,
 }) {
-return renderShadow(
+  return renderShadow(
     <EditResource
       resourceId={resourceId}
       setExternalSubmit={setExternalSubmit}
@@ -177,15 +177,15 @@ return renderShadow(
 }
 
 export function projects({ target, username, routes, baseUrl = null, stylesheets = null }) {
-return renderShadow(<Projects username={username} routes={routes} />, { target, baseUrl, stylesheets });
+  return renderShadow(<Projects username={username} routes={routes} />, { target, baseUrl, stylesheets });
 }
 
 export function projectsBrowser({ target, apiUrl, baseUrl = null, stylesheets = null }) {
-return renderShadow(<ProjectsBrowser api_url={apiUrl} />, { target, baseUrl, stylesheets });
+  return renderShadow(<ProjectsBrowser api_url={apiUrl} />, { target, baseUrl, stylesheets });
 }
 
 export function publicationsBrowser({ target, routes, baseUrl = null, stylesheets = null }) {
-return renderShadow(<PublicationsBrowser routes={routes} />, { target, baseUrl, stylesheets });
+  return renderShadow(<PublicationsBrowser routes={routes} />, { target, baseUrl, stylesheets });
 }
 
 function HydrateAtoms({ values, children }) {
@@ -203,7 +203,7 @@ export function publicationEdit({
 }) {
   const store = createStore();
 
-return renderShadow(
+  return renderShadow(
     <JotaiProvider store={store}>
       <HydrateAtoms
         values={
@@ -230,7 +230,7 @@ export function publicationsSelect({
   baseUrl = null,
   stylesheets = null,
 }) {
-return renderShadow(
+  return renderShadow(
     <PublicationsSelect
       authenticityToken={authenticityToken}
       routes={routes}
@@ -244,11 +244,16 @@ return renderShadow(
 export function onRampsResourceCatalog({
   target,
   onRamps,
+  // No default here on purpose: `ResourceCatalogInner` defaults it to
+  // `defaultApiUrl`, so there's one place that decides. (A `= undefined`
+  // default would also make TS infer the prop's type as literally
+  // `undefined` for callers of this untyped module.)
+  apiUrl,
   baseUrl = null,
   stylesheets = null,
 }) {
-return renderShadow(
-    <OnRampsResourceCatalog onRamps={onRamps} baseUrl={baseUrl} />,
+  return renderShadow(
+    <OnRampsResourceCatalog onRamps={onRamps} apiUrl={apiUrl} baseUrl={baseUrl} />,
     { target, baseUrl, stylesheets },
   );
 }
@@ -262,7 +267,7 @@ export function myPublications({
   baseUrl = null,
   stylesheets = null,
 }) {
-return renderShadow(
+  return renderShadow(
     <MyPublications
       authenticityToken={authenticityToken}
       routes={routes}
@@ -284,7 +289,7 @@ export function resourceCatalog({
   baseUrl = null,
   stylesheets = null,
 }) {
-return renderShadow(
+  return renderShadow(
     <ResourceCatalog
       apiUrl={apiUrl}
       excludedCategories={excludedCategories}
@@ -298,7 +303,7 @@ return renderShadow(
 }
 
 export function keywords({ allocationTypes, target, baseUrl = null, stylesheets = null }) {
-return renderShadow(<Keywords allocationTypes={allocationTypes} />, {
+  return renderShadow(<Keywords allocationTypes={allocationTypes} />, {
     target,
     baseUrl,
     stylesheets,
@@ -311,7 +316,7 @@ export function supportingGrants({
   stylesheets = null,
   ...props
 }) {
-return renderShadow(<SupportingGrantsSection {...props} />, {
+  return renderShadow(<SupportingGrantsSection {...props} />, {
     target,
     baseUrl,
     stylesheets,

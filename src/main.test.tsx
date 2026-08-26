@@ -610,24 +610,52 @@ describe("myPublications", () => {
 });
 
 describe("onRampsResourceCatalog", () => {
-  // This widget takes no data props: `initAppAtom` always fetches the three
-  // hardcoded `operations-api.access-ci.org` URLs, so mocking those is the
-  // whole of its input. The `catalogSources`/`onRampsApi` props it used to
-  // accept were dropped along with the caller-configured-feeds path they
-  // belonged to; nothing read either of them.
-  it("mounts, renders, and tolerates omitted baseUrl/stylesheets", async () => {
-    const target = makeTarget();
+  // Its one data prop is `apiUrl`, the base the three ACCESS operations API
+  // feeds hang off. Omitted, it defaults to `defaultApiUrl` - hence the loose
+  // regex handlers here, which match either base. (The `catalogSources` and
+  // `onRampsApi` props this used to accept were dropped along with the
+  // caller-configured-feeds path they belonged to; nothing read either.)
+  function stubFeeds(seen?: string[]) {
+    const record = (request: Request) => void seen?.push(new URL(request.url).host);
     server.use(
-      http.get(/access-active-groups/, () =>
-        HttpResponse.json({ results: { organizations: [], active_groups: [] } }),
-      ),
-      http.get(/access-allocated/, () => HttpResponse.json({ results: [] })),
-      http.get(/\/features\//, () => HttpResponse.json({ results: [] })),
+      http.get(/access-active-groups/, ({ request }) => {
+        record(request);
+        return HttpResponse.json({ results: { organizations: [], active_groups: [] } });
+      }),
+      http.get(/access-allocated/, ({ request }) => {
+        record(request);
+        return HttpResponse.json({ results: [] });
+      }),
+      http.get(/\/features\//, ({ request }) => {
+        record(request);
+        return HttpResponse.json({ results: [] });
+      }),
     );
+  }
 
-    track(onRampsResourceCatalog({ target, onRamps: false }));
+  it("mounts, renders, and tolerates omitted apiUrl/baseUrl/stylesheets", async () => {
+    const target = makeTarget();
+    stubFeeds();
+
+    track(onRampsResourceCatalog({ target, onRamps: false } as any));
 
     expect(await shadowOf(target).findByText("No Resources Match Your Filters")).toBeInTheDocument();
+  });
+
+  // The prop has to reach `apiUrlAtom` through the component's own jotai
+  // store, so assert on the host actually requested rather than just that the
+  // widget renders - a silently dropped prop would still render fine, which is
+  // exactly how the old `onRampsApi` prop went unnoticed.
+  it("fetches from a caller-supplied apiUrl instead of the default", async () => {
+    const target = makeTarget();
+    const seen: string[] = [];
+    stubFeeds(seen);
+
+    track(onRampsResourceCatalog({ target, onRamps: false, apiUrl: "https://ops.test/v1" }));
+
+    expect(await shadowOf(target).findByText("No Resources Match Your Filters")).toBeInTheDocument();
+    expect(seen).toHaveLength(3);
+    expect(new Set(seen)).toEqual(new Set(["ops.test"]));
   });
 });
 

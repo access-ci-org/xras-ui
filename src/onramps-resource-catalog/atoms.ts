@@ -19,18 +19,27 @@ export const filteredResourcesAtom = atom((get) => {
   );
 });
 
-const dataUrl =
-  "https://operations-api.access-ci.org/wh2/cider/v1/access-active-groups/type/resource-catalog.access-ci.org/";
-const resourcesUrl =
-  "https://operations-api.access-ci.org/wh2/cider/v1/access-allocated/";
-const featuresUrl =
-  "https://operations-api.access-ci.org/wh2/cider/v1/features/";
+/**
+ * Base of the ACCESS operations API the catalog reads. The three feeds below
+ * all hang off it, so one knob is enough to point the widget at a staging or
+ * sandbox deployment; `onRampsResourceCatalog`'s `apiUrl` prop overrides it.
+ *
+ * Exported so tests can set it instead of having to intercept these literal
+ * production URLs.
+ */
+export const defaultApiUrl = "https://operations-api.access-ci.org/wh2/cider/v1";
 
-const getRampsResourcesAtom = atom(null, async (_get, set) => {
+export const apiUrlAtom = atom(defaultApiUrl);
+
+const getRampsResourcesAtom = atom(null, async (get, set) => {
+  // Tolerate a trailing slash on a caller-supplied base, since every path
+  // below adds its own.
+  const api = get(apiUrlAtom).replace(/\/+$/, "");
+
   const [metadataRes, resourcesRes, featuresRes] = await Promise.all([
-    fetch(dataUrl),
-    fetch(resourcesUrl),
-    fetch(featuresUrl),
+    fetch(`${api}/access-active-groups/type/resource-catalog.access-ci.org/`),
+    fetch(`${api}/access-allocated/`),
+    fetch(`${api}/features/`),
   ]);
   const metadata = (await metadataRes.json()).results;
   const rampsResources = (await resourcesRes.json()).results;
