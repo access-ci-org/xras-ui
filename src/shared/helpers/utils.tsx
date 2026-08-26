@@ -138,14 +138,24 @@ export const coalesce = <T,>(...values: (T | null | undefined)[]): T | null => {
   return null;
 };
 
-export const formatArray = (items: ReactNode[], conjunction = "and", separator = ", ") =>
-  items.reduce((result: ReactNode, item, i) => (
+// Joins items into "a, b or c". The reduce runs with no initial value on
+// purpose - that is what returns a lone item unwrapped, and what keeps the
+// separator *between* items rather than emitting one ahead of the first. The
+// cost is that an empty array throws ("Reduce of empty array with no initial
+// value"), so it gets its own early return: callers render the result straight
+// into a sentence, where nothing to say should print nothing, not crash the
+// component. `formatManagers` below is the one that can actually hit this.
+export const formatArray = (items: ReactNode[], conjunction = "and", separator = ", ") => {
+  if (!items.length) return null;
+
+  return items.reduce((result: ReactNode, item, i) => (
     <>
       {result}
       {items.length - 1 > i ? separator : ` ${conjunction} `}
       {item}
     </>
   ));
+};
 
 export const formatBoolean = (value: boolean) => {
   return value ? (
@@ -155,13 +165,18 @@ export const formatBoolean = (value: boolean) => {
   );
 };
 
-export const formatManagers = (project: ProjectSummary) =>
-  formatArray(
-    project.users
-      .filter(({ role }) => ["pi", "co_pi", "allocation_manager"].includes(role))
-      .map((user) => `${user.firstName} ${user.lastName}`),
-    "or",
-  );
+// Callers render this mid-sentence ("Please contact ... to request a change"),
+// so an empty result would leave a hole in the sentence. Name the roles
+// generically instead - it still tells the reader who to go looking for.
+export const noManagers = "your PI, Co-PI, or Allocation Manager";
+
+export const formatManagers = (project: ProjectSummary) => {
+  const names = project.users
+    .filter(({ role }) => ["pi", "co_pi", "allocation_manager"].includes(role))
+    .map((user) => `${user.firstName} ${user.lastName}`);
+
+  return names.length ? formatArray(names, "or") : noManagers;
+};
 
 export const singularize = (name: string, count: number) => {
   return count == 1 && name.endsWith("s") ? name.slice(0, -1) : name;

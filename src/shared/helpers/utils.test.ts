@@ -13,6 +13,7 @@ import {
   getCost,
   getResourceUsagePercent,
   icon,
+  noManagers,
   parseDate,
   parseResourceName,
   roundNumber,
@@ -297,13 +298,14 @@ describe("formatArray", () => {
     expect(container.textContent).toBe("A or B");
   });
 
-  // BUG: src/shared/helpers/utils.tsx:119-125. `items.reduce(...)` is called
-  // with no initial value, so an empty array throws
-  // "Reduce of empty array with no initial value" instead of returning ""
-  // or null. formatManagers() (line 136) inherits this: a project with no
-  // pi/co_pi/allocation_manager users would throw when rendered.
-  it("throws on an empty array rather than returning an empty node", () => {
-    expect(() => formatArray([])).toThrow(/Reduce of empty array/);
+  // The reduce has no initial value (that is what makes the two cases above
+  // work), so an empty array would throw "Reduce of empty array with no
+  // initial value" without the early return guarding it.
+  it("returns null for an empty array instead of throwing", () => {
+    expect(formatArray([])).toBeNull();
+
+    const { container } = renderNode(formatArray([]));
+    expect(container.textContent).toBe("");
   });
 });
 
@@ -333,6 +335,40 @@ describe("formatManagers", () => {
     };
     const { container } = renderNode(formatManagers(project));
     expect(container.textContent).toBe("Ada Lovelace, Alan Turing or Katherine Johnson");
+  });
+
+  // The reachable route into formatArray's empty case: the role filter matches
+  // nothing, so the render used to throw. Three components drop this straight
+  // into "Please contact ... to request a change" (Resources.tsx,
+  // OverviewResources.tsx, Users.tsx), so a project whose user list is empty
+  // or carries only plain users took the whole panel down with it - and a
+  // blank would have left a hole in the sentence, hence the generic phrase.
+  it("falls back to the generic role phrase when a project has no managers", () => {
+    const noUsers: ProjectSummary = { users: [] };
+    const onlyPlainUsers: ProjectSummary = {
+      users: [{ role: "user", firstName: "Grace", lastName: "Hopper" }],
+    };
+
+    expect(formatManagers(noUsers)).toBe(noManagers);
+    expect(formatManagers(onlyPlainUsers)).toBe(noManagers);
+    expect(noManagers).toBe("your PI, Co-PI, or Allocation Manager");
+  });
+
+  // The sentence the three call sites build, end to end.
+  it("reads correctly mid-sentence with and without managers", () => {
+    const withPi: ProjectSummary = {
+      users: [{ role: "pi", firstName: "Ada", lastName: "Lovelace" }],
+    };
+
+    const sentence = (project: ProjectSummary) =>
+      renderNode(
+        createElement(Fragment, null, "Please contact ", formatManagers(project), " to request a change."),
+      ).container.textContent;
+
+    expect(sentence(withPi)).toBe("Please contact Ada Lovelace to request a change.");
+    expect(sentence({ users: [] })).toBe(
+      "Please contact your PI, Co-PI, or Allocation Manager to request a change.",
+    );
   });
 });
 
