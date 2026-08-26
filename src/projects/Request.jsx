@@ -68,6 +68,11 @@ export default function Request({ requestId, grantNumber }) {
           {disabledTabs.length
             ? `You cannot manage ${disabledTabs.join(" or ")} for this request.`
             : ""}{" "}
+          {displayStatus !== 'approved' && displayStatus !== 'incomplete'? (
+              <>
+                Click <a href={config.routes.confirmation_path(requestId)}>here</a> to go to the submission confirmation page.
+              </>
+          ) : ""}{" "}
           {project.currentRequestId ? (
             <a
               href={config.routes.request_path(project.currentRequestId)}
