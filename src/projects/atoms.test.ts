@@ -810,6 +810,40 @@ describe("saveResourcesAtom", () => {
     expect(request.exchangeErrors).toEqual(["Insufficient allocation"]);
     expect(request.exchangeActionEditable).toBe(true);
     expect(request.showResourcesModal).toBe(false);
+    // The failed save must not discard the id of the action being edited:
+    // it's what makes the retry a PUT rather than a second POST, and what
+    // the views read as "there is a previous exchange".
+    expect(request.exchangeActionId).toBe(100);
+  });
+
+  // The `catch` around `res.json()`: a response body that isn't JSON at all
+  // (a proxy error page, say). It substitutes its own error message, and must
+  // likewise leave the known action id alone.
+  it("keeps the existing exchange action id when the response body can't be parsed", async () => {
+    server.use(
+      http.put("https://example.test/requests/555/actions/100.json", () =>
+        HttpResponse.text("<html>502 Bad Gateway</html>", { status: 502 }),
+      ),
+    );
+
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      request_action_path: () => "https://example.test/requests/555/actions/100",
+    });
+    store.set(
+      apiStateAtom,
+      seedState({
+        requests: { 555: makeExchangeRequest({ exchangeActionId: 100, exchangeActionEditable: false }) },
+      }),
+    );
+
+    await store.set(saveResourcesAtom, { requestId: 555 });
+
+    const request = store.get(apiStateAtom).requests[555];
+    expect(request.exchangeStatus).toBe("error");
+    expect(request.exchangeErrors).toEqual(["Unable to save exchange"]);
+    expect(request.exchangeActionId).toBe(100);
   });
 });
 

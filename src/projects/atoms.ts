@@ -664,13 +664,21 @@ export const saveResourcesAtom = atom(null, async (get, set, { requestId }: { re
   update(get, set, (draft) => {
     const draftRequest = draft.requests[requestId];
     draftRequest.showResourcesModal = false;
+
+    // Only overwrite the action id when the response actually carried one. A
+    // failed save tells us nothing new about it (the `catch` above even forces
+    // it to null), and a successful PUT needn't echo back the id it was given.
+    // Assigning unconditionally lost the id of an *existing* action, so a
+    // retry would POST a second action instead of PUTting the first - and
+    // `exchangeActionId !== null` is also how the views decide whether there
+    // is a previous exchange at all (see Resources.tsx, OverviewResources.tsx).
+    if (actionId != null) draftRequest.exchangeActionId = actionId;
+
     if (res.status == 200) {
-      draftRequest.exchangeActionId = actionId;
       draftRequest.exchangeActionEditable = false;
       draftRequest.exchangeErrors = [];
       draftRequest.exchangeStatus = statuses.success;
     } else {
-      draftRequest.exchangeActionId = actionId;
       draftRequest.exchangeActionEditable = true;
       draftRequest.exchangeErrors = errors;
       draftRequest.exchangeStatus = statuses.error;
