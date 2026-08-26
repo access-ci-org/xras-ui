@@ -3,6 +3,7 @@ import { Provider, createStore, useSetAtom, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 import { mergeRoutes, routesAtom, type RouteOverrides } from "../shared/routes";
 import Filters from "./Filters";
+import PublicationsAlerts from "./PublicationsAlerts";
 import PublicationsList from "./PublicationsList";
 import { getFiltersAtom, getPublicationsAtom } from "./atoms";
 
@@ -33,6 +34,10 @@ function PublicationsBrowserInner() {
        of each column and cancelled again by the row's negative margin, so the
        columns sit a full gutter apart but flush with the container's edges. */
     <div className="px-2.5">
+      {/* Both effects above surface fetch failures through `addErrorAtom`, so
+          this view needs somewhere to render them - the other three mounts
+          already had one. */}
+      <PublicationsAlerts />
       <div className="-mx-2.5 flex flex-wrap">
         <div className="w-full px-2.5 sm:w-1/4">
           <Filters />

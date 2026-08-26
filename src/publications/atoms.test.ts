@@ -270,6 +270,19 @@ describe("editPublicationAtom", () => {
     expect(store.get(publicationIdAtom)).toBe(42);
     expect(store.get(showEditModalAtom)).toBe(true);
   });
+
+  // The modal renders its own PublicationsAlerts now, so a failure from the
+  // last time it was open would otherwise greet the user on reopening - and
+  // PublicationEdit keys its spinner off `errors.length`, so a stale error
+  // would also suppress the spinner for the fetch that is actually running.
+  it("clears errors left over from a previous open", () => {
+    const store = createStore();
+    store.set(addErrorAtom, "Unable to load this publication. Please try again.");
+
+    store.set(editPublicationAtom, 42);
+
+    expect(store.get(errorsAtom)).toEqual([]);
+  });
 });
 
 describe("getPublicationDataAtom", () => {
@@ -339,6 +352,99 @@ describe("getPublicationDataAtom", () => {
     expect(store.get(resourcesNoneSelectedAtom)).toBe(false);
     expect(store.get(selectedResourcesAtom)).toEqual([]);
   });
+
+  // This atom had no try/catch at all, so a failed fetch (or an error page
+  // that won't parse as JSON) escaped as an unhandled rejection. It now
+  // follows grantSearchAtom's convention: catch, and surface it through
+  // `addErrorAtom`. `dataLoadedAtom` deliberately stays false - that is what
+  // stops PublicationForm rendering against a null publication - so
+  // PublicationEdit shows the error in place of its spinner instead.
+  it("pushes an error instead of rejecting when the request is unhandled", async () => {
+    const store = createStore();
+
+    await expect(store.set(getPublicationDataAtom, 7)).resolves.toBeUndefined();
+
+    const errors = store.get(errorsAtom);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toBe("Unable to load this publication. Please try again.");
+    expect(store.get(dataLoadedAtom)).toBe(false);
+    expect(store.get(publicationAtom)).toBeNull();
+  });
+
+  // `fetch` resolves for a 4xx/5xx, so the status has to be checked by hand.
+  // The body here is a *perfectly valid* publication on purpose: an error body
+  // that happens to be missing `publication` throws in the mapping code
+  // anyway, which hides whether the status is being honored. This proves the
+  // status alone decides.
+  it("honors a bad status even when the body would have parsed as a publication", async () => {
+    server.use(
+      http.get(`${defaultRoutes.edit_publication_path(7)}.json`, () =>
+        HttpResponse.json(
+          {
+            publication: { publication_id: 7, title: "Stale Pub", authors: [], fields: [] },
+            publication_types: [],
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+
+    const store = createStore();
+    await store.set(getPublicationDataAtom, 7);
+
+    expect(store.get(errorsAtom)[0].message).toBe("Unable to load this publication. Please try again.");
+    expect(store.get(dataLoadedAtom)).toBe(false);
+    expect(store.get(publicationAtom)).toBeNull();
+  });
+});
+
+describe("getFiltersAtom", () => {
+  // Same story as getPublicationDataAtom above: previously no try/catch.
+  it("pushes an error instead of rejecting when the request is unhandled", async () => {
+    const store = createStore();
+
+    await expect(store.set(getFiltersAtom)).resolves.toBeUndefined();
+
+    const errors = store.get(errorsAtom);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toBe("Unable to load the publication filters. Please try again.");
+    // Left at its initial value rather than clobbered with a partial result.
+    expect(store.get(filterOptionsAtom)).toEqual({ journals: [], publication_types: [] });
+  });
+
+  it("treats a JSON error response as a failure rather than an empty filter set", async () => {
+    server.use(
+      http.get(defaultRoutes.search_publications_filters_path(), () =>
+        HttpResponse.json({ error: "boom" }, { status: 500 }),
+      ),
+    );
+
+    const store = createStore();
+    await store.set(getFiltersAtom);
+
+    expect(store.get(errorsAtom)[0].message).toBe(
+      "Unable to load the publication filters. Please try again.",
+    );
+    expect(store.get(filterOptionsAtom)).toEqual({ journals: [], publication_types: [] });
+  });
+
+  // Not decoration: a server with no JSON for this path answers an
+  // `Accept: */*` request with an HTML page and a 200, which passes the
+  // `response.ok` check and only fails at `response.json()`. The alert looks
+  // the same, so the header is the only thing keeping the status in charge.
+  it("asks for JSON, so a path with no JSON behind it answers with a status rather than HTML", async () => {
+    let accept: string | null = null;
+    server.use(
+      http.get(defaultRoutes.search_publications_filters_path(), ({ request }) => {
+        accept = request.headers.get("accept");
+        return HttpResponse.json({ filters: { journals: [], publication_types: [] } });
+      }),
+    );
+
+    await createStore().set(getFiltersAtom);
+
+    expect(accept).toBe("application/json");
+  });
 });
 
 describe("grantSearchAtom", () => {
@@ -377,6 +483,28 @@ describe("grantSearchAtom", () => {
     expect(errors).toHaveLength(1);
     expect(errors[0].message).toBe("Unable to find a project with this grant number.");
     expect(store.get(editProjectsAtom)).toEqual([]);
+  });
+
+  // A 404 from this endpoint is the *expected* "no such grant number" answer,
+  // and it used to be appended to editProjectsAtom as though it were a project.
+  it("reports a 404 as not-found instead of appending the error body as a project", async () => {
+    server.use(
+      http.get("/publications/find_project", () =>
+        HttpResponse.json({ error: "No project found" }, { status: 404 }),
+      ),
+    );
+
+    const store = createStore();
+    store.set(grantNumberAtom, "TG-404");
+
+    await store.set(grantSearchAtom);
+
+    expect(store.get(errorsAtom)[0].message).toBe(
+      "Unable to find a project with this grant number.",
+    );
+    expect(store.get(editProjectsAtom)).toEqual([]);
+    // Not cleared, so the user can correct the number they typed.
+    expect(store.get(grantNumberAtom)).toBe("TG-404");
   });
 });
 
@@ -535,16 +663,41 @@ describe("getPublicationsAtom", () => {
     expect(receivedUrl?.searchParams.get("journal")).toBe("Nature");
   });
 
-  it("still marks publications as loaded (via the catch) when the request is unhandled, rather than hanging or throwing", async () => {
+  // The catch used to `console.error` and nothing else, so a failed search
+  // was indistinguishable from "no publications matched" - the one failure
+  // mode a user can't diagnose. It now reports through `addErrorAtom` like
+  // grantSearchAtom does, while still marking the list loaded so it stops
+  // spinning.
+  it("marks publications as loaded and surfaces an error when the request is unhandled", async () => {
     const store = createStore();
     store.set(publicationsAtom, [publicationSummary({ publication_id: 1 })]);
 
     await expect(store.set(getPublicationsAtom)).resolves.toBeUndefined();
 
     expect(store.get(publicationsLoadedAtom)).toBe(true);
+
+    const errors = store.get(errorsAtom);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toBe("Unable to load publications. Please try again.");
+
     // The catch block runs before either `set(publicationsAtom, ...)` call,
     // so the list from before the failed fetch is left as-is.
     expect(store.get(publicationsAtom)).toEqual([publicationSummary({ publication_id: 1 })]);
+  });
+
+  it("treats a JSON error response as a failure rather than an empty result set", async () => {
+    server.use(
+      http.get(defaultRoutes.search_publications_path(), () =>
+        HttpResponse.json({ error: "boom" }, { status: 500 }),
+      ),
+    );
+
+    const store = createStore();
+    await store.set(getPublicationsAtom);
+
+    expect(store.get(errorsAtom)[0].message).toBe("Unable to load publications. Please try again.");
+    expect(store.get(publicationsAtom)).toEqual([]);
+    expect(store.get(publicationsLoadedAtom)).toBe(true);
   });
 });
 
@@ -574,12 +727,36 @@ describe("dismissUpdatePublicationsNoticeAtom (additional cases)", () => {
     expect(store.get(showUpdatePublicationsAtom)).toBe(true);
   });
 
-  it("leaves the notice showing and doesn't throw when the request is unhandled", async () => {
+  it("leaves the notice showing and reports the failure when the request is unhandled", async () => {
     const store = createStore();
     store.set(showUpdatePublicationsAtom, true);
 
     await expect(store.set(dismissUpdatePublicationsNoticeAtom)).resolves.toBeUndefined();
 
     expect(store.get(showUpdatePublicationsAtom)).toBe(true);
+
+    // Brought onto the same convention as the three read atoms: a silent
+    // failure here just makes the notice look like it ignored the dismissal.
+    const errors = store.get(errorsAtom);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toBe("Unable to dismiss this notice. Please try again.");
+  });
+
+  // Distinct from the `success: false` case above: that is the server saying
+  // no, this is the server failing. A `{ success: true }` body carrying a 500
+  // used to dismiss the notice anyway.
+  it("leaves the notice showing when a bad status carries a success body", async () => {
+    server.use(
+      http.post(defaultRoutes.publications_dismiss_notice_path(), () =>
+        HttpResponse.json({ success: true }, { status: 500 }),
+      ),
+    );
+
+    const store = createStore();
+    store.set(showUpdatePublicationsAtom, true);
+    await store.set(dismissUpdatePublicationsNoticeAtom);
+
+    expect(store.get(showUpdatePublicationsAtom)).toBe(true);
+    expect(store.get(errorsAtom)[0].message).toBe("Unable to dismiss this notice. Please try again.");
   });
 });

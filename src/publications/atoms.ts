@@ -55,6 +55,12 @@ export const toggleProjectSelectedAtom = atom(null, (get, set, index: number) =>
   );
 });
 
+// The convention for every fetch in this feature: check `response.ok`, throw
+// on a bad status, and let the caller's `catch` turn it into an error here.
+// `fetch` itself only rejects on network failure, so without the explicit check
+// a 404 or 500 reaches the success path and is read as a valid payload -
+// unless it happens to be an HTML error page that fails `response.json()`,
+// which is the accident that made this look like it worked.
 export const addErrorAtom = atom(null, (get, set, message: FormError["message"]) => {
   set(errorsAtom, [...get(errorsAtom), { id: Math.random().toString(36).slice(2), message }]);
 });
@@ -80,6 +86,11 @@ export const resetPublicationEditStateAtom = atom(null, (_get, set) => {
 
 export const editPublicationAtom = atom(null, (_get, set, publicationId: number | string | null) => {
   set(publicationIdAtom, publicationId);
+  // Now that the modal shows its own alerts, a failure from the last time it
+  // was open would greet the user on reopening. Every path that opens the
+  // modal goes through here (PublicationAddButton, Publication,
+  // PublicationsGrid), so this is the one place that needs to clear them.
+  set(errorsAtom, []);
   set(showEditModalAtom, true);
 });
 
@@ -88,24 +99,32 @@ export const getPublicationDataAtom = atom(null, async (get, set, publicationId:
   const url = publicationId
     ? `${routes.edit_publication_path(publicationId)}.json`
     : routes.publication_path("new.json");
-  const response = await fetch(url, { headers: { accept: "application/json" } });
-  const data = await response.json();
 
-  data.publication.authors.forEach((a: { affiliation?: string }) => {
-    if (!a.affiliation) a.affiliation = "";
-  });
-  set(publicationAtom, data.publication);
-  set(publicationTypesAtom, data.publication_types);
-  set(editProjectsAtom, data.publication.projects ?? []);
-  set(
-    selectedResourcesAtom,
-    ((data.publication.publication_resources ?? []) as { acct_resource_id: number | string }[])
-      .map((pubResource) => pubResource.acct_resource_id)
-      .filter(Boolean)
-      .map(Number),
-  );
-  set(resourcesNoneSelectedAtom, Boolean(data.publication.access_staff_publication));
-  set(dataLoadedAtom, true);
+  try {
+    const response = await fetch(url, { headers: { accept: "application/json" } });
+    if (!response.ok) throw new Error(`Publication load failed with status ${response.status}`);
+    const data = await response.json();
+
+    data.publication.authors.forEach((a: { affiliation?: string }) => {
+      if (!a.affiliation) a.affiliation = "";
+    });
+    set(publicationAtom, data.publication);
+    set(publicationTypesAtom, data.publication_types);
+    set(editProjectsAtom, data.publication.projects ?? []);
+    set(
+      selectedResourcesAtom,
+      ((data.publication.publication_resources ?? []) as { acct_resource_id: number | string }[])
+        .map((pubResource) => pubResource.acct_resource_id)
+        .filter(Boolean)
+        .map(Number),
+    );
+    set(resourcesNoneSelectedAtom, Boolean(data.publication.access_staff_publication));
+    set(dataLoadedAtom, true);
+  } catch {
+    // `dataLoadedAtom` stays false, which is what keeps a half-populated form
+    // from rendering. PublicationEdit shows the error in place of its spinner.
+    set(addErrorAtom, "Unable to load this publication. Please try again.");
+  }
 });
 
 export const grantSearchAtom = atom(null, async (get, set) => {
@@ -114,6 +133,7 @@ export const grantSearchAtom = atom(null, async (get, set) => {
     const response = await fetch(
       get(routesAtom).publications_find_project_path({ grant_number: grantNumber }),
     );
+    if (!response.ok) throw new Error(`Project search failed with status ${response.status}`);
     const data = await response.json();
     set(editProjectsAtom, [...get(editProjectsAtom), data]);
     set(grantNumberAtom, "");
@@ -202,6 +222,7 @@ export const getPublicationsAtom = atom(null, async (get, set) => {
     const response = await fetch(get(routesAtom).search_publications_path(params), {
       headers: { Accept: "application/json" },
     });
+    if (!response.ok) throw new Error(`Publication search failed with status ${response.status}`);
     const data = await response.json();
 
     set(publicationsLoadedAtom, true);
@@ -214,16 +235,30 @@ export const getPublicationsAtom = atom(null, async (get, set) => {
     } else {
       set(publicationsAtom, data.publications || []);
     }
-  } catch (error) {
+  } catch {
+    // Still mark it loaded so the list stops spinning - but say so, rather
+    // than leaving an empty list that looks like "no results".
     set(publicationsLoadedAtom, true);
-    console.error(error);
+    set(addErrorAtom, "Unable to load publications. Please try again.");
   }
 });
 
 export const getFiltersAtom = atom(null, async (get, set) => {
-  const response = await fetch(get(routesAtom).search_publications_filters_path());
-  const data = await response.json();
-  set(filterOptionsAtom, data.filters || []);
+  try {
+    // The `Accept` header matters beyond matching the other GETs in this file:
+    // without it a server that has no JSON to offer at this path answers the
+    // request with an HTML page and a 200, which sails past the `response.ok`
+    // check below and only fails at `response.json()`. Same alert either way,
+    // but the status is the thing that should decide.
+    const response = await fetch(get(routesAtom).search_publications_filters_path(), {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`Filter load failed with status ${response.status}`);
+    const data = await response.json();
+    set(filterOptionsAtom, data.filters || []);
+  } catch {
+    set(addErrorAtom, "Unable to load the publication filters. Please try again.");
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -260,9 +295,10 @@ export const dismissUpdatePublicationsNoticeAtom = atom(null, async (get, set) =
       },
       body: JSON.stringify({ acknowledged: true }),
     });
+    if (!response.ok) throw new Error(`Notice dismissal failed with status ${response.status}`);
     const data = await response.json();
     if (data?.success) set(showUpdatePublicationsAtom, false);
-  } catch (error) {
-    console.error(error);
+  } catch {
+    set(addErrorAtom, "Unable to dismiss this notice. Please try again.");
   }
 });

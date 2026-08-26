@@ -24,6 +24,9 @@ export default function DoiSearch({ form }: { form: AppForm<PublicationFormValue
 
     try {
       const response = await fetch(routes.publications_lookup_path({ doi }));
+      // Same reason as the atoms (see the note by `addErrorAtom`): a bad status
+      // has to be thrown by hand, or a 404 body gets read as a publication.
+      if (!response.ok) throw new Error(`DOI lookup failed with status ${response.status}`);
       const data: Record<string, unknown> = await response.json();
 
       if (data.title === "") {

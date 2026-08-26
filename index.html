@@ -26,5 +26,52 @@
                 onSubmit: (grants) => console.log("submitted", grants),
             });
         </script>
+
+        <h2>Publications alerts</h2>
+        <p>
+            Every fetch in the publications feature reports failures through
+            <code>addErrorAtom</code>, which renders as a dismissable alert. The route overrides
+            below point at paths this dev server has nothing behind, so the alerts show up with no
+            Rails backend running. Two appear on load — the publication search and the filter
+            list — and two more are there to trigger by hand:
+        </p>
+        <ul>
+            <li><em>Update your publications</em> — fails the dismiss POST.</li>
+            <li>
+                <em>Add a New Publication</em> — fails the form load, so the modal shows its alert
+                at the top instead of spinning forever.
+            </li>
+        </ul>
+        <p>
+            Each of the four is a real 404 in the network tab, which is what makes
+            <code>response.ok</code> false. Worth knowing if you point these somewhere else: Vite
+            serves this page for any unmatched path that accepts HTML, so a route with no
+            <code>Accept: application/json</code> on its fetch would come back <em>200</em> with
+            this document as the body, and fail one step later in <code>response.json()</code>.
+        </p>
+        <div id="my-publications-react"></div>
+        <script type="module">
+            import { myPublications, shadowTarget } from "/src/main.jsx";
+
+            // Named so it is obvious in the network tab that the 404 is the point
+            // of the example, not a missing route.
+            const missing = (name) => () => `/__no-backend__/${name}`;
+
+            myPublications({
+                target: shadowTarget(document.getElementById("my-publications-react")),
+                authenticityToken: "dev-harness-token",
+                username: "adalovelace",
+                showUpdatePublications: true,
+                routes: {
+                    // Both of these run on mount, so their alerts are there immediately.
+                    search_publications_path: missing("search"),
+                    search_publications_filters_path: missing("filters"),
+                    // `publication_path("new.json")` is what the Add button loads.
+                    publication_path: missing("publication"),
+                    edit_publication_path: missing("publication"),
+                    publications_dismiss_notice_path: missing("dismiss-notice"),
+                },
+            });
+        </script>
     </body>
 </html>
