@@ -88,12 +88,9 @@ describe("ActionTitle", () => {
     expect(text.tagName).not.toBe("A");
   });
 
-  // NOTE: the Delete InlineButton is passed title="Edit action" in the
-  // source (src/projects/ActionTitle.tsx:44) - apparently copy-pasted from
-  // the Edit button above it - so both buttons are indistinguishable by
-  // accessible name. That looks like a genuine bug (reported, not fixed
-  // here); this test locates the delete control by element type instead of
-  // relying on its title being correct.
+  // Both buttons are icon-only (InlineButton renders just the Lucide icon),
+  // so `title` is their entire accessible name - which is why each one having
+  // its own is worth asserting. Edit renders as a link, Delete as a button.
   it("shows Edit and Delete buttons when allowed, and Delete calls toggleDeleteModal with the action id", async () => {
     const user = userEvent.setup();
     const store = createStore();
@@ -102,8 +99,11 @@ describe("ActionTitle", () => {
     const toggleDeleteModal = vi.fn();
     render(<Wrapper store={store} action={action} request={request} toggleDeleteModal={toggleDeleteModal} />);
 
-    const [editLink, deleteButton] = screen.getAllByTitle("Edit action");
+    const editLink = screen.getByTitle("Edit action");
+    expect(editLink.tagName).toBe("A");
     expect(editLink).toHaveAttribute("href", "/requests/99/edit");
+
+    const deleteButton = screen.getByTitle("Delete action");
     expect(deleteButton.tagName).toBe("BUTTON");
 
     await user.click(deleteButton);
@@ -117,5 +117,6 @@ describe("ActionTitle", () => {
     render(<Wrapper store={store} action={action} request={request} toggleDeleteModal={() => {}} />);
 
     expect(screen.queryByTitle("Edit action")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Delete action")).not.toBeInTheDocument();
   });
 });

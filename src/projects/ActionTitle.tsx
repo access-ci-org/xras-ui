@@ -40,7 +40,7 @@ export default function ActionTitle({
         color="danger"
         icon={Trash2}
         onClick={() => toggleDeleteModal(action.actionId)}
-        title="Edit action"
+        title="Delete action"
       />,
     );
 
