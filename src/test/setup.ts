@@ -19,13 +19,63 @@ if (!globalThis.TransformStream) globalThis.TransformStream = TransformStream as
 if (!globalThis.BroadcastChannel) globalThis.BroadcastChannel = BroadcastChannel as never;
 
 import { afterAll, afterEach, beforeAll } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure, prettyDOM } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
 import { server } from "./msw";
 
 // --- RTL cleanup -------------------------------------------------------
 afterEach(() => cleanup());
+
+// --- RTL async queries against a shadow root ------------------------------
+//
+// The mount-function tests (src/main.test.tsx) query through
+// `host.shadowRoot`, since that's where every mount function renders. That
+// makes a `findBy*`/`waitFor` timeout fatal to the whole run rather than to
+// the one test, for two compounding reasons in
+// @testing-library/dom's wait-for.js:
+//
+//  1. On timeout it builds the failure message via
+//     `getConfig().getElementError(message, container)`, and the default
+//     implementation calls `prettyDOM(container)`, which throws
+//     `TypeError: Expected an element or document but got ShadowRoot` -
+//     a ShadowRoot has no `outerHTML`. That throw happens *inside the
+//     `setTimeout` callback*, so it escapes as an unhandled error instead of
+//     rejecting the query's promise.
+//  2. Because the throw pre-empts `onDone`, the polling interval and the
+//     MutationObserver are never torn down. They keep retrying, the element
+//     usually does show up a moment later, and the promise resolves - so the
+//     awaiting test *passes*. The run then fails on an unhandled error with
+//     no test attached to it.
+//
+// A ShadowRoot-safe `getElementError` fixes both halves: nothing throws, so
+// the timeout rejects the query normally and the failure lands on the test
+// that caused it, with a readable dump.
+configure({
+  getElementError: (message, container) => {
+    // `prettyDOM` needs an Element or Document. For a ShadowRoot (or a
+    // DocumentFragment) print its element children instead; that's the
+    // rendered tree, which is what makes the message useful.
+    const dump =
+      container && "outerHTML" in container
+        ? prettyDOM(container as Element)
+        : [...((container as ParentNode | null)?.children ?? [])]
+            .map((child) => prettyDOM(child as Element))
+            .join("\n");
+
+    const error = new Error([message, dump].filter(Boolean).join("\n\n"));
+    error.name = "TestingLibraryElementError";
+    return error;
+  },
+
+  // Mounting a whole app - shadow root, stylesheets, jotai hydration and the
+  // MSW-served fetches it kicks off - can take longer than the 1000ms
+  // default, especially under `--coverage`'s instrumentation. That timing
+  // margin is what made the failure above intermittent. Stay below vitest's
+  // 5000ms `testTimeout` so a query that genuinely never matches still
+  // reports the RTL message naming the element, not a bare test timeout.
+  asyncUtilTimeout: 3000,
+});
 
 // --- Radix / jsdom polyfills ---------------------------------------------
 //
