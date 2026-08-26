@@ -25,7 +25,7 @@
 // exists to test - so those specific calls are cast rather than changing
 // src/main.jsx to add type annotations it doesn't otherwise need.
 import { afterEach, describe, expect, it } from "vitest";
-import { waitFor, within } from "@testing-library/react";
+import { act, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/msw";
 import { defaultRoutes } from "@/shared/routes";
@@ -52,6 +52,14 @@ import {
 // shadow tree from one test can't be queried (or collide by id) in another.
 const hosts: HTMLElement[] = [];
 
+// Every mount function returns an `unmount` handle (see `renderShadow` in
+// src/main.jsx). RTL's `cleanup` can't reach these roots - they were created
+// by `ReactDOM.createRoot` inside the package, not by RTL's `render` - so
+// detaching the host would leave the React tree alive for the rest of the
+// file, still running effects and fetches. Collect the handles and tear them
+// down instead.
+const unmounts: Array<() => void> = [];
+
 function makeTarget(): HTMLDivElement {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -59,7 +67,16 @@ function makeTarget(): HTMLDivElement {
   return host;
 }
 
+function track(unmount: () => void): () => void {
+  unmounts.push(unmount);
+  return unmount;
+}
+
 afterEach(() => {
+  // `act` because unmounting flushes React work, and RTL sets
+  // `IS_REACT_ACT_ENVIRONMENT`, so an unwrapped flush warns.
+  act(() => unmounts.forEach((unmount) => unmount()));
+  unmounts.length = 0;
   hosts.forEach((host) => host.remove());
   hosts.length = 0;
 });
@@ -77,15 +94,17 @@ describe("resources", () => {
   it("mounts, renders, and tolerates omitted baseUrl/stylesheets", async () => {
     const target = makeTarget();
 
-    resources({
-      target,
-      availableResources: [
-        { resource_id: 1, display_resource_name: "Test Resource A", resource_repository_key: null, relative_order: 1 },
-      ],
-      unavailableResources: [],
-      canAdd: false,
-      relativeUrlRoot: "",
-    });
+    track(
+      resources({
+        target,
+        availableResources: [
+          { resource_id: 1, display_resource_name: "Test Resource A", resource_repository_key: null, relative_order: 1 },
+        ],
+        unavailableResources: [],
+        canAdd: false,
+        relativeUrlRoot: "",
+      }),
+    );
 
     expect(await shadowOf(target).findByText("Test Resource A")).toBeInTheDocument();
   });
@@ -110,7 +129,7 @@ describe("editResource", () => {
       ),
     );
 
-    editResource({ target, resourceId: 1, relativeUrlRoot: "" } as any);
+    track(editResource({ target, resourceId: 1, relativeUrlRoot: "" } as any));
 
     expect(await shadowOf(target).findByDisplayValue("Bridges-3")).toBeInTheDocument();
   });
@@ -123,7 +142,7 @@ describe("projects", () => {
       http.get(`${defaultRoutes.projects_path()}.json`, () => HttpResponse.json({ result: [] })),
     );
 
-    projects({ target, username: "alice" } as any);
+    track(projects({ target, username: "alice" } as any));
 
     // Empty project list -> the "no projects yet" panel, from ProjectsInner
     // (src/projects/Projects.tsx).
@@ -176,16 +195,20 @@ describe("projects", () => {
       }),
     );
 
-    projects({
-      target: targetA,
-      username: "alice",
-      routes: { projects_path: () => "https://isolation-a.test/projects" },
-    });
-    projects({
-      target: targetB,
-      username: "bob",
-      routes: { projects_path: () => "https://isolation-b.test/projects" },
-    });
+    track(
+      projects({
+        target: targetA,
+        username: "alice",
+        routes: { projects_path: () => "https://isolation-a.test/projects" },
+      }),
+    );
+    track(
+      projects({
+        target: targetB,
+        username: "bob",
+        routes: { projects_path: () => "https://isolation-b.test/projects" },
+      }),
+    );
 
     await waitFor(() => {
       expect(callsA).toHaveLength(1);
@@ -222,7 +245,7 @@ describe("projectsBrowser", () => {
       }),
     );
 
-    projectsBrowser({ target, apiUrl });
+    track(projectsBrowser({ target, apiUrl }));
 
     expect(await shadowOf(target).findByText("No Projects Found")).toBeInTheDocument();
   });
@@ -240,7 +263,7 @@ describe("publicationsBrowser", () => {
       ),
     );
 
-    publicationsBrowser({ target } as any);
+    track(publicationsBrowser({ target } as any));
 
     expect(await shadowOf(target).findByText("Filters")).toBeInTheDocument();
   });
@@ -296,20 +319,24 @@ describe("publicationsBrowser", () => {
       ),
     );
 
-    publicationsBrowser({
-      target: targetA,
-      routes: {
-        search_publications_path: () => "https://isolation-a.test/pubs",
-        search_publications_filters_path: () => "https://isolation-shared.test/filters",
-      },
-    });
-    publicationsBrowser({
-      target: targetB,
-      routes: {
-        search_publications_path: () => "https://isolation-b.test/pubs",
-        search_publications_filters_path: () => "https://isolation-shared.test/filters",
-      },
-    });
+    track(
+      publicationsBrowser({
+        target: targetA,
+        routes: {
+          search_publications_path: () => "https://isolation-a.test/pubs",
+          search_publications_filters_path: () => "https://isolation-shared.test/filters",
+        },
+      }),
+    );
+    track(
+      publicationsBrowser({
+        target: targetB,
+        routes: {
+          search_publications_path: () => "https://isolation-b.test/pubs",
+          search_publications_filters_path: () => "https://isolation-shared.test/filters",
+        },
+      }),
+    );
 
     expect(await shadowOf(targetA).findByText(/Store A Publication/)).toBeInTheDocument();
     expect(await shadowOf(targetB).findByText(/Store B Publication/)).toBeInTheDocument();
@@ -338,7 +365,7 @@ describe("publicationEdit", () => {
       ),
     );
 
-    publicationEdit({ target, publicationId: 7, authenticityToken: "token" } as any);
+    track(publicationEdit({ target, publicationId: 7, authenticityToken: "token" } as any));
 
     expect(await shadowOf(target).findByDisplayValue("Existing Pub")).toBeInTheDocument();
   });
@@ -381,18 +408,22 @@ describe("publicationEdit", () => {
       ),
     );
 
-    publicationEdit({
-      target: targetA,
-      publicationId: 1,
-      authenticityToken: "token-a",
-      routes: { edit_publication_path: () => "https://isolation-a.test/pub-edit" }, // getPublicationDataAtom appends ".json"
-    });
-    publicationEdit({
-      target: targetB,
-      publicationId: 2,
-      authenticityToken: "token-b",
-      routes: { edit_publication_path: () => "https://isolation-b.test/pub-edit" }, // getPublicationDataAtom appends ".json"
-    });
+    track(
+      publicationEdit({
+        target: targetA,
+        publicationId: 1,
+        authenticityToken: "token-a",
+        routes: { edit_publication_path: () => "https://isolation-a.test/pub-edit" }, // getPublicationDataAtom appends ".json"
+      }),
+    );
+    track(
+      publicationEdit({
+        target: targetB,
+        publicationId: 2,
+        authenticityToken: "token-b",
+        routes: { edit_publication_path: () => "https://isolation-b.test/pub-edit" }, // getPublicationDataAtom appends ".json"
+      }),
+    );
 
     expect(await shadowOf(targetA).findByDisplayValue("Store A Pub")).toBeInTheDocument();
     expect(await shadowOf(targetB).findByDisplayValue("Store B Pub")).toBeInTheDocument();
@@ -408,12 +439,14 @@ describe("publicationsSelect", () => {
       ),
     );
 
-    publicationsSelect({
-      target,
-      authenticityToken: "token",
-      selectedPublicationIds: [],
-      usernames: ["alice"],
-    } as any);
+    track(
+      publicationsSelect({
+        target,
+        authenticityToken: "token",
+        selectedPublicationIds: [],
+        usernames: ["alice"],
+      } as any),
+    );
 
     expect(await shadowOf(target).findByText("Entered By")).toBeInTheDocument();
   });
@@ -460,20 +493,24 @@ describe("publicationsSelect", () => {
       ),
     );
 
-    publicationsSelect({
-      target: targetA,
-      authenticityToken: "token-a",
-      selectedPublicationIds: [],
-      usernames: [],
-      routes: { search_publications_path: () => "https://isolation-a.test/pubs-select" },
-    });
-    publicationsSelect({
-      target: targetB,
-      authenticityToken: "token-b",
-      selectedPublicationIds: [],
-      usernames: [],
-      routes: { search_publications_path: () => "https://isolation-b.test/pubs-select" },
-    });
+    track(
+      publicationsSelect({
+        target: targetA,
+        authenticityToken: "token-a",
+        selectedPublicationIds: [],
+        usernames: [],
+        routes: { search_publications_path: () => "https://isolation-a.test/pubs-select" },
+      }),
+    );
+    track(
+      publicationsSelect({
+        target: targetB,
+        authenticityToken: "token-b",
+        selectedPublicationIds: [],
+        usernames: [],
+        routes: { search_publications_path: () => "https://isolation-b.test/pubs-select" },
+      }),
+    );
 
     expect(await shadowOf(targetA).findByText(/Select Store A/)).toBeInTheDocument();
     expect(await shadowOf(targetB).findByText(/Select Store B/)).toBeInTheDocument();
@@ -492,7 +529,7 @@ describe("myPublications", () => {
       ),
     );
 
-    myPublications({ target, authenticityToken: "token", username: "alice", showUpdatePublications: false } as any);
+    track(myPublications({ target, authenticityToken: "token", username: "alice", showUpdatePublications: false } as any));
 
     expect(await shadowOf(target).findByText("My Publications")).toBeInTheDocument();
   });
@@ -542,26 +579,30 @@ describe("myPublications", () => {
       ),
     );
 
-    myPublications({
-      target: targetA,
-      authenticityToken: "token-a",
-      username: "alice",
-      showUpdatePublications: false,
-      routes: {
-        search_publications_path: () => "https://isolation-a.test/my-pubs",
-        search_publications_filters_path: () => "https://isolation-shared.test/my-filters",
-      },
-    });
-    myPublications({
-      target: targetB,
-      authenticityToken: "token-b",
-      username: "bob",
-      showUpdatePublications: false,
-      routes: {
-        search_publications_path: () => "https://isolation-b.test/my-pubs",
-        search_publications_filters_path: () => "https://isolation-shared.test/my-filters",
-      },
-    });
+    track(
+      myPublications({
+        target: targetA,
+        authenticityToken: "token-a",
+        username: "alice",
+        showUpdatePublications: false,
+        routes: {
+          search_publications_path: () => "https://isolation-a.test/my-pubs",
+          search_publications_filters_path: () => "https://isolation-shared.test/my-filters",
+        },
+      }),
+    );
+    track(
+      myPublications({
+        target: targetB,
+        authenticityToken: "token-b",
+        username: "bob",
+        showUpdatePublications: false,
+        routes: {
+          search_publications_path: () => "https://isolation-b.test/my-pubs",
+          search_publications_filters_path: () => "https://isolation-shared.test/my-filters",
+        },
+      }),
+    );
 
     expect(await shadowOf(targetA).findByText(/My Store A Pub/)).toBeInTheDocument();
     expect(await shadowOf(targetB).findByText(/My Store B Pub/)).toBeInTheDocument();
@@ -584,7 +625,7 @@ describe("onRampsResourceCatalog", () => {
       http.get(/\/features\//, () => HttpResponse.json({ results: [] })),
     );
 
-    onRampsResourceCatalog({ target, onRamps: false });
+    track(onRampsResourceCatalog({ target, onRamps: false }));
 
     expect(await shadowOf(target).findByText("No Resources Match Your Filters")).toBeInTheDocument();
   });
@@ -596,7 +637,7 @@ describe("resourceCatalog", () => {
     const apiUrl = "https://example.test/resource-catalog-api";
     server.use(http.get(apiUrl, () => HttpResponse.json([])));
 
-    resourceCatalog({ target, apiUrl } as any);
+    track(resourceCatalog({ target, apiUrl } as any));
 
     expect(await shadowOf(target).findByText("No Resources Match Your Filters")).toBeInTheDocument();
   });
@@ -612,7 +653,7 @@ describe("keywords", () => {
     // assertion below doesn't wait on it.
     server.use(http.get("/keywords", () => HttpResponse.json([])));
 
-    keywords({ target, allocationTypes: [] });
+    track(keywords({ target, allocationTypes: [] }));
 
     expect(
       await shadowOf(target).findByText(/Type new keywords separated by semicolons/),
@@ -624,7 +665,7 @@ describe("supportingGrants", () => {
   it("mounts, renders, and tolerates omitted baseUrl/stylesheets", async () => {
     const target = makeTarget();
 
-    supportingGrants({ target, fundingAgencies: [], fosTypes: [], fieldsConfig: {} });
+    track(supportingGrants({ target, fundingAgencies: [], fosTypes: [], fieldsConfig: {} }));
 
     expect(
       await shadowOf(target).findByText("Does this request include supporting grants?"),
@@ -654,6 +695,36 @@ describe("allocationsMap", () => {
     // unconditionally on first render, independent of whether the map data
     // fetches above have resolved yet.
     expect(await shadowOf(target).findByTitle("Enter Fullscreen")).toBeInTheDocument();
+  });
+});
+
+describe("the unmount handle every mount function returns", () => {
+  it("tears the React tree down, leaving the shadow root and its stylesheets in place", async () => {
+    const target = makeTarget();
+
+    // `supportingGrants` because it fetches nothing on mount, keeping this
+    // about the unmount contract. Deliberately not `track`ed: this test calls
+    // the handle itself, and the afterEach would then unmount the same root
+    // twice.
+    const unmount = supportingGrants({
+      target,
+      fundingAgencies: [],
+      fosTypes: [],
+      fieldsConfig: {},
+    });
+    const question = "Does this request include supporting grants?";
+    expect(await shadowOf(target).findByText(question)).toBeInTheDocument();
+
+    act(() => unmount());
+
+    expect(shadowOf(target).queryByText(question)).toBeNull();
+
+    // The shadow root and the stylesheet links `shadowTarget` put in it
+    // survive: `attachShadow` can't be undone and the injected sheets are
+    // cheap to leave, so the handle is a teardown, not a reset. Mounting again
+    // wants a fresh host element.
+    expect(target.shadowRoot).not.toBeNull();
+    expect(target.shadowRoot!.querySelectorAll("link").length).toBeGreaterThan(0);
   });
 });
 

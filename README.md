@@ -111,6 +111,29 @@ The `projects` component is styled entirely with Tailwind, whose reset lives in 
 
 Pass `baseUrl` or `stylesheets` to override where those sheets are loaded from, or pass a `shadowTarget(...)` as `target` to build the shadow root yourself.
 
+Every mount function returns an `unmount` function. A host page that tears down
+the markup around a component — a modal, a turbo-style page swap — should call
+it, so the component's effects, timers and in-flight requests stop instead of
+running on against detached DOM:
+
+```html
+<script type="module">
+  import { projects } from "https://esm.sh/@xras/ui@0.1.3?exports=projects";
+  const unmount = projects({
+    target: document.getElementById("projects-react"),
+    username: "myuser",
+    routes: { projects_path: () => "/projects" },
+  });
+  // Later, before removing #projects-react from the page:
+  unmount();
+</script>
+```
+
+It unmounts React and nothing else: the shadow root and the stylesheet links
+injected into it stay, since `attachShadow` can't be undone and the web font
+link in the document head is shared by every mount on the page. So it's a
+teardown, not a reset — mounting again wants a fresh host element.
+
 Against the Vite dev server there is no `dist`, so `shadowTarget` links the sources the dev server can serve (`tailwind.css` and `bootstrap/access.scss`) and copies in the `<style>` tags Vite injects into the document head — CSS modules only exist in that form during development, and a shadow tree can't see the document head.
 
 ## Testing

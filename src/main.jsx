@@ -88,6 +88,18 @@ export function shadowTarget(
  * and so loses to the host site's unlayered Bootstrap rules. Rendering in a
  * shadow root means only the injected stylesheets apply. A caller that wants
  * control over the stylesheets can pass a `shadowTarget` as `target`.
+ *
+ * Returns an `unmount` function, which every mount function passes on to its
+ * own caller. Calling it tears the React tree down, which is what lets a host
+ * page that removes the surrounding markup — a modal or a turbo-style page
+ * swap — stop the component's effects, timers and in-flight fetches instead of
+ * leaving them running against detached DOM.
+ *
+ * It unmounts React and nothing else, deliberately: the shadow root and its
+ * stylesheet links stay put, since `attachShadow` can't be undone and the
+ * document-level web font link is shared by every mount on the page. So this
+ * is a teardown handle, not a reset — mounting again wants a fresh host
+ * element.
  */
 function renderShadow(
   element,
@@ -98,9 +110,12 @@ function renderShadow(
       ? target
       : shadowTarget(target, { baseUrl, stylesheets, extraStylesheets });
 
-  ReactDOM.createRoot(root).render(
+  const reactRoot = ReactDOM.createRoot(root);
+  reactRoot.render(
     <ShadowRootProvider target={root}>{element}</ShadowRootProvider>,
   );
+
+  return () => reactRoot.unmount();
 }
 
 /*
@@ -115,7 +130,7 @@ function documentStylesheets(match) {
 }
 
 export function allocationsMap({ target, baseUrl = null, stylesheets = null }) {
-  renderShadow(<AllocationsMap />, {
+return renderShadow(<AllocationsMap />, {
     target,
     baseUrl,
     stylesheets,
@@ -132,7 +147,7 @@ export function resources({
   baseUrl = null,
   stylesheets = null,
 }) {
-  renderShadow(
+return renderShadow(
     <Resources
       availableResources={availableResources}
       unavailableResources={unavailableResources}
@@ -151,7 +166,7 @@ export function editResource({
   baseUrl = null,
   stylesheets = null,
 }) {
-  renderShadow(
+return renderShadow(
     <EditResource
       resourceId={resourceId}
       setExternalSubmit={setExternalSubmit}
@@ -162,15 +177,15 @@ export function editResource({
 }
 
 export function projects({ target, username, routes, baseUrl = null, stylesheets = null }) {
-  renderShadow(<Projects username={username} routes={routes} />, { target, baseUrl, stylesheets });
+return renderShadow(<Projects username={username} routes={routes} />, { target, baseUrl, stylesheets });
 }
 
 export function projectsBrowser({ target, apiUrl, baseUrl = null, stylesheets = null }) {
-  renderShadow(<ProjectsBrowser api_url={apiUrl} />, { target, baseUrl, stylesheets });
+return renderShadow(<ProjectsBrowser api_url={apiUrl} />, { target, baseUrl, stylesheets });
 }
 
 export function publicationsBrowser({ target, routes, baseUrl = null, stylesheets = null }) {
-  renderShadow(<PublicationsBrowser routes={routes} />, { target, baseUrl, stylesheets });
+return renderShadow(<PublicationsBrowser routes={routes} />, { target, baseUrl, stylesheets });
 }
 
 function HydrateAtoms({ values, children }) {
@@ -188,7 +203,7 @@ export function publicationEdit({
 }) {
   const store = createStore();
 
-  renderShadow(
+return renderShadow(
     <JotaiProvider store={store}>
       <HydrateAtoms
         values={
@@ -215,7 +230,7 @@ export function publicationsSelect({
   baseUrl = null,
   stylesheets = null,
 }) {
-  renderShadow(
+return renderShadow(
     <PublicationsSelect
       authenticityToken={authenticityToken}
       routes={routes}
@@ -232,7 +247,7 @@ export function onRampsResourceCatalog({
   baseUrl = null,
   stylesheets = null,
 }) {
-  renderShadow(
+return renderShadow(
     <OnRampsResourceCatalog onRamps={onRamps} baseUrl={baseUrl} />,
     { target, baseUrl, stylesheets },
   );
@@ -247,7 +262,7 @@ export function myPublications({
   baseUrl = null,
   stylesheets = null,
 }) {
-  renderShadow(
+return renderShadow(
     <MyPublications
       authenticityToken={authenticityToken}
       routes={routes}
@@ -269,7 +284,7 @@ export function resourceCatalog({
   baseUrl = null,
   stylesheets = null,
 }) {
-  renderShadow(
+return renderShadow(
     <ResourceCatalog
       apiUrl={apiUrl}
       excludedCategories={excludedCategories}
@@ -283,7 +298,7 @@ export function resourceCatalog({
 }
 
 export function keywords({ allocationTypes, target, baseUrl = null, stylesheets = null }) {
-  renderShadow(<Keywords allocationTypes={allocationTypes} />, {
+return renderShadow(<Keywords allocationTypes={allocationTypes} />, {
     target,
     baseUrl,
     stylesheets,
@@ -296,7 +311,7 @@ export function supportingGrants({
   stylesheets = null,
   ...props
 }) {
-  renderShadow(<SupportingGrantsSection {...props} />, {
+return renderShadow(<SupportingGrantsSection {...props} />, {
     target,
     baseUrl,
     stylesheets,
