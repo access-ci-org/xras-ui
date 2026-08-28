@@ -30,7 +30,9 @@ function ProjectsBrowserInner() {
   const showPagination = useAtomValue(showPaginationAtom);
 
   useEffect(() => {
-    initApp();
+    // The only place the query string is read. `initAppAtom` takes it as an
+    // argument, so this component is the app's single edge onto the URL.
+    void initApp(window.location.search);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createStore } from "jotai";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/msw";
@@ -322,35 +322,36 @@ describe("getFiltersAtom", () => {
 });
 
 describe("initAppAtom", () => {
-  const originalUrl = window.location.href;
+  // The query string is a parameter, so these tests never touch
+  // `window.location` or `history.pushState` and there is nothing to restore.
+  // `ProjectsBrowser.tsx` owns the one read of the global.
 
-  // `initAppAtom` reads `window.location.search` directly, so these tests
-  // mutate real global location state via `history.pushState` - restore it
-  // afterward so no state leaks into other test files' assumptions about the
-  // jsdom URL.
-  afterEach(() => {
-    window.history.pushState(null, "", originalUrl);
-  });
-
-  it("seeds requestNumber/listIsFilteredAtom from a _requestNumber query param and runs getFilters -> getProjects -> filterCleanup", async () => {
-    window.history.pushState(null, "", "/?_requestNumber=42");
-
+  // `initAppAtom` fires both fetches off the same endpoint, distinguished only
+  // by `?filters=1`, so every test here needs both branches answered.
+  function stubApi(
+    filters: Partial<TypeLists> = {},
+    projects: unknown[] = [],
+  ) {
     server.use(
       http.get("https://example.test/api/projects", ({ request }) => {
         const url = new URL(request.url);
         if (url.searchParams.get("filters") === "1") {
           return HttpResponse.json({
-            filters: { orgs: ["Org A"], fosTypes, allocationTypes: [], resources: [] },
+            filters: { orgs: [], fosTypes: [], allocationTypes: [], resources: [], ...filters },
           });
         }
-        return HttpResponse.json({ projects: [{ projectId: 99 }], pages: 1 });
+        return HttpResponse.json({ projects, pages: 1 });
       }),
     );
+  }
+
+  it("seeds requestNumber/listIsFilteredAtom from a _requestNumber query param and runs getFilters -> getProjects", async () => {
+    stubApi({ orgs: ["Org A"], fosTypes }, [{ projectId: 99 }]);
 
     const store = createStore();
     store.set(apiUrlAtom, "https://example.test/api/projects");
 
-    await store.set(initAppAtom);
+    await store.set(initAppAtom, "?_requestNumber=42");
 
     expect(store.get(filtersAtom).requestNumber).toBe("42");
     expect(store.get(listIsFilteredAtom)).toBe(true);
@@ -361,27 +362,31 @@ describe("initAppAtom", () => {
   });
 
   it("leaves requestNumber/listIsFilteredAtom at their defaults when there's no _requestNumber param", async () => {
-    window.history.pushState(null, "", "/");
-
-    server.use(
-      http.get("https://example.test/api/projects", ({ request }) => {
-        const url = new URL(request.url);
-        if (url.searchParams.get("filters") === "1") {
-          return HttpResponse.json({
-            filters: { orgs: [], fosTypes: [], allocationTypes: [], resources: [] },
-          });
-        }
-        return HttpResponse.json({ projects: [], pages: 1 });
-      }),
-    );
+    stubApi();
 
     const store = createStore();
     store.set(apiUrlAtom, "https://example.test/api/projects");
 
-    await store.set(initAppAtom);
+    await store.set(initAppAtom, "");
 
     expect(store.get(filtersAtom).requestNumber).toBe("");
     expect(store.get(listIsFilteredAtom)).toBe(false);
+  });
+
+  // An empty `_requestNumber` is present-but-blank: `has()` is true, so the
+  // list is marked filtered on a filter that matches nothing. Characterizing
+  // the existing behavior, not endorsing it - the guard has always been
+  // `has()`, and the URL is only ever written by the app's own links.
+  it("treats a blank _requestNumber as a filter", async () => {
+    stubApi();
+
+    const store = createStore();
+    store.set(apiUrlAtom, "https://example.test/api/projects");
+
+    await store.set(initAppAtom, "?_requestNumber=");
+
+    expect(store.get(filtersAtom).requestNumber).toBe("");
+    expect(store.get(listIsFilteredAtom)).toBe(true);
   });
 });
 

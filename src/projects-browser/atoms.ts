@@ -101,8 +101,13 @@ export const getFiltersAtom = atom(null, async (get, set) => {
   set(filtersLoadedAtom, true);
 });
 
-export const initAppAtom = atom(null, async (get, set) => {
-  const urlParams = new URLSearchParams(window.location.search);
+// `search` is required rather than defaulting to `window.location.search`, so
+// the one read of the global happens at the call site that owns it
+// (`ProjectsBrowser.tsx`) instead of in here. That keeps this writable and its
+// tests off `history.pushState`; a `URLSearchParams` argument accepts the
+// leading "?" or not, so either spelling works.
+export const initAppAtom = atom(null, async (get, set, search: string) => {
+  const urlParams = new URLSearchParams(search);
   if (urlParams.has("_requestNumber")) {
     set(filtersAtom, {
       ...get(filtersAtom),
