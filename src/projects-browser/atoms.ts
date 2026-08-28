@@ -46,7 +46,7 @@ function buildProjectsUrl(apiUrl: string, filters: Filters, typeLists: TypeLists
     url += `&fos=${filters.fosTypeIds.join(",")}`;
   }
 
-  if (filters.org != "" && filters.org != "-- ALL --") {
+  if (filters.org != "") {
     url += `&org=${encodeURIComponent(filters.org)}`;
   }
 
@@ -101,14 +101,6 @@ export const getFiltersAtom = atom(null, async (get, set) => {
   set(filtersLoadedAtom, true);
 });
 
-export const filterCleanupAtom = atom(null, (get, set) => {
-  const typeLists = get(typeListsAtom);
-  set(typeListsAtom, {
-    ...typeLists,
-    orgs: ["-- ALL --", ...typeLists.orgs],
-  });
-});
-
 export const initAppAtom = atom(null, async (get, set) => {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has("_requestNumber")) {
@@ -121,7 +113,6 @@ export const initAppAtom = atom(null, async (get, set) => {
 
   await set(getFiltersAtom);
   await set(getProjectsAtom);
-  set(filterCleanupAtom);
 });
 
 export const resetFiltersAtom = atom(null, (get, set) => {

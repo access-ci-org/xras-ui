@@ -5,7 +5,6 @@ import { server } from "@/test/msw";
 import {
   apiUrlAtom,
   commitFiltersAtom,
-  filterCleanupAtom,
   filtersAtom,
   filtersLoadedAtom,
   getFiltersAtom,
@@ -136,7 +135,7 @@ describe("getProjectsAtom (buildProjectsUrl branches, via the request MSW actual
     expect(receivedUrl?.searchParams.has("fos")).toBe(false);
   });
 
-  it("adds an org param when org is set to something other than the ALL sentinel", async () => {
+  it("adds an org param when org is set", async () => {
     let receivedUrl: URL | undefined;
     server.use(
       http.get("https://example.test/api/projects", ({ request }) => {
@@ -161,7 +160,7 @@ describe("getProjectsAtom (buildProjectsUrl branches, via the request MSW actual
     expect(receivedUrl?.searchParams.get("org")).toBe("Acme University");
   });
 
-  it("omits the org param when org is the ALL sentinel", async () => {
+  it("omits the org param when no org is selected", async () => {
     let receivedUrl: URL | undefined;
     server.use(
       http.get("https://example.test/api/projects", ({ request }) => {
@@ -174,15 +173,18 @@ describe("getProjectsAtom (buildProjectsUrl branches, via the request MSW actual
     store.set(apiUrlAtom, "https://example.test/api/projects");
     store.set(typeListsAtom, { orgs: [], fosTypes, allocationTypes: [], resources: [] });
     store.set(filtersAtom, {
-      org: "-- ALL --",
+      org: "",
       allocationType: "",
-      fosTypeIds: [1, 2],
+      fosTypeIds: fosTypes.map((fos) => fos.fosTypeId),
       resource: "",
       requestNumber: "",
     });
 
     await store.set(getProjectsAtom);
 
+    // "Organization: -- All --" reaches this layer as "", the same as every
+    // other unset filter. Filters.tsx owns the "__all__" option and maps it
+    // back on submit, so no sentinel string is special-cased here.
     expect(receivedUrl?.searchParams.has("org")).toBe(false);
   });
 
@@ -319,17 +321,6 @@ describe("getFiltersAtom", () => {
   });
 });
 
-describe("filterCleanupAtom", () => {
-  it("prepends the ALL sentinel to typeListsAtom.orgs", () => {
-    const store = createStore();
-    store.set(typeListsAtom, { orgs: ["Org A", "Org B"], fosTypes: [], allocationTypes: [], resources: [] });
-
-    store.set(filterCleanupAtom);
-
-    expect(store.get(typeListsAtom).orgs).toEqual(["-- ALL --", "Org A", "Org B"]);
-  });
-});
-
 describe("initAppAtom", () => {
   const originalUrl = window.location.href;
 
@@ -363,9 +354,9 @@ describe("initAppAtom", () => {
 
     expect(store.get(filtersAtom).requestNumber).toBe("42");
     expect(store.get(listIsFilteredAtom)).toBe(true);
-    // filterCleanupAtom ran after getFilters/getProjects: the ALL sentinel is
-    // prepended to whatever getFiltersAtom just loaded.
-    expect(store.get(typeListsAtom).orgs).toEqual(["-- ALL --", "Org A"]);
+    // typeListsAtom holds exactly what the API returned. Nothing injects a
+    // display-only entry into it, so init is idempotent with respect to it.
+    expect(store.get(typeListsAtom).orgs).toEqual(["Org A"]);
     expect(store.get(projectsAtom)).toEqual([{ projectId: 99 }]);
   });
 

@@ -40,12 +40,14 @@ const FiltersForm = () => {
   const form = useAppForm({
     defaultValues: {
       ...filters,
+      org: filters.org || "__all__",
       allocationType: filters.allocationType || "__all__",
       resource: filters.resource || "__all__",
     },
     onSubmit: ({ value }) => {
       commitFilters({
         ...value,
+        org: value.org === "__all__" ? "" : value.org,
         allocationType: value.allocationType === "__all__" ? "" : value.allocationType,
         resource: value.resource === "__all__" ? "" : value.resource,
       });
@@ -65,7 +67,7 @@ const FiltersForm = () => {
 
   const handleReset = () => {
     form.reset({
-      org: "",
+      org: "__all__",
       allocationType: "__all__",
       fosTypeIds: allFosIds,
       resource: "__all__",
@@ -136,7 +138,10 @@ const FiltersForm = () => {
         <form.AppField name="org">
           {(field) => (
             <field.FieldReactSelect
-              options={typeLists.orgs.map((org) => ({ label: org, value: org }))}
+              options={[
+                { value: "__all__", label: "-- All --" },
+                ...typeLists.orgs.map((org) => ({ label: org, value: org })),
+              ]}
               openMenuOnClick
               closeMenuOnSelect
               aria-labelledby="org_select_label"
