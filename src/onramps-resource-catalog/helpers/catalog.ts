@@ -205,6 +205,12 @@ export function transformRampsData(
         .map((id: number) =>
           rampsResources.find((rr) => rr.info_resourceid == id),
         )
+        // A rollup group can name a resource this feed doesn't carry - the
+        // group list and the resource list come from separate endpoints, so
+        // the two can disagree. There is nothing to link to for an id we have
+        // no resource for, so drop it: a stale entry in one group is not worth
+        // throwing away the whole catalog for.
+        .filter((rr: any) => rr !== undefined)
         .map((rr: any) => ({
           cider_resource_id: rr.cider_resource_id,
           displayResourceName: rr.resource_descriptive_name,

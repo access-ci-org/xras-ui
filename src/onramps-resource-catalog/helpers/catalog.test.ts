@@ -104,12 +104,9 @@ describe("mergeData", () => {
 });
 
 describe("transformRampsData", () => {
-  // active_groups is empty by default: a group whose rollup_info_resourceids
-  // references a resource id absent from the current rampsResources list
-  // makes transformRampsData throw (relatedResources maps over
-  // `rampsResources.find(...)`, which comes back undefined) - see the
-  // "computes relatedResources" test below, which supplies both ids the
-  // fixture group references.
+  // active_groups is empty by default; the tests that care about rollup groups
+  // supply their own. A group naming an id absent from rampsResources is no
+  // longer fatal - see "skips a rollup id with no matching resource" below.
   const metadata = {
     active_groups: [] as { info_groupid: number; rollup_info_resourceids: number[] }[],
     organizations: [{ organization_name: "PSC", organization_favicon_url: "https://psc.test/favicon.ico" }],
@@ -222,6 +219,49 @@ describe("transformRampsData", () => {
     const bridges = resources.find((r) => r.resourceName == "Bridges-2")!;
     expect(bridges.groupId).toBe(555);
     expect(bridges.relatedResources).toEqual([
+      { cider_resource_id: 2, displayResourceName: "Bridges-2 Wide Memory" },
+    ]);
+  });
+
+  // Was bug #11. The group list and the resource list come from separate
+  // endpoints, so a group can outrun the resources actually in the feed; the
+  // unguarded `.map` over `rampsResources.find(...)` then threw
+  // `TypeError: Cannot read properties of undefined (reading
+  // 'cider_resource_id')` and took the entire catalog down with it.
+  it("skips a rollup id with no matching resource instead of throwing", () => {
+    const grouped = rampsResource({ cider_resource_id: 1, info_resourceid: 1, short_name: "Bridges-2" });
+    const metadataWithGroup = {
+      ...metadata,
+      active_groups: [{ info_groupid: 555, rollup_info_resourceids: [1, 2] }],
+    };
+
+    // Only resource 1 is in the feed; the group also names 2.
+    const { resources } = transformRampsData(metadataWithGroup, [grouped], features);
+
+    const bridges = resources.find((r) => r.resourceName == "Bridges-2")!;
+    // The group membership itself still holds - only the unresolvable link is
+    // dropped, so groupId survives and the resource stays in the catalog.
+    expect(bridges.groupId).toBe(555);
+    expect(bridges.relatedResources).toEqual([]);
+  });
+
+  it("keeps the resolvable members of a group that also names a missing one", () => {
+    const grouped = rampsResource({ cider_resource_id: 1, info_resourceid: 1, short_name: "Bridges-2" });
+    const groupMate = rampsResource({
+      cider_resource_id: 2,
+      info_resourceid: 2,
+      short_name: "Bridges-2 Wide",
+      resource_descriptive_name: "Bridges-2 Wide Memory",
+    });
+    const metadataWithGroup = {
+      ...metadata,
+      active_groups: [{ info_groupid: 555, rollup_info_resourceids: [1, 2, 99] }],
+    };
+
+    const { resources } = transformRampsData(metadataWithGroup, [grouped, groupMate], features);
+
+    // 99 is dropped, 2 is not: the filter has to be per-id, not all-or-nothing.
+    expect(resources.find((r) => r.resourceName == "Bridges-2")!.relatedResources).toEqual([
       { cider_resource_id: 2, displayResourceName: "Bridges-2 Wide Memory" },
     ]);
   });
