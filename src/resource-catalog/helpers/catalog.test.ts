@@ -142,20 +142,55 @@ describe("processCatalogResponse", () => {
     expect(organization.features.map((f) => f.name)).toEqual(["PSC"]);
   });
 
-  // Category-level allow/exclude only controls whether a *category* shows up
-  // in the filter tree - it does NOT gate which feature names land in a
-  // resource's own `features` array. That's controlled solely by
-  // allowedFilters/excludedFilters below. Confirmed by reading catalog.ts:
-  // the `filterIncluded` check (feature-level) is independent of whether
-  // `categories[categoryId]` exists (category-level).
+  // The asymmetry between the two gates, in both directions. Category-level
+  // allow/exclude controls only whether a category gets a node in the filter
+  // tree; whether a feature name lands in `resource.features` is decided
+  // solely by allowedFilters/excludedFilters. So a category can be gone from
+  // the sidebar while its names still render as badges on every card - and,
+  // because `featureIds` is unfiltered too, those ids stay in the data that
+  // `computeFilteredResources` matches on.
   it("excluding a category removes it from the filter tree but not from resource.features", () => {
     const { filters, resources } = processCatalogResponse(
       [apiResource()],
       noParams({ excludedCategories: ["Organization"] }),
     );
     expect(filters.map((f) => f.categoryName)).toEqual(["Resource Type"]);
+
     const bridges = resources.find((r) => r.resourceName == "Bridges-2")!;
-    expect(bridges.features).toContain("PSC");
+    // Exhaustive rather than `toContain`: the point is that nothing was
+    // removed, so naming the whole array is what would catch a change here.
+    expect(bridges.features).toEqual(["CPU", "GPU", "PSC"]);
+    expect(bridges.featureIds).toEqual([10, 11, 20]);
+  });
+
+  // The shape the NAIRR resources page actually ships
+  // (`xras_submit_nairr/app/views/resources/index.html.erb` passes
+  // allowedCategories and nothing else), so this is the live consequence, not
+  // a hypothetical one.
+  it("an allow-list of categories narrows the filter tree but still leaves every feature name on the cards", () => {
+    const { filters, resources } = processCatalogResponse(
+      [apiResource()],
+      noParams({ allowedCategories: ["Resource Type"] }),
+    );
+    expect(filters.map((f) => f.categoryName)).toEqual(["Resource Type"]);
+
+    const bridges = resources.find((r) => r.resourceName == "Bridges-2")!;
+    expect(bridges.features).toEqual(["CPU", "GPU", "PSC"]);
+  });
+
+  // The other half of the contract: to remove a category *and* its names, the
+  // feature names have to be listed too. Pinned so the workaround stays
+  // discoverable next to the trap.
+  it("removes a category from both the tree and the cards only when its feature names are also excluded", () => {
+    const { filters, resources } = processCatalogResponse(
+      [apiResource()],
+      noParams({ excludedCategories: ["Organization"], excludedFilters: ["PSC"] }),
+    );
+    expect(filters.map((f) => f.categoryName)).toEqual(["Resource Type"]);
+
+    const bridges = resources.find((r) => r.resourceName == "Bridges-2")!;
+    expect(bridges.features).toEqual(["CPU", "GPU"]);
+    expect(bridges.featureIds).toEqual([10, 11]);
   });
 
   it("excluding a filter name removes it from both resource.features and the filter tree", () => {

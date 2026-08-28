@@ -46,6 +46,11 @@ function formatResourceFeatures(
       // any features.
       if (category.categoryName == "ACCESS Resource Grouping") return;
 
+      // CATEGORY GATE: filter-tree membership only. It does not gate the
+      // `featureList` below, so excluding a category hides its filter while
+      // its feature names go on rendering on every card in it. Same asymmetry
+      // as the sibling copy in `resource-catalog/helpers/catalog.ts`; pinned
+      // by test in both.
       if (
         !categories[categoryId] &&
         useFilter(
@@ -69,6 +74,9 @@ function formatResourceFeatures(
           categoryId: categoryId,
         };
 
+        // FEATURE GATE: the only thing that keeps a name off a card. It gates
+        // the tree as well, via the check below, which is what makes the two
+        // look symmetric when they are not.
         const filterIncluded = useFilter(
           catalog.allowedFilters,
           catalog.excludedFilters,
@@ -256,6 +264,13 @@ export function transformRampsData(
     allowedCategories: [],
     allowedFilters: [],
     allowedResources: [],
+    // Redundant, and deliberately left that way: the three names below are
+    // already dropped from `featureCategories` by the hardcoded list above,
+    // before `mergeData` can see them, so nothing here is reachable through
+    // `transformRampsData`. Keeping them means this source config still says
+    // what it means on its own, and means the category gate's asymmetry never
+    // bites here - an `excludedCategories`-only exclusion would otherwise
+    // leave those feature names on the cards.
     excludedCategories: [
       "Resource Category",
       "**DELETED** ACCESS Integration Roadmap",

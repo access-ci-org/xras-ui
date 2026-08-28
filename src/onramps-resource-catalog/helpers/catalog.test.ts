@@ -56,6 +56,34 @@ describe("mergeData", () => {
     expect(Object.keys(categories[1].features)).toEqual(["10", "11"]);
   });
 
+  // Same asymmetry as `resource-catalog/helpers/catalog.ts`: the category gate
+  // controls filter-tree membership only, so an excluded category's feature
+  // names stay on the resource. Untestable through `transformRampsData` - its
+  // hardcoded name list drops those categories upstream before `mergeData`
+  // runs - but `mergeData` is exported and this is its contract, so a second
+  // caller would meet it. Verified by execution, not by reading.
+  it("excluding a category removes it from the tree but leaves its feature names on the resource", () => {
+    const withTwoCategories = rawResource({
+      featureCategories: [
+        ...rawResource().featureCategories,
+        {
+          categoryId: 2,
+          categoryName: "Resource Category",
+          categoryDescription: "How it is grouped",
+          categoryIsFilter: true,
+          features: [{ featureId: 20, name: "Compute", description: "" }],
+        },
+      ],
+    });
+    const { resources, categories } = mergeData({
+      ...source({ excludedCategories: ["Resource Category"] }),
+      data: [withTwoCategories],
+    });
+
+    expect(Object.values(categories).map((c) => c.categoryName)).toEqual(["Resource Type"]);
+    expect(resources[0].features).toEqual(["CPU", "Compute", "GPU"]);
+  });
+
   it("excludes resources not in a catalog source's allowedResources list", () => {
     const { resources } = mergeData({
       ...source({ allowedResources: ["Bridges-2"] }),
