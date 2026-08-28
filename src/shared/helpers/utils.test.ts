@@ -384,6 +384,13 @@ describe("formatArray", () => {
   });
 });
 
+// The leading space in `textContent` is intentional, not an artifact these
+// tests are grudgingly pinning down: it is the separator between the icon and
+// the label, and it collapses away wherever callers render it (the start of a
+// `Grid` cell's inline content). Asserting it exactly is what would catch
+// someone "tidying" it into a non-breaking space or dropping it and leaving the
+// icon flush against the text. See the note on formatBoolean for the rewrite to
+// use if a clean `textContent` is ever needed.
 describe("formatBoolean", () => {
   it("renders a check icon and Yes for true", () => {
     const { container } = renderNode(formatBoolean(true));
@@ -395,6 +402,14 @@ describe("formatBoolean", () => {
     const { container } = renderNode(formatBoolean(false));
     expect(container.textContent).toBe(" No");
     expect(container.querySelector("svg")).not.toBeNull();
+  });
+
+  it("puts the icon before the label", () => {
+    // The reason the space is safe to leave alone: it separates two things in
+    // a fixed order, so it is layout, not content.
+    const { container } = renderNode(formatBoolean(true));
+    const svg = container.querySelector("svg")!;
+    expect(svg.nextSibling?.textContent).toBe(" Yes");
   });
 });
 

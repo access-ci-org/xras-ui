@@ -200,6 +200,14 @@ export const formatArray = (items: ReactNode[], conjunction = "and", separator =
   ));
 };
 
+// The space between the icon and the label is a literal text node, so
+// `textContent` here is " Yes" / " No" with a leading space. That is deliberate
+// and harmless: every caller drops the result at the start of a `Grid` cell's
+// inline content, where HTML collapses leading whitespace, so it never renders.
+// `ResourceName` uses the same `{icon(...)} {text}` idiom, and the two should
+// stay consistent. If a caller ever needs a clean `textContent` - to match on
+// `getByText("Yes")`, say - move the separation into the class instead:
+// `{icon("check-circle")}<span className="ml-1">Yes</span>`.
 export const formatBoolean = (value: boolean) => {
   return value ? (
     <>{icon("check-circle")} Yes</>
