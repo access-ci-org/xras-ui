@@ -153,7 +153,13 @@ export function transformRampsData(
 ) {
   const featureCategories: Record<number, any> = {};
   const formattedFeatures: Record<number, any> = {};
-  const groups = metadata.active_groups;
+  // Both metadata lists default to empty for the same reason the rollup lookup
+  // below filters: this payload comes from an upstream API, and a missing key
+  // should cost the affected field, not the whole catalog. Every per-resource
+  // lookup here already tolerates a miss (`organization?.`, `resourceGroup?.`),
+  // so the arrays themselves were the last thing that could take the call down.
+  const groups = metadata.active_groups ?? [];
+  const organizations = metadata.organizations ?? [];
 
   features
     .filter(
@@ -185,7 +191,7 @@ export function transformRampsData(
     });
 
   const formattedResources = rampsResources.map((r) => {
-    const organization = metadata.organizations.find(
+    const organization = organizations.find(
       (o: any) => o.organization_name == r.organization_name,
     );
     const originalResourceType = r.features.find(

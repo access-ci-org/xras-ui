@@ -266,6 +266,43 @@ describe("transformRampsData", () => {
     ]);
   });
 
+  // Same class as #11, one level up: the metadata payload is upstream data, so
+  // a missing list should cost the field it feeds and nothing else. Both of
+  // these threw before the guards - `groups.find(...)` and
+  // `metadata.organizations.find(...)` were the only unguarded dereferences
+  // left in the function.
+  it("treats missing active_groups as no rollup groups", () => {
+    const solo = rampsResource({ cider_resource_id: 3, info_resourceid: 3, short_name: "Solo" });
+    // Built explicitly rather than destructured, so what is absent is obvious.
+    const { resources } = transformRampsData(
+      { organizations: metadata.organizations },
+      [solo],
+      features,
+    );
+
+    const result = resources.find((r) => r.resourceName == "Solo")!;
+    expect(result.groupId).toBeUndefined();
+    expect(result.relatedResources).toEqual([]);
+    // The rest of the resource is unaffected - losing the group list costs the
+    // grouping fields only.
+    expect(result.icon).toBe("https://psc.test/favicon.ico");
+  });
+
+  it("treats missing organizations as an unknown organization", () => {
+    const solo = rampsResource({ cider_resource_id: 3, info_resourceid: 3, short_name: "Solo" });
+    const { resources } = transformRampsData(
+      { active_groups: metadata.active_groups },
+      [solo],
+      features,
+    );
+
+    const result = resources.find((r) => r.resourceName == "Solo")!;
+    // Same outcome as an organization_name that matches nothing, which the
+    // "unknown organization" test above already covers.
+    expect(result.icon).toBeNull();
+    expect(result.resourceCategory).toBe("CPU");
+  });
+
   it("leaves groupId and relatedResources empty for a resource in no rollup group", () => {
     const solo = rampsResource({ cider_resource_id: 3, info_resourceid: 3, short_name: "Solo" });
     const { resources } = transformRampsData(metadata, [solo], features);
