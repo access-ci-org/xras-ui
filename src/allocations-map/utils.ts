@@ -1,3 +1,4 @@
+import { formatNumber } from "../shared/helpers/utils";
 import { organizationTypes } from "./config";
 import type {
   CreditLevel,
@@ -11,18 +12,6 @@ import type {
 } from "./types";
 
 const mapDataCache: Record<string, any> = {};
-
-export function formatNumber(value: number, sigFigs = 3) {
-  let power = 0;
-  while (value / Math.pow(1000, power) > 1000) power += 1;
-
-  const digits = value.toString().length;
-  const roundFactor = Math.pow(10, digits - sigFigs);
-  return (
-    ((Math.round(value / roundFactor) * roundFactor) / Math.pow(1000, power)).toString() +
-    ["", "K", "M", "B", "T"][power]
-  );
-}
 
 export async function getBasemapStyle() {
   const esriBaseUrl = "https://basemaps-api.arcgis.com/arcgis/rest/services";
@@ -248,7 +237,7 @@ export function makeLevels(values: number[], quantiles = [0, 0.3, 0.6, 0.9]): Cr
   return quantiles.map((q, i) => {
     const value = quantile(values, q);
     const suffix = i === quantiles.length - 1 ? "+" : "";
-    return [`${formatNumber(Math.round(value))}${suffix}`, value];
+    return [`${formatNumber(Math.round(value), { abbreviate: true })}${suffix}`, value];
   });
 }
 

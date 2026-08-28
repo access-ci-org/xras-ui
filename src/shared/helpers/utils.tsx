@@ -54,21 +54,47 @@ export const dateOptions: Intl.DateTimeFormatOptions = {
 export const formatDate = (dateStr: string, options?: Intl.DateTimeFormatOptions) =>
   parseDate(dateStr).toLocaleString("en-us", options || dateOptions);
 
-export const formatNumber = (
-  value: number,
-  { abbreviate = false, decimalPlaces = undefined }: { abbreviate?: boolean; decimalPlaces?: number } = {},
-) => {
-  if (abbreviate) {
+const suffixes = ["", "K", "M", "B", "T", "Q"];
+
+// `abbreviate` and `decimalPlaces` are two answers to the same question, and
+// Intl resolves the pair by silently dropping the fraction digits, so a call
+// passing both would quietly ignore one of its own arguments. The union makes
+// that a compile error instead: each option configures exactly one mode.
+type FormatNumberOptions =
+  | { abbreviate: true; sigFigs?: number; decimalPlaces?: never }
+  | { abbreviate?: false; decimalPlaces?: number; sigFigs?: never };
+
+export const formatNumber = (value: number, options: FormatNumberOptions = {}) => {
+  if (options.abbreviate) {
+    const sigFigs = options.sigFigs ?? 3;
+
+    // Infinity would otherwise drive the loop until Math.pow overflows and
+    // then divide Infinity by Infinity, printing "NaNundefined".
+    if (!Number.isFinite(value)) return String(value);
+
+    const maxPower = suffixes.length - 1;
     let power = 0;
-    while (Math.abs(value) / Math.pow(1000, power) >= 1000) power += 1;
-    const suffix = ["", "K", "M", "B", "T", "Q"][power];
+    while (Math.abs(value) / Math.pow(1000, power) >= 1000 && power < maxPower) power += 1;
+
+    // The tier comes from the unrounded value, so rounding can push the
+    // mantissa back over the boundary: 999_500 is 999.5K unrounded but 1.00M
+    // once rounded to three figures. Promote a tier when that happens - and
+    // stop at the last suffix rather than indexing past it.
+    if (Math.abs(Number((value / Math.pow(1000, power)).toPrecision(sigFigs))) >= 1000 && power < maxPower)
+      power += 1;
+
     return `${(value / Math.pow(1000, power)).toLocaleString("en-US", {
-      maximumSignificantDigits: 3,
-    })}${suffix}`;
+      // Trailing zeros carry information once a suffix is in play: 999_500 to
+      // three figures is 1.00M, and "1M" claims one. An unabbreviated value is
+      // exact, so there is no retained precision to declare and no padding.
+      minimumSignificantDigits: power > 0 ? sigFigs : undefined,
+      maximumSignificantDigits: sigFigs,
+    })}${suffixes[power]}`;
   }
+
   return value.toLocaleString("en-US", {
-    maximumFractionDigits: decimalPlaces,
-    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: options.decimalPlaces,
+    minimumFractionDigits: options.decimalPlaces,
   });
 };
 

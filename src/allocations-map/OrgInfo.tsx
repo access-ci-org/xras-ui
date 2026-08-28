@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { formatNumber } from "./utils";
+import { formatNumber } from "../shared/helpers/utils";
 import type { OrganizationType } from "./config";
 import type { ActiveOrg, CreditType } from "./types";
 
@@ -70,7 +70,7 @@ export default function OrgInfo({
         Researchers at {formatOrgs(orgs.user, "user", "research institution", organizationType)}{" "}
         {creditType === "allocated" ? "were " : ""}
         {creditType}{" "}
-        <span className="font-semibold">{formatNumber(credits)} ACCESS Credits</span>
+        <span className="font-semibold">{formatNumber(credits, { abbreviate: true })} ACCESS Credits</span>
         {creditType !== "allocated" ? (
           <>
             {" "}

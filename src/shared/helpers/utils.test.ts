@@ -53,43 +53,83 @@ describe("formatNumber", () => {
     expect(formatNumber(1234567)).toBe("1,234,567");
   });
 
-  it("abbreviates thousands with a K suffix", () => {
+  it("abbreviates to three significant figures", () => {
     expect(formatNumber(12345, { abbreviate: true })).toBe("12.3K");
+    expect(formatNumber(1234499, { abbreviate: true })).toBe("1.23M");
   });
 
-  it("abbreviates millions with an M suffix", () => {
-    expect(formatNumber(2500000, { abbreviate: true })).toBe("2.5M");
+  it("pads trailing zeros so an abbreviation always shows three figures", () => {
+    // "1M" would claim a single significant figure. The zeros are the point:
+    // they say the value is 1.00 million, not merely somewhere in the millions.
+    expect(formatNumber(1000, { abbreviate: true })).toBe("1.00K");
+    expect(formatNumber(2_500_000, { abbreviate: true })).toBe("2.50M");
+    expect(formatNumber(2_500_000_000, { abbreviate: true })).toBe("2.50B");
+    expect(formatNumber(1_000_000_000_000, { abbreviate: true })).toBe("1.00T");
+    expect(formatNumber(1_000_000_000_000_000, { abbreviate: true })).toBe("1.00Q");
   });
 
-  it("does not abbreviate values under 1000", () => {
+  it("promotes a tier when rounding pushes the mantissa over the boundary", () => {
+    // The tier is picked from the unrounded value, so 999_500 lands in the K
+    // tier as 999.5 and only then rounds to 1,000 - which used to print
+    // "1,000K": off by a factor of a thousand in the suffix, and wider than
+    // abbreviating is supposed to be.
+    expect(formatNumber(999_499, { abbreviate: true })).toBe("999K");
+    expect(formatNumber(999_500, { abbreviate: true })).toBe("1.00M");
+    expect(formatNumber(999_999, { abbreviate: true })).toBe("1.00M");
+    expect(formatNumber(999_999_999, { abbreviate: true })).toBe("1.00B");
+  });
+
+  it("leaves values under 1000 unabbreviated and exact", () => {
+    // Below the K tier nothing has been rounded away, so there is no retained
+    // precision to declare; padding a zero balance to "0.00" is only noise.
     expect(formatNumber(999, { abbreviate: true })).toBe("999");
-  });
-
-  it("sits right at the K threshold", () => {
-    // 1000 / 1000^1 = 1, which is < 1000, so the while loop in formatNumber
-    // stops at power=1 rather than rolling over to the next tier.
-    expect(formatNumber(1000, { abbreviate: true })).toBe("1K");
-  });
-
-  it("abbreviates billions with a B suffix", () => {
-    expect(formatNumber(2_500_000_000, { abbreviate: true })).toBe("2.5B");
-  });
-
-  it("abbreviates trillions with a T suffix", () => {
-    expect(formatNumber(1_000_000_000_000, { abbreviate: true })).toBe("1T");
-  });
-
-  it("abbreviates quadrillions with a Q suffix", () => {
-    expect(formatNumber(1_000_000_000_000_000, { abbreviate: true })).toBe("1Q");
+    expect(formatNumber(0, { abbreviate: true })).toBe("0");
+    expect(formatNumber(5, { abbreviate: true })).toBe("5");
+    expect(formatNumber(0.5, { abbreviate: true })).toBe("0.5");
   });
 
   it("carries the sign through when abbreviating negative values", () => {
     expect(formatNumber(-12345, { abbreviate: true })).toBe("-12.3K");
+    expect(formatNumber(-999_999, { abbreviate: true })).toBe("-1.00M");
+  });
+
+  it("clamps to the largest suffix instead of running off the end of the list", () => {
+    // Six suffixes and an unbounded loop: 1e18 used to print "1undefined".
+    expect(formatNumber(1e18, { abbreviate: true })).toBe("1,000Q");
+    expect(formatNumber(1e21, { abbreviate: true })).toBe("1,000,000Q");
+  });
+
+  it("passes non-finite values straight through", () => {
+    // Infinity drove the loop until Math.pow overflowed and then divided
+    // Infinity by Infinity, printing "NaNundefined".
+    expect(formatNumber(Infinity, { abbreviate: true })).toBe("Infinity");
+    expect(formatNumber(-Infinity, { abbreviate: true })).toBe("-Infinity");
+    expect(formatNumber(NaN, { abbreviate: true })).toBe("NaN");
+  });
+
+  it("honours a sigFigs override, including inside the tier promotion", () => {
+    // At four figures 999_500 is exact in the K tier, so it must not be
+    // promoted - the promotion check has to use the caller's precision.
+    expect(formatNumber(999_500, { abbreviate: true, sigFigs: 4 })).toBe("999.5K");
+    expect(formatNumber(999_500, { abbreviate: true, sigFigs: 2 })).toBe("1.0M");
+    expect(formatNumber(12345, { abbreviate: true, sigFigs: 4 })).toBe("12.35K");
   });
 
   it("pads/truncates to a fixed number of decimal places when not abbreviating", () => {
     expect(formatNumber(3, { decimalPlaces: 2 })).toBe("3.00");
     expect(formatNumber(-1234.5, { decimalPlaces: 1 })).toBe("-1,234.5");
+  });
+
+  it("rejects the option combinations that cannot both be honoured", () => {
+    // Not really a runtime assertion - `tsc --noEmit` is what enforces this,
+    // and it fails on an unused @ts-expect-error, so these lines break if the
+    // union is ever loosened back into one object with all fields optional.
+    // Intl resolves significant digits against fraction digits by discarding
+    // the latter, so either combination would silently ignore an argument.
+    // @ts-expect-error decimalPlaces cannot apply to an abbreviated value
+    expect(formatNumber(5, { abbreviate: true, decimalPlaces: 2 })).toBe("5");
+    // @ts-expect-error sigFigs only has meaning when abbreviating
+    expect(formatNumber(5, { sigFigs: 2 })).toBe("5");
   });
 });
 
