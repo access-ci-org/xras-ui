@@ -18,6 +18,7 @@ function Wrapper({ store }: { store: ReturnType<typeof createStore> }) {
       publication_year: "",
       publication_month: "",
       doi: "10.1000/example",
+      peer_reviewed: true,
       fields: [],
       authors: [],
       tags: [],
@@ -37,6 +38,19 @@ function Wrapper({ store }: { store: ReturnType<typeof createStore> }) {
           instance directly. */}
       <form.Subscribe selector={(state) => state.values.title}>
         {(title) => <div data-testid="title">{title}</div>}
+      </form.Subscribe>
+      <form.Subscribe
+        selector={(state) => ({
+          extraFields: state.values.extraFields,
+          peerReviewed: state.values.peer_reviewed,
+        })}
+      >
+        {({ extraFields, peerReviewed }) => (
+          <>
+            <div data-testid="extra-fields">{JSON.stringify(extraFields)}</div>
+            <div data-testid="peer-reviewed">{String(peerReviewed)}</div>
+          </>
+        )}
       </form.Subscribe>
     </Provider>
   );
@@ -68,6 +82,45 @@ describe("DoiSearch", () => {
     await user.click(screen.getByText("Lookup Publication"));
 
     expect(await screen.findByTestId("title")).toHaveTextContent("Hydrated Title");
+  });
+
+  it("keeps the lookup's peerReviewed out of the form entirely", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get("https://example.test/hydrated/lookup", () =>
+        HttpResponse.json({
+          title: "Hydrated Title",
+          type: "article-journal",
+          authors: [],
+          // What `prepare_publication` really returns: hardcoded `false`, never
+          // revised by `format_access_publication`, so it says nothing about
+          // whether the publication was peer reviewed.
+          peerReviewed: false,
+          issn: "0028-0836",
+        }),
+      ),
+    );
+
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      publications_lookup_path: () => "https://example.test/hydrated/lookup",
+    });
+
+    render(<Wrapper store={store} />);
+    await user.click(screen.getByText("Lookup Publication"));
+    await screen.findByTestId("title");
+
+    // Two things at once. It must not reach `peer_reviewed`, or every
+    // DOI-imported publication would be filed as not peer reviewed. And it must
+    // not reach `extraFields` either, where it would ride along in the request
+    // as a camelCase near-miss for the field the payload actually needs -
+    // which is precisely what made the NotNullViolation hard to spot in the
+    // Rails log. Genuinely unmapped keys like `issn` still come through.
+    expect(screen.getByTestId("peer-reviewed")).toHaveTextContent("true");
+    expect(JSON.parse(screen.getByTestId("extra-fields").textContent!)).toEqual({
+      issn: "0028-0836",
+    });
   });
 
   // `fetch` resolves for a 4xx, so without the explicit `response.ok` check

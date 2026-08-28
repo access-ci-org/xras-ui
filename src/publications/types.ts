@@ -55,6 +55,10 @@ export type EditablePublication = {
   doi?: string;
   authors: PublicationAuthor[];
   fields: PublicationField[];
+  // Sent by both `new.json` (always `true`) and `edit.json` (the stored value).
+  // Declared explicitly rather than left to the index signature below because
+  // the form has to round-trip it - see `PublicationFormValues.peer_reviewed`.
+  peer_reviewed?: boolean;
   access_staff_publication?: boolean;
   tags?: TagCategory[];
   [key: string]: unknown;

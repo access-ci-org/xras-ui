@@ -22,6 +22,7 @@ import Projects from "./Projects";
 import ProjectSearch from "./ProjectSearch";
 import Resources from "./Resources";
 import { invalidFormAlert, validateForm } from "./FormValidation";
+import { buildPublicationRequest } from "./helpers/request";
 import {
   addErrorAtom,
   authenticityTokenAtom,
@@ -98,6 +99,11 @@ export type PublicationFormValues = {
   publication_year: string;
   publication_month: string;
   doi: string;
+  // Round-tripped, not edited: there is no peer-review control in this form, so
+  // this only exists to hand the server's own value back to it. Dropping it is
+  // what made every create fail - `publications.peer_reviewed` is NOT NULL with
+  // no default, so an omitted key is a 500, not a default.
+  peer_reviewed: boolean;
   fields: PublicationField[];
   authors: PublicationAuthor[];
   tags: TagCategory[];
@@ -147,6 +153,9 @@ function PublicationFormContent({ publication }: { publication: EditablePublicat
     publication_year: normalizePublicationYear(publication.publication_year),
     publication_month: normalizePublicationMonth(publication.publication_month),
     doi: publication.doi ?? "",
+    // `true` matches what the server's own `default_publication` sends for a
+    // new publication, so the fallback only ever applies if that changes.
+    peer_reviewed: publication.peer_reviewed ?? true,
     fields: publication.fields,
     authors: publication.authors.length > 0 ? publication.authors : [emptyAuthor()],
     tags: publication.tags ?? [],
@@ -175,29 +184,12 @@ function PublicationFormContent({ publication }: { publication: EditablePublicat
         document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ||
         "";
 
-      const formData = {
-        authenticity_token: token,
-        publication: {
-          ...value.extraFields,
-          publication_id: value.publication_id,
-          publication_type: value.publication_type,
-          title: value.title,
-          publication_year: value.publication_year,
-          publication_month: value.publication_month,
-          doi: value.doi,
-          fields: value.fields,
-          access_staff_publication: value.resourcesNoneSelected,
-        },
-        authors: value.authors.map((a) => ({ ...a, order: 0 })),
-        tags: [],
-        projects: selectedProjects,
-        resources: value.resourceIds.map((resource_id) => ({ resource_id })),
-      };
-
-      const url = value.publication_id
-        ? routes.publication_path(value.publication_id)
-        : routes.publications_path();
-      const method = value.publication_id ? "PATCH" : "POST";
+      const { url, method, payload } = buildPublicationRequest(
+        value,
+        token,
+        selectedProjects,
+        routes,
+      );
 
       setSaving(true);
       setShowSaved(false);
@@ -206,7 +198,7 @@ function PublicationFormContent({ publication }: { publication: EditablePublicat
         const response = await fetch(url, {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) throw new Error(`Save failed with status ${response.status}`);

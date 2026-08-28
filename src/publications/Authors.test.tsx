@@ -29,6 +29,7 @@ function Wrapper({ authors }: { authors: PublicationAuthor[] }) {
       publication_year: "",
       publication_month: "",
       doi: "",
+      peer_reviewed: true,
       fields: [],
       authors,
       tags: [],

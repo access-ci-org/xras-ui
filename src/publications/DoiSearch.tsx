@@ -9,7 +9,22 @@ import { mergeFieldsForType, type PublicationFormValues } from "./PublicationFor
 import { addErrorAtom, publicationTypesAtom } from "./atoms";
 import type { PublicationAuthor } from "./types";
 
-const SKIPPED_KEYS = new Set(["fields", "projects", "publication_resources", "tags", "authors", "type"]);
+// "peerReviewed" is skipped rather than mapped: `prepare_publication` hardcodes
+// it to `false` and `format_access_publication` never revises it, so the lookup
+// carries no peer-review information. Adopting it would mark every DOI-imported
+// publication as not peer reviewed. Without this it lands in `extraFields`,
+// where Rails drops it as an unpermitted parameter - harmless, but it shows up
+// in the request log looking exactly like the `peer_reviewed` the payload was
+// missing, which is a trap for the next person reading it.
+const SKIPPED_KEYS = new Set([
+  "fields",
+  "projects",
+  "publication_resources",
+  "tags",
+  "authors",
+  "type",
+  "peerReviewed",
+]);
 const KNOWN_SCALAR_KEYS = ["title", "publication_year", "publication_month", "doi"] as const;
 
 export default function DoiSearch({ form }: { form: AppForm<PublicationFormValues> }) {
