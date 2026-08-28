@@ -200,23 +200,58 @@ describe("parseResourceName", () => {
     expect(parseResourceName("Expanse")).toEqual({ full: "Expanse", short: null });
   });
 
-  // The regex is `^([^()]+) (\(([^)]+)\))?$` - the space before the optional
-  // group is NOT part of the group, so a name with no trailing "(...)" and no
-  // trailing space still matches with short: null, but a trailing space with
-  // nothing after it does not match at all (the optional group can't consume
-  // the dangling space), so `matches` is null and short falls back to null.
-  it("falls back to a null short name for a dangling trailing space", () => {
-    expect(parseResourceName("Expanse ")).toEqual({ full: "Expanse ", short: null });
+  it("trims surrounding whitespace off the full name", () => {
+    // The trailing space used to survive into `full`, which every caller
+    // renders - as an <abbr> title, a select label, or the fallback text node.
+    expect(parseResourceName("Expanse ")).toEqual({ full: "Expanse", short: null });
+    expect(parseResourceName("  Expanse  ")).toEqual({ full: "Expanse", short: null });
   });
 
-  // `[^()]+` can't span a paren, so a name with two paren groups doesn't match
-  // the whole-string regex at all - this is a real limitation of the parser,
-  // not a hypothetical.
-  it("does not extract a short name when there are two parenthesized groups", () => {
+  it("still finds the short name when a space dangles after the parens", () => {
+    // Previously null: the optional group could not consume the trailing space,
+    // so the whole regex failed and a perfectly good abbreviation was dropped.
+    expect(parseResourceName("Bridges-2 (Bridges2) ")).toEqual({
+      full: "Bridges-2 (Bridges2)",
+      short: "Bridges2",
+    });
+  });
+
+  it("requires a name before the parens to report a short name", () => {
+    // "  (Bridges2)" used to yield short: "Bridges2" by matching the leading
+    // whitespace as the name - an abbreviation for nothing, and `full` would
+    // have rendered as blank in the <abbr> tooltip.
+    expect(parseResourceName("  (Bridges2)")).toEqual({ full: "(Bridges2)", short: null });
+    expect(parseResourceName("(Bridges2)")).toEqual({ full: "(Bridges2)", short: null });
+  });
+
+  it("does not extract a short name across an unbalanced paren", () => {
+    // The old inner class was [^)]+, which swallowed an opening paren happily:
+    // "Foo ((Bar)" reported short: "(Bar". Excluding both parens means an
+    // unbalanced name is simply not parsed.
+    expect(parseResourceName("Foo ((Bar)")).toEqual({ full: "Foo ((Bar)", short: null });
+    expect(parseResourceName("Foo (Bar(Baz)")).toEqual({
+      full: "Foo (Bar(Baz)",
+      short: null,
+    });
+  });
+
+  it("leaves ambiguous parenthesization unparsed", () => {
+    // No single obvious abbreviation in any of these, and every caller falls
+    // back to `full`, so null shows the name as-is rather than guessing.
     expect(parseResourceName("Foo (Bar) (Baz)")).toEqual({
       full: "Foo (Bar) (Baz)",
       short: null,
     });
+    expect(parseResourceName("Foo ((Bar))")).toEqual({ full: "Foo ((Bar))", short: null });
+    expect(parseResourceName("Foo ()")).toEqual({ full: "Foo ()", short: null });
+    expect(parseResourceName("Foo (Bar) extra")).toEqual({
+      full: "Foo (Bar) extra",
+      short: null,
+    });
+  });
+
+  it("returns an empty full name for a blank string", () => {
+    expect(parseResourceName("   ")).toEqual({ full: "", short: null });
   });
 });
 

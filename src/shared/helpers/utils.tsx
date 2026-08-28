@@ -117,9 +117,26 @@ export const icon = (name: string) => {
   return Icon ? <Icon className="inline-block size-[1em] align-[-0.125em]" /> : null;
 };
 
+// Resource names arrive as "Bridges-2 (Bridges2)" - a display name with an
+// abbreviation in parentheses - and callers render the short form under an
+// <abbr> titled with the full one.
+//
+// Trimming does the real work: it stops a trailing space from costing the
+// caller its abbreviation, and it stops "  (Bridges2)" from reporting an
+// abbreviation for a string with no name in it. With the input trimmed the old
+// regex's optional `(...)` group is unreachable - it could only match as absent
+// when the string ended in whitespace - so it is required here, which is the
+// same behavior spelled honestly. The inner class excludes both parens rather
+// than just ")", so an unbalanced "Foo ((Bar)" is left unparsed instead of
+// yielding short: "(Bar".
+//
+// Genuinely ambiguous input stays unparsed: "Foo (Bar) (Baz)" and "Foo (B(a)r)"
+// have no one obvious abbreviation, and every caller falls back to `full`, so
+// null degrades to showing the name as-is.
 export const parseResourceName = (name: string) => {
-  const matches = name.match(/^([^()]+) (\(([^)]+)\))?$/);
-  return { full: name, short: (matches && matches[3]) || null };
+  const full = name.trim();
+  const matches = full.match(/^[^()]+\s+\(([^()]+)\)$/);
+  return { full, short: matches?.[1] ?? null };
 };
 
 const getSortResourceName = (res: { name: string }) => {
