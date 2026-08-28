@@ -693,7 +693,7 @@ describe("supportingGrants", () => {
   it("mounts, renders, and tolerates omitted baseUrl/stylesheets", async () => {
     const target = makeTarget();
 
-    track(supportingGrants({ target, fundingAgencies: [], fosTypes: [], fieldsConfig: {} }));
+    track(supportingGrants({ target, fundingAgencies: [], fosTypes: [] }));
 
     expect(
       await shadowOf(target).findByText("Does this request include supporting grants?"),
@@ -738,7 +738,6 @@ describe("the unmount handle every mount function returns", () => {
       target,
       fundingAgencies: [],
       fosTypes: [],
-      fieldsConfig: {},
     });
     const question = "Does this request include supporting grants?";
     expect(await shadowOf(target).findByText(question)).toBeInTheDocument();

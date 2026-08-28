@@ -40,6 +40,13 @@ function addDocumentFont() {
   document.head.appendChild(link);
 }
 
+// The custom element mounts itself with its own `createRoot` and needs no
+// shadow host from here, so it is re-exported rather than wrapped. Its sibling
+// `supportingGrants` export from that module is deliberately NOT re-exported:
+// this branch moved that mount into the `renderShadow` function below, and
+// `supporting-grants/index.tsx` no longer defines one.
+export { defineSupportingGrantsElement } from "./supporting-grants/element";
+
 export function shadowTarget(
   host,
   { baseUrl = null, stylesheets = null, extraStylesheets = [] } = {},

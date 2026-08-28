@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { useAtomValue } from "jotai";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { AppForm } from "@/components/form";
 import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
-import type { SupportingGrant } from "./types";
+import { formatAsCurrency } from "./currency";
+import { fetchNSFGrantDetails, nsfDateToIso } from "./nsf-lookup";
+import type { GrantFieldName, SupportingGrantsState } from "./types";
 
 interface GrantFieldsProps {
-  form: AppForm<{ grants: SupportingGrant[] }>;
+  form: AppForm<SupportingGrantsState>;
   index: number;
   onRemove: () => void;
 }
@@ -14,6 +18,63 @@ interface GrantFieldsProps {
 export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
   const fundingAgencies = useAtomValue(fundingAgenciesAtom);
   const fosTypes = useAtomValue(fosTypesAtom);
+  const [nsfLookupStatus, setNsfLookupStatus] = useState<
+    "idle" | "pending" | "error"
+  >("idle");
+
+  async function handleGrantNumberBlur() {
+    setNsfLookupStatus("idle");
+
+    const grant = form.getFieldValue(`grants[${index}]`);
+    const fundingAgency = fundingAgencies.find(
+      (agency) => String(agency.id) === String(grant.fundingAgencyId),
+    );
+    if (fundingAgency?.abbr !== "NSF") return;
+
+    const grantNumber = grant.grantNumber.replace(/[^0-9]+/g, "");
+    if (!grantNumber) return;
+
+    setNsfLookupStatus("pending");
+    const details = await fetchNSFGrantDetails(grantNumber);
+    if (!details) {
+      setNsfLookupStatus("error");
+      return;
+    }
+    setNsfLookupStatus("idle");
+
+    const {
+      title,
+      pdPIName,
+      startDate,
+      expDate,
+      fundsObligatedAmt,
+      poName,
+      poEmail,
+    } = details;
+
+    const setIfEmpty = (field: GrantFieldName, value: string | undefined) => {
+      if (!value) return;
+      const current = form.getFieldValue(`grants[${index}].${field}`);
+      if (typeof current === "string" && current.length > 0) return;
+      form.setFieldValue(`grants[${index}].${field}`, value);
+    };
+
+    setIfEmpty("title", title);
+    setIfEmpty("piName", pdPIName);
+    setIfEmpty("beginDate", startDate ? nsfDateToIso(startDate) : undefined);
+    setIfEmpty("endDate", expDate ? nsfDateToIso(expDate) : undefined);
+    setIfEmpty(
+      "awardedAmount",
+      fundsObligatedAmt ? formatAsCurrency(fundsObligatedAmt) : undefined,
+    );
+    setIfEmpty("programOfficerName", poName);
+    setIfEmpty("programOfficerEmail", poEmail);
+
+    // If grant information is available from the API, it has already been awarded.
+    if (form.getFieldValue(`grants[${index}].isPending`) === null) {
+      form.setFieldValue(`grants[${index}].isPending`, false);
+    }
+  }
 
   return (
     <div className="supporting-grant border border-input p-4 space-y-2">
@@ -35,7 +96,23 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <form.AppField name={`grants[${index}].grantNumber`}>
-          {(field) => <field.FieldInput label="Grant Number" required />}
+          {(field) => (
+            <div className="relative">
+              <field.FieldInput
+                label="Grant Number"
+                required
+                onBlur={() => void handleGrantNumberBlur()}
+              />
+              {nsfLookupStatus === "pending" ? (
+                <Loader2 className="absolute right-2 top-8 size-4 animate-spin text-muted-foreground" />
+              ) : null}
+              {nsfLookupStatus === "error" ? (
+                <p className="text-sm text-destructive">
+                  Could not find an NSF grant with this number.
+                </p>
+              ) : null}
+            </div>
+          )}
         </form.AppField>
 
         <form.AppField name={`grants[${index}].title`}>
@@ -62,50 +139,62 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
         </form.AppField>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <form.AppField name={`grants[${index}].beginDate`}>
-          {(field) => <field.FieldDatePicker label="Start Date" required />}
-        </form.AppField>
+      <form.Subscribe
+        selector={(state) => state.values.grants[index]?.isPending === false}
+      >
+        {(requireAwardDetails) => (
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <form.AppField name={`grants[${index}].beginDate`}>
+                {(field) => (
+                  <field.FieldDatePicker
+                    label="Start Date"
+                    required={requireAwardDetails}
+                  />
+                )}
+              </form.AppField>
 
-        <form.AppField name={`grants[${index}].endDate`}>
-          {(field) => <field.FieldDatePicker label="End Date" required />}
-        </form.AppField>
-      </div>
+              <form.AppField name={`grants[${index}].endDate`}>
+                {(field) => (
+                  <field.FieldDatePicker
+                    label="End Date"
+                    required={requireAwardDetails}
+                  />
+                )}
+              </form.AppField>
+            </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <form.AppField name={`grants[${index}].primaryFosTypeId`}>
-          {(field) => (
-            <field.FieldSelect
-              label="Field of Science"
-              required
-              placeholder="-- Please select one --"
-              options={fosTypes.map((fos) => ({
-                value: String(fos.id),
-                label: fos.name,
-              }))}
-            />
-          )}
-        </form.AppField>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <form.AppField name={`grants[${index}].primaryFosTypeId`}>
+                {(field) => (
+                  <field.FieldSelect
+                    label="Field of Science"
+                    required
+                    placeholder="-- Please select one --"
+                    options={fosTypes.map((fos) => ({
+                      value: String(fos.id),
+                      label: fos.name,
+                    }))}
+                  />
+                )}
+              </form.AppField>
 
-        <form.AppField name={`grants[${index}].awardedAmount`}>
-          {(field) => (
-            <field.FieldInput
-              label="Awarded Amount"
-              required
-              placeholder="Enter awarded amount"
-            />
-          )}
-        </form.AppField>
-        <form.Field name={`grants[${index}].awardedUnits`}>
-          {(field) => (
-            <input
-              type="hidden"
-              value="Dollars"
-              onChange={() => field.handleChange("Dollars")}
-            />
-          )}
-        </form.Field>
-      </div>
+              <form.AppField name={`grants[${index}].awardedAmount`}>
+                {(field) => (
+                  <field.FieldInput
+                    label="Awarded Amount"
+                    required={requireAwardDetails}
+                    placeholder="Enter awarded amount"
+                    onBlur={(e) =>
+                      field.handleChange(formatAsCurrency(e.target.value))
+                    }
+                  />
+                )}
+              </form.AppField>
+            </div>
+          </>
+        )}
+      </form.Subscribe>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <form.AppField name={`grants[${index}].programOfficerName`}>

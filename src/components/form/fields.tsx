@@ -1,5 +1,6 @@
 import * as React from "react";
 import ReactSelect from "react-select";
+import { useStore, type AnyFieldApi } from "@tanstack/react-form";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -28,17 +29,29 @@ interface FieldWrapperProps {
   required?: boolean;
 }
 
+// Validation runs continuously (onChange) so isValid is always accurate for
+// consumers like the form-associated custom element wrapper, but errors
+// should only be shown once a field has been touched or the form has had a
+// submit attempt — otherwise every untouched required field would flash red
+// on first render.
+function useDisplayErrors(field: AnyFieldApi): unknown[] {
+  const isSubmitted = useStore(field.form.store, (state) => state.isSubmitted);
+  return field.state.meta.isTouched || isSubmitted ? field.state.meta.errors : [];
+}
+
 export function FieldInput({
   label,
   description,
   required,
+  onBlur,
   ...props
 }: FieldWrapperProps &
   Omit<
     React.ComponentProps<typeof Input>,
-    "id" | "value" | "onChange" | "onBlur"
+    "id" | "value" | "onChange"
   >) {
   const field = useFieldContext<string>();
+  const errors = useDisplayErrors(field);
 
   return (
     <FormItem>
@@ -52,10 +65,13 @@ export function FieldInput({
         id={field.name}
         value={field.state.value ?? ""}
         onChange={(e) => field.handleChange(e.target.value)}
-        onBlur={field.handleBlur}
+        onBlur={(e) => {
+          field.handleBlur();
+          onBlur?.(e);
+        }}
         {...props}
       />
-      <FormError errors={field.state.meta.errors} />
+      <FormError errors={errors} />
     </FormItem>
   );
 }
@@ -71,6 +87,7 @@ export function FieldTextarea({
     "id" | "value" | "onChange" | "onBlur"
   >) {
   const field = useFieldContext<string>();
+  const errors = useDisplayErrors(field);
 
   return (
     <FormItem>
@@ -87,7 +104,7 @@ export function FieldTextarea({
         onBlur={field.handleBlur}
         {...props}
       />
-      <FormError errors={field.state.meta.errors} />
+      <FormError errors={errors} />
     </FormItem>
   );
 }
@@ -99,6 +116,7 @@ export function FieldDatePicker({
   placeholder = "YYYY-MM-DD",
 }: FieldWrapperProps & { placeholder?: string }) {
   const field = useFieldContext<string>();
+  const errors = useDisplayErrors(field);
 
   return (
     <FormItem>
@@ -115,7 +133,7 @@ export function FieldDatePicker({
         onValueChange={(value) => field.handleChange(value)}
         onBlur={field.handleBlur}
       />
-      <FormError errors={field.state.meta.errors} />
+      <FormError errors={errors} />
     </FormItem>
   );
 }
@@ -133,6 +151,7 @@ export function FieldSelect({
   options,
 }: FieldWrapperProps & { placeholder?: string; options: SelectOption[] }) {
   const field = useFieldContext<string | number | null>();
+  const errors = useDisplayErrors(field);
 
   return (
     <FormItem>
@@ -143,9 +162,7 @@ export function FieldSelect({
       ) : null}
       <FormDescription>{description}</FormDescription>
       <Select
-        value={
-          field.state.value != null ? String(field.state.value) : undefined
-        }
+        value={field.state.value != null ? String(field.state.value) : ""}
         onValueChange={(value) => field.handleChange(value)}
       >
         <SelectTrigger id={field.name} onBlur={field.handleBlur}>
@@ -159,7 +176,7 @@ export function FieldSelect({
           ))}
         </SelectContent>
       </Select>
-      <FormError errors={field.state.meta.errors} />
+      <FormError errors={errors} />
     </FormItem>
   );
 }
@@ -264,6 +281,7 @@ export function FieldRadio<TValue>({
   options: RadioOption<TValue>[];
 }) {
   const field = useFieldContext<TValue>();
+  const errors = useDisplayErrors(field);
 
   return (
     <FormItem>
@@ -278,13 +296,17 @@ export function FieldRadio<TValue>({
         onValueChange={(key) => {
           const option = options.find((o) => radioKey(o.value) === key);
           if (option) field.handleChange(option.value);
+          // Selecting an option is a complete interaction for a radio
+          // group (there's no separate blur to wait for), so mark it
+          // touched here for error-display purposes.
+          field.handleBlur();
         }}
         options={options.map((option) => ({
           value: radioKey(option.value),
           label: option.label,
         }))}
       />
-      <FormError errors={field.state.meta.errors} />
+      <FormError errors={errors} />
     </FormItem>
   );
 }
