@@ -7,9 +7,8 @@ import type {
   SuccessMessage,
 } from "./types";
 import { fetchResourceData, updateResourceData } from "./helpers/utils";
-import { collectDateErrors, validateOverlap } from "./helpers/exchangeRates";
+import { collectDateErrors, validateRateDates } from "./helpers/exchangeRates";
 
-const MIN_DATE = new Date().toISOString().split("T")[0];
 const MAX_DATE = "2100-12-31";
 
 export const resourceIdAtom = atom(0);
@@ -345,48 +344,23 @@ export const updateRateDateAtom = atom(
     const rate = discountRates.find((r) => r.id === rateId);
     if (!data || !rate) return;
 
-    const fieldMap = { start_date: "begin_date", end_date: "end_date" } as const;
-    const isEndDate = dateField === "end_date";
-    const changes: Partial<DiscountRate> = { [fieldMap[dateField]]: value };
-    const errorKey = `${dateField}_error` as "start_date_error" | "end_date_error";
-    const errors: Partial<DiscountRate> = {};
+    const changes: Partial<DiscountRate> =
+      dateField === "end_date" ? { end_date: value } : { begin_date: value };
 
-    if (!value) {
-      errors[errorKey] = "Date cannot be empty or invalid";
-      set(resourceDataAtom, patchDiscountRate(data, rateId, { ...changes, ...errors }));
-      return;
-    }
-
-    const effectiveMinDate = isEndDate && rate.begin_date ? rate.begin_date : MIN_DATE;
-    if (value < effectiveMinDate) {
-      errors[errorKey] = `${dateField.replace("_", " ")} ${value} cannot be before ${effectiveMinDate}`;
-    } else if (value > MAX_DATE) {
-      errors[errorKey] = `${dateField.replace("_", " ")} cannot be after ${MAX_DATE}`;
-    } else {
-      errors[errorKey] = "";
-
-      const currentEndDate = isEndDate ? value : rate.end_date;
-      if (dateField === "start_date" && currentEndDate && value > currentEndDate) {
-        errors.end_date_error = `end date ${currentEndDate} cannot be before ${value}`;
-      }
-
-      const currentStartDate = dateField === "start_date" ? value : rate.begin_date;
-      if (currentStartDate && currentEndDate) {
-        const overlapError = validateOverlap(
-          { id: rate.id, begin_date: currentStartDate, end_date: currentEndDate },
-          discountRates,
-        );
-        if (overlapError) {
-          errors.start_date_error = overlapError;
-          errors.end_date_error = overlapError;
-        }
-      }
-
-      if (isEndDate && !rate.begin_date) errors.start_date_error = "Date cannot be empty or invalid";
-      if (!isEndDate && !rate.end_date) errors.end_date_error = "Date cannot be empty or invalid";
-    }
-
-    set(resourceDataAtom, patchDiscountRate(data, rateId, { ...changes, ...errors }));
+    // Validate the rate the edit would produce, not just the field that moved,
+    // and write the errors `validateRateDates` returns for both fields. It
+    // always returns both, so a message can never outlive the state that
+    // justified it - `patchDiscountRate` merges, and the partial writes this
+    // replaced could leave an overlap complaint on one field quoting a date
+    // range the admin had already changed on the other.
+    const minDate = new Date().toISOString().split("T")[0];
+    set(
+      resourceDataAtom,
+      patchDiscountRate(data, rateId, {
+        ...changes,
+        ...validateRateDates({ ...rate, ...changes }, discountRates, minDate, MAX_DATE),
+      }),
+    );
   },
 );
 

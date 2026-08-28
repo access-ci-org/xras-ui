@@ -38,12 +38,14 @@ import type { AllocationType, DiscountRate, ResourceData } from "@/edit-resource
 const ROOT = "https://example.test";
 const RESOURCE_ID = 42;
 
-// `updateRateDateAtom`'s MIN_DATE is `new Date().toISOString().split("T")[0]`
-// computed once at module load. Deriving all fixture dates from "today" (as
-// computed here, at test-run time) rather than hardcoding calendar dates
-// keeps every assertion correct regardless of what day the suite runs on -
-// both values come from the same clock instant modulo UTC-midnight, and
-// `vitest.config.ts` pins TZ=UTC so both computations agree.
+// `updateRateDateAtom` reads its floor as `new Date().toISOString().split("T")[0]`
+// on each call. Deriving all fixture dates from "today" (as computed here, at
+// test-run time) rather than hardcoding calendar dates keeps every assertion
+// correct regardless of what day the suite runs on - both values come from the
+// same clock instant modulo UTC-midnight, and `vitest.config.ts` pins TZ=UTC so
+// both computations agree. The date rules themselves take their bounds as
+// arguments and are tested against fixed dates in
+// `helpers/exchangeRates.test.ts`; what is left here is the wiring.
 const TODAY = new Date().toISOString().split("T")[0];
 
 function addDays(dateStr: string, days: number): string {
@@ -655,6 +657,61 @@ describe("updateRateDateAtom", () => {
     expect(rate.begin_date).toBe(value);
     expect(rate.start_date_error).toBe("");
     expect(rate.end_date_error).toBe("Date cannot be empty or invalid");
+  });
+
+  it("clears the other field's message once it stops being true", () => {
+    // The regression that motivated validating the candidate rate. Two ordinary
+    // edits used to be enough to strand a message: the first creates an overlap,
+    // which is reported on both fields; the second makes the start date invalid,
+    // and the write that carried it only touched `start_date_error`. Because
+    // `patchDiscountRate` merges, `end_date_error` kept an overlap complaint
+    // quoting a begin date the rate no longer had - and `dateErrorsAtom` lifted
+    // it into the form-level alert, so the admin saw a demand to fix a date
+    // range they had already abandoned.
+    const store = storeWithRates([
+      { id: 1, exchange_rate: "1.0", begin_date: addDays(TODAY, 1), end_date: addDays(TODAY, 4) },
+      { id: 2, exchange_rate: "0.5", begin_date: addDays(TODAY, 5), end_date: addDays(TODAY, 20) },
+    ]);
+
+    store.set(updateRateDateAtom, { rateId: 1, dateField: "end_date", value: addDays(TODAY, 10) });
+    expect(rateAfter(store, 1).end_date_error).toContain("overlaps with an existing discount rate");
+
+    const pastDate = addDays(TODAY, -10);
+    store.set(updateRateDateAtom, { rateId: 1, dateField: "start_date", value: pastDate });
+
+    const rate = rateAfter(store, 1);
+    expect(rate.start_date_error).toBe(`start date ${pastDate} cannot be before ${TODAY}`);
+    expect(rate.end_date_error).toBe("");
+    expect(store.get(dateErrorsAtom)).toEqual([
+      `start date ${pastDate} cannot be before ${TODAY}`,
+    ]);
+  });
+
+  it("reaches the same verdict whichever endpoint was moved to invert the range", () => {
+    // Editing either field now runs the same rules over the resulting rate, so
+    // "the range is backwards" reads identically in both directions rather than
+    // being two branches with two wordings.
+    const early = addDays(TODAY, 4);
+    const late = addDays(TODAY, 9);
+    const expected = `end date ${early} cannot be before ${late}`;
+
+    const movedStart = storeWithRates([
+      { id: 1, exchange_rate: "1.0", begin_date: addDays(TODAY, 1), end_date: early },
+    ]);
+    movedStart.set(updateRateDateAtom, { rateId: 1, dateField: "start_date", value: late });
+
+    const movedEnd = storeWithRates([
+      { id: 1, exchange_rate: "1.0", begin_date: late, end_date: addDays(TODAY, 12) },
+    ]);
+    movedEnd.set(updateRateDateAtom, { rateId: 1, dateField: "end_date", value: early });
+
+    for (const store of [movedStart, movedEnd]) {
+      const rate = rateAfter(store, 1);
+      expect(rate.begin_date).toBe(late);
+      expect(rate.end_date).toBe(early);
+      expect(rate.start_date_error).toBe("");
+      expect(rate.end_date_error).toBe(expected);
+    }
   });
 });
 
