@@ -20,11 +20,16 @@ import {
   formatNumber,
   getResourceUsagePercent,
   icon,
-  parseResourceName,
-  roundNumber,
 } from "../shared/helpers/utils";
 import ResourcesDiagram from "./ResourcesDiagram";
 import { useProject, useRequest } from "./helpers/hooks";
+import {
+  belowMinimum,
+  cleanBalance,
+  getBalance,
+  groupAvailableResources,
+  resourceAlertKind,
+} from "./helpers/resources";
 import type { Resource } from "./types";
 
 export default function Resources({
@@ -105,9 +110,6 @@ export default function Resources({
   }
   const hasUnmetDeps = unmetDeps.length > 0;
 
-  const getBalance = (row: Resource) => row.requested - row.used;
-  const belowMinimum = (row: Resource) =>
-    row.isNew && 0 < row.requested && row.requested < row.minimumExchange;
   const belowMinimums: React.ReactNode[] = [];
   for (const res of resources) {
     if (!res.isCredit && belowMinimum(res)) {
@@ -121,14 +123,21 @@ export default function Resources({
   }
   const anyBelowMinimum = belowMinimums.length > 0;
 
+  const alertKind = resourceAlertKind({
+    saved,
+    error,
+    errorMessages,
+    previous,
+    timeStatus: request.timeStatus,
+    isManager: project.isManager,
+    hasUnmetDeps,
+    anyBelowMinimum,
+  });
+
   let alert;
-  if (saved) alert = <Alert color="info">Your exchange request has been submitted.</Alert>;
-  else if (
-    error &&
-    errorMessages.length > 0 &&
-    errorMessages[0].includes("PI") &&
-    errorMessages[0].includes("person status Unknown")
-  )
+  if (alertKind == "submitted")
+    alert = <Alert color="info">Your exchange request has been submitted.</Alert>;
+  else if (alertKind == "pi-status-unknown")
     alert = (
       <Alert color="danger">
         {project.currentUser?.role === "pi" ? (
@@ -145,7 +154,7 @@ export default function Resources({
         )}
       </Alert>
     );
-  else if (error)
+  else if (alertKind == "error")
     alert = (
       <Alert color="danger">
         Sorry, something went wrong: {errorMessages.join(", ")}. For assistance, please{" "}
@@ -153,23 +162,23 @@ export default function Resources({
         message.
       </Alert>
     );
-  else if (previous)
+  else if (alertKind == "pending-exchange")
     alert = (
       <Alert color="warning">
         You have an exchange request under review. The information below reflects the pending exchange
         request.
       </Alert>
     );
-  else if (request.timeStatus == "current" && !project.isManager)
+  else if (alertKind == "not-manager")
     alert = (
       <Alert color="warning">
         You do not have permission to manage resources for this project. Please contact{" "}
         {formatManagers(project)} to request a change.
       </Alert>
     );
-  else if (hasUnmetDeps)
+  else if (alertKind == "unmet-dependencies")
     alert = <Alert color="warning">{unmetDeps} Please adjust your balance values.</Alert>;
-  else if (anyBelowMinimum) alert = <Alert color="warning">{belowMinimums}</Alert>;
+  else if (alertKind == "below-minimum") alert = <Alert color="warning">{belowMinimums}</Alert>;
 
   const hasReason = reason.length > 0;
   let hasAddedResources = false;
@@ -182,40 +191,13 @@ export default function Resources({
   }
 
   const resourceIds = resources.map((res) => res.resourceId);
+  const exchangeableResources =
+    canExchange && exchangeEditable && exchangeActionSingle ? exchangeActionSingle.resources : [];
+  // Keyed by option value, so it only ever gets queried for resources that made
+  // it into a group; holding the unfiltered set costs nothing.
   const availableResourcesMap: Record<number, Resource> = {};
-  const groupedResourcesMap: Record<string, Resource[]> = {};
-  const availableResourceGroups: { label: string; options: { value: number; label: string }[] }[] = [];
-  if (canExchange && exchangeEditable && exchangeActionSingle) {
-    exchangeActionSingle.resources
-      .filter((res) => !resourceIds.includes(res.resourceId))
-      .forEach((res) => {
-        availableResourcesMap[res.resourceId] = res;
-        const groupLabel = `${res.type} Resources (${res.unit})`;
-        groupedResourcesMap[groupLabel] = groupedResourcesMap[groupLabel] || [];
-        groupedResourcesMap[groupLabel].push(res);
-      });
-
-    for (const [label, options] of Object.entries(groupedResourcesMap)) {
-      availableResourceGroups.push({
-        label,
-        options: options
-          .sort((a, b) =>
-            a.exchangeRates.current.unitCost < b.exchangeRates.current.unitCost ||
-            (a.exchangeRates.current.unitCost == b.exchangeRates.current.unitCost && a.name < b.name)
-              ? -1
-              : 1,
-          )
-          .map((res) => {
-            const parsed = parseResourceName(res.name);
-            const label = parsed.short
-              ? `${parsed.short} (${parsed.full.replace(/ \([^(]+\)/, "")})`
-              : parsed.full;
-            return { value: res.resourceId, label };
-          }),
-      });
-      availableResourceGroups.sort((a, b) => (a.label < b.label ? -1 : 1));
-    }
-  }
+  for (const res of exchangeableResources) availableResourcesMap[res.resourceId] = res;
+  const availableResourceGroups = groupAvailableResources(exchangeableResources, resourceIds);
 
   const exchangeActionResourceIds = canExchange && exchangeActionSingle
     ? exchangeActionSingle.resources.map((res) => res.resourceId)
@@ -242,33 +224,6 @@ export default function Resources({
   }
 
   const resourceAddMessage = `Add ${rows.length ? "another" : "a"} resource to your exchange...`;
-
-  const cleanBalance = (balanceString: string, row: Resource) => {
-    const allocatedBalance = row.allocated - row.used;
-    const desiredBalance = roundNumber(
-      Number(balanceString.replace(/[^0-9-.]/g, "")),
-      row.decimalPlaces,
-    );
-    const minBalance = Math.min(0, allocatedBalance);
-    if (desiredBalance < minBalance) return minBalance;
-
-    // We use the base exchange rate when the allocation is being reduced below the
-    // current allocation, and the current exchange rate when the allocations is
-    // being increased above the current allocation. To handle cases where the user
-    // reduces the allocation and then later increases it before submitting, we need
-    // to split the increase at the current allocation and apply the base exchange rate
-    // to the lower portion and the current exchange rate to the upper portion.
-    let availableCredits = (credit?.requested ?? 0) * (credit?.exchangeRates.base.unitCost ?? 0);
-    const costToAllocated = (row.allocated - row.requested) * row.exchangeRates.base.unitCost;
-    const baseCost = Math.min(availableCredits, costToAllocated);
-
-    availableCredits -= baseCost;
-    let maxBalance = row.requested - row.used + baseCost / row.exchangeRates.base.unitCost;
-    if (availableCredits > 0) maxBalance += availableCredits / row.exchangeRates.current.unitCost;
-
-    if (desiredBalance > maxBalance) return roundNumber(maxBalance, row.decimalPlaces, "floor");
-    return desiredBalance;
-  };
 
   const formatUnitCost = (resource: Resource) =>
     resource.isBoolean ? (
@@ -345,7 +300,7 @@ export default function Resources({
               {editable ? (
                 <BlurInput
                   classes="h-auto w-full rounded-none bg-background text-right"
-                  clean={(balanceString) => cleanBalance(balanceString, typedRow).toString()}
+                  clean={(balanceString) => cleanBalance(balanceString, typedRow, credit).toString()}
                   format={(value) => formatNumber(Number(value))}
                   label={`Balance for ${typedRow.name}`}
                   setValue={(cleaned) => {

@@ -9,9 +9,10 @@ import ResourceName from "../shared/ResourceName";
 import UserName from "../shared/UserName";
 import gridStyle from "../shared/Grid.module.scss";
 import { routesAtom } from "../shared/routes";
-import { formatManagers, roles } from "../shared/helpers/utils";
+import { formatManagers } from "../shared/helpers/utils";
 import { filterResource, searchUsersAtom } from "./atoms";
 import { useProject, useRequest } from "./helpers/hooks";
+import { resourceTallies, selectableRoles } from "./helpers/users";
 import type { SearchedUser } from "./types";
 
 export default function Users({ grantNumber, requestId }: { grantNumber: string; requestId?: number }) {
@@ -95,20 +96,12 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
   }
 
   const formatHeader = (name: React.ReactNode, column: GridColumn) => {
-    let description, onChange, selectedLength, totalLength;
-    if (column.key == "all") {
-      description = "all resources for all users";
-      onChange = (checked: boolean) => toggleUsersResources(checked);
-      selectedLength = 0;
-      for (const user of users) selectedLength += user.resourceIds.length;
-      totalLength = users.length * resources.length;
-    } else {
-      description = `all users for ${column.name}`;
-      const resourceId = Number(column.key);
-      onChange = (checked: boolean) => toggleUsersResources(checked, null, resourceId);
-      selectedLength = users.filter(({ resourceIds }) => resourceIds.includes(resourceId)).length;
-      totalLength = users.length;
-    }
+    const isAll = column.key == "all";
+    const description = isAll ? "all resources for all users" : `all users for ${column.name}`;
+    const onChange = isAll
+      ? (checked: boolean) => toggleUsersResources(checked)
+      : (checked: boolean) => toggleUsersResources(checked, null, Number(column.key));
+    const { selectedLength, totalLength } = resourceTallies(users, resources.length, column.key);
 
     return (
       <>
@@ -124,12 +117,6 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
       </>
     );
   };
-
-  const roleOptions = roles.map(({ role, name }) => (
-    <option key={role} value={role}>
-      {name}
-    </option>
-  ));
 
   const columns: GridColumn[] = [
     {
@@ -150,9 +137,11 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
           onChange={(e) => setUserRole(row.username, e.target.value)}
           disabled={!canManageUsers || value == "pi" || value == "co_pi"}
         >
-          {roleOptions.filter(
-            (option) => option.key == value || !["pi", "co_pi"].includes(option.key as string),
-          )}
+          {selectableRoles(String(value)).map(({ role, name }) => (
+            <option key={role} value={role}>
+              {name}
+            </option>
+          ))}
         </select>
       ),
     },
