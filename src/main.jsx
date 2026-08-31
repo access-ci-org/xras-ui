@@ -8,7 +8,7 @@ import AllocationsMap from "./allocations-map/AllocationsMap";
 import Resources from "./resources/Resources";
 import EditResource from "./edit-resource/EditResource";
 
-import Projects from "./projects/Projects";
+import MyProjectsPage from "./projects/MyProjectsPage";
 
 import ProjectsBrowser from "./projects-browser/ProjectsBrowser";
 
@@ -184,7 +184,11 @@ export function editResource({
 }
 
 export function projects({ target, username, routes, baseUrl = null, stylesheets = null }) {
-  return renderShadow(<Projects username={username} routes={routes} />, { target, baseUrl, stylesheets });
+  return renderShadow(<MyProjectsPage username={username} routes={routes} />, {
+    target,
+    baseUrl,
+    stylesheets,
+  });
 }
 
 export function projectsBrowser({ target, apiUrl, baseUrl = null, stylesheets = null }) {

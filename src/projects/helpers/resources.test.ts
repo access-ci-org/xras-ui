@@ -25,6 +25,7 @@ function makeResource(overrides: Partial<Resource> = {}): Resource {
     isNew: false,
     minimumExchange: 0,
     name: "Bridges-3",
+    negativeOnly: false,
     resourceProvider: { name: "PSC" },
     requested: 0,
     resourceId: 1,
@@ -206,6 +207,28 @@ describe("groupAvailableResources", () => {
     expect(groups).toEqual([
       { label: "Compute Resources (Core Hours)", options: [{ value: 2, label: "Anvil CPU" }] },
     ]);
+  });
+
+  // A decommissioned resource can only have its existing balance exchanged
+  // *down*, so there is nothing to be gained by adding one to a request that
+  // doesn't already hold a balance on it.
+  it("drops decommissioned resources, and the group with them", () => {
+    const retired = makeResource({
+      resourceId: 4,
+      name: "Retired Cluster",
+      type: "GPU",
+      unit: "GPU Hours",
+      negativeOnly: true,
+    });
+
+    const groups = groupAvailableResources([cheap, gpu, retired], []);
+
+    expect(groups).toEqual([
+      { label: "Compute Resources (Core Hours)", options: [{ value: 2, label: "Anvil CPU" }] },
+      { label: "GPU Resources (GPU Hours)", options: [{ value: 1, label: "Delta GPU" }] },
+    ]);
+
+    expect(groupAvailableResources([retired], [])).toEqual([]);
   });
 
   it("leads with the abbreviation, which is the part a user scanning recognises", () => {

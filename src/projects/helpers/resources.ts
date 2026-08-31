@@ -90,6 +90,9 @@ export function groupAvailableResources(
 ): ResourceOptionGroup[] {
   const grouped: Record<string, Resource[]> = {};
   for (const res of available) {
+    // A decommissioned resource can't be added to a request that doesn't
+    // already hold a balance on it - there would be nothing to exchange down.
+    if (res.negativeOnly) continue;
     if (excludeIds.includes(res.resourceId)) continue;
     const groupLabel = `${res.type} Resources (${res.unit})`;
     grouped[groupLabel] = grouped[groupLabel] || [];

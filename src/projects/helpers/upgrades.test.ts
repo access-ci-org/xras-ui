@@ -23,6 +23,7 @@ function makeCreditResource(allocated: number, overrides: Partial<Resource> = {}
     isNew: false,
     minimumExchange: 0,
     name: "ACCESS Credits",
+    negativeOnly: false,
     resourceProvider: { name: "ACCESS" },
     requested: allocated,
     resourceId: 1,

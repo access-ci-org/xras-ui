@@ -167,6 +167,10 @@ describe("projects", () => {
     await waitFor(() => {
       expect(shadowOf(target).getByText(/don't have any projects yet/i)).toBeInTheDocument();
     });
+
+    // The mount wraps `Projects` in `MyProjectsPage`, which carries the survey
+    // recruitment banner - delete this assertion with the banner itself.
+    expect(shadowOf(target).getByText(/short voluntary survey/i)).toBeInTheDocument();
   });
 
   // Regression test for the bug src/shared/routes.ts documents at length:

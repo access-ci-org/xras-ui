@@ -27,6 +27,7 @@ import {
   setResourcesReasonAtom,
   setTabAtom,
   setUserRoleAtom,
+  statuses,
   toggleActionsModalAtom,
   toggleConfirmModalAtom,
   toggleDeleteModalAtom,
@@ -64,6 +65,7 @@ function makeResourceFixture(overrides: Partial<Resource> = {}): Resource {
     isNew: false,
     minimumExchange: 0,
     name: "Compute Resource",
+    negativeOnly: false,
     questions: [],
     requires: [],
     resourceProvider: { name: "Example Org" },
@@ -481,6 +483,144 @@ describe("fetchProjectsListAtom (raw API shape transform)", () => {
     const action = request.actions[0];
     expect(action.date).toBe("2025-01-02"); // entryDate's date portion
     expect(action.resources.map((r) => r.resourceId).sort()).toEqual([101, 999]);
+  });
+
+  it("defaults negativeOnly to false and leaves the optional API flags unset when omitted", async () => {
+    server.use(
+      http.get(`${defaultRoutes.projects_path()}.json`, () =>
+        HttpResponse.json({ result: [rawProject()] }),
+      ),
+    );
+
+    const store = createStore();
+    await store.set(fetchProjectsListAtom, "ghopper");
+
+    const state = store.get(apiStateAtom);
+    // `negativeOnly` is defaulted rather than left undefined, so every consumer
+    // can treat it as a boolean (see `makeResource`).
+    expect(state.requests[555].resources.every((r) => r.negativeOnly === false)).toBe(true);
+    expect(state.projects["ABC123"].internationalUserRequests).toBeNull();
+    expect(state.projects["ABC123"].users[0].canChangeRoles).toBeUndefined();
+  });
+
+  it("carries negativeOnly, canChangeRoles and internationalUserRequests through the transform", async () => {
+    const project = rawProject({
+      grantNumber: "DEF456",
+      internationalUserRequests: [
+        { id: 9, requestId: 555, status: "Incomplete", submittedAt: null },
+      ],
+      requests: [
+        {
+          actions: [
+            {
+              actionId: 1,
+              actionStatusType: "Approved",
+              actionType: "Maximize",
+              allowedOperations: [],
+              approvedStartDate: null,
+              detailAvailable: true,
+              entryDate: "2025-01-02T00:00:00Z",
+              isRequest: true,
+              requestedStartDate: null,
+              resources: [rawResource({ negativeOnly: true }), rawCreditResource()],
+            },
+          ],
+          allocationType: "Maximize",
+          allowedActions: [],
+          endDate: "2026-12-31",
+          requestId: 557,
+          requestType: "Maximize",
+          resources: [rawResource({ negativeOnly: true }), rawCreditResource()],
+          startDate: "2025-01-01",
+          status: "Active",
+          timeStatus: "current",
+        },
+      ],
+      users: [
+        {
+          canChangeRoles: false,
+          eligibleReason: null,
+          email: "ada@example.test",
+          firstName: "Ada",
+          isEligible: true,
+          lastName: "Lovelace",
+          organization: "Example Org",
+          resources: [],
+          role: "pi",
+          username: "alovelace",
+        },
+      ],
+    });
+
+    server.use(
+      http.get(`${defaultRoutes.projects_path()}.json`, () =>
+        HttpResponse.json({ result: [project] }),
+      ),
+    );
+
+    const store = createStore();
+    await store.set(fetchProjectsListAtom, "alovelace");
+
+    const state = store.get(apiStateAtom);
+    expect(state.requests[557].resources.find((r) => r.resourceId === 101)!.negativeOnly).toBe(true);
+    expect(state.projects["DEF456"].users[0].canChangeRoles).toBe(false);
+    expect(state.projects["DEF456"].internationalUserRequests).toEqual([
+      { id: 9, requestId: 555, status: "Incomplete", submittedAt: null },
+    ]);
+  });
+
+  // The request's own resource list doesn't carry `negativeOnly`; only the
+  // Exchange action's resource list does, and `addRequest` copies it across
+  // (alongside `questions` and `requires`).
+  it("copies negativeOnly from the Exchange allowedAction onto a resource already in the request", async () => {
+    const project = rawProject({
+      grantNumber: "GHI789",
+      requests: [
+        {
+          actions: [
+            {
+              actionId: 1,
+              actionStatusType: "Approved",
+              actionType: "Maximize",
+              allowedOperations: [],
+              approvedStartDate: null,
+              detailAvailable: true,
+              entryDate: "2025-01-02T00:00:00Z",
+              isRequest: true,
+              requestedStartDate: null,
+              resources: [rawResource(), rawCreditResource()],
+            },
+          ],
+          allocationType: "Maximize",
+          allowedActions: [
+            {
+              actionType: "Exchange",
+              allowedResources: [rawResource({ negativeOnly: true }), rawCreditResource()],
+            },
+          ],
+          endDate: "2026-12-31",
+          requestId: 558,
+          requestType: "Maximize",
+          resources: [rawResource(), rawCreditResource()],
+          startDate: "2025-01-01",
+          status: "Active",
+          timeStatus: "current",
+        },
+      ],
+    });
+
+    server.use(
+      http.get(`${defaultRoutes.projects_path()}.json`, () =>
+        HttpResponse.json({ result: [project] }),
+      ),
+    );
+
+    const store = createStore();
+    await store.set(fetchProjectsListAtom, "ghopper");
+
+    const request = store.get(apiStateAtom).requests[558];
+    expect(request.resources.find((r) => r.resourceId === 101)!.negativeOnly).toBe(true);
+    expect(request.resources.find((r) => r.resourceId === 999)!.negativeOnly).toBe(false);
   });
 
   it("computes projectStatus from requests, and detects an in-flight exchange action", async () => {
@@ -1046,6 +1186,67 @@ describe("setResourceRequestAtom", () => {
     expect(compute.requested).toBe(10);
     expect(credit.requested).toBe(100);
   });
+
+  // A decommissioned resource's balance can only be exchanged downwards. The
+  // check runs on every quantity change rather than at save time, so the
+  // Resources view can disable submission while it holds (see Resources.tsx).
+  it("reports an error when a decommissioned resource is requested above its allocation", () => {
+    const store = createStore();
+    const decommissioned = makeResourceFixture({
+      resourceId: 101,
+      name: "Retired Cluster",
+      negativeOnly: true,
+      allocated: 10,
+      requested: 10,
+    });
+    const request = makeRequestFixture({ resources: [decommissioned] });
+    store.set(apiStateAtom, seedState({ requests: { 555: request } }));
+
+    store.set(setResourceRequestAtom, { requestId: 555, resourceId: 101, requested: 11 });
+
+    const updated = store.get(apiStateAtom).requests[555];
+    expect(updated.exchangeErrors).toEqual([
+      "Retired Cluster is decommissioned. Its balance can only be decreased",
+    ]);
+    expect(updated.exchangeStatus).toBe(statuses.error);
+  });
+
+  it("allows a decommissioned resource to be decreased, and clears the error it had set", () => {
+    const store = createStore();
+    const decommissioned = makeResourceFixture({
+      resourceId: 101,
+      name: "Retired Cluster",
+      negativeOnly: true,
+      allocated: 10,
+      requested: 10,
+    });
+    const request = makeRequestFixture({ resources: [decommissioned] });
+    store.set(apiStateAtom, seedState({ requests: { 555: request } }));
+
+    store.set(setResourceRequestAtom, { requestId: 555, resourceId: 101, requested: 11 });
+    expect(store.get(apiStateAtom).requests[555].exchangeStatus).toBe(statuses.error);
+
+    store.set(setResourceRequestAtom, { requestId: 555, resourceId: 101, requested: 5 });
+
+    const updated = store.get(apiStateAtom).requests[555];
+    expect(updated.exchangeErrors).toEqual([]);
+    expect(updated.exchangeStatus).toBeNull();
+  });
+
+  // Only an error status is this validation's to clear: a `success` status
+  // belongs to a save that already happened (see saveResourcesAtom).
+  it("leaves a non-error exchange status alone", () => {
+    const store = createStore();
+    const request = makeRequestFixture({
+      resources: [makeResourceFixture({ resourceId: 101, allocated: 10, requested: 10 })],
+      exchangeStatus: statuses.success,
+    });
+    store.set(apiStateAtom, seedState({ requests: { 555: request } }));
+
+    store.set(setResourceRequestAtom, { requestId: 555, resourceId: 101, requested: 20 });
+
+    expect(store.get(apiStateAtom).requests[555].exchangeStatus).toBe(statuses.success);
+  });
 });
 
 describe("toggleUsersResourcesAtom", () => {
@@ -1266,6 +1467,36 @@ describe("setResourcesReasonAtom", () => {
   });
 });
 
+// `canChangeRoles` decides whether the Users grid lets a role be edited (see
+// Users.tsx), so it has to survive both routes into a project's user list: the
+// project payload (covered in the raw-shape transform block above) and a
+// people-search result added to the grid.
+describe("searchUsersAtom (canChangeRoles)", () => {
+  it("maps the API's can_change_roles onto the searched user", async () => {
+    server.use(
+      http.get(defaultRoutes.search_people_path(), () =>
+        HttpResponse.json([
+          {
+            can_change_roles: false,
+            eligible_reason: null,
+            email: "ada@example.test",
+            first_name: "Ada",
+            is_eligible: true,
+            last_name: "Lovelace",
+            username: "ada",
+            organization: "Example University",
+          },
+        ]),
+      ),
+    );
+
+    const store = createStore();
+    const found = await store.set(searchUsersAtom, "ada");
+
+    expect(found[0].canChangeRoles).toBe(false);
+  });
+});
+
 describe("addUserAtom", () => {
   it("adds a new user with resourceIds computed from the current request's qualifying resources", () => {
     const store = createStore();
@@ -1292,6 +1523,26 @@ describe("addUserAtom", () => {
     expect(updated.users[0].resourceIds).toEqual([101]); // credit filtered out
     expect(updated.users[0].isNew).toBe(true);
     expect(updated.usersNewRowIndex).toBe(0);
+  });
+
+  it("keeps the searched user's canChangeRoles flag", () => {
+    const store = createStore();
+    const request = makeRequestFixture({ resources: [] });
+    const project = makeProjectFixture({ currentRequestId: 555, users: [] });
+    store.set(apiStateAtom, seedState({ projects: { ABC123: project }, requests: { 555: request } }));
+
+    store.set(addUserAtom, {
+      grantNumber: "ABC123",
+      user: {
+        canChangeRoles: false,
+        eligibility: "true",
+        firstName: "New",
+        lastName: "User",
+        username: "newuser",
+      },
+    });
+
+    expect(store.get(apiStateAtom).projects["ABC123"].users[0].canChangeRoles).toBe(false);
   });
 
   it("does not add a user whose username is already on the project (immer no-op)", () => {

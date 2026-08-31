@@ -6,6 +6,7 @@ import ActionsModal from "./ActionsModal";
 import ConfirmModal from "./ConfirmModal";
 import DeleteModal from "./DeleteModal";
 import History from "./History";
+import InternationalUserRequest from "./InternationalUserRequest";
 import Overview from "./Overview";
 import ProjectPublications from "./ProjectPublications";
 import Resources from "./Resources";
@@ -41,6 +42,14 @@ export default function Request({
 
   const ineligibleUsers = (project.users || []).filter(
     (user) => user.eligibility === "no" && user.role !== "user",
+  );
+
+  // The tab is gated on the key being *present*, not on it being non-empty:
+  // the API omits it entirely for projects whose allocation needs no
+  // International User Justifications (see `addProject` in atoms.ts).
+  const hasInternationalUserRequests = !!project.internationalUserRequests;
+  const hasIncompleteInternationalUserRequest = (project.internationalUserRequests || []).some(
+    ({ status }) => status === "Incomplete",
   );
 
   return (
@@ -94,6 +103,12 @@ export default function Request({
           </ul>
         </Alert>
       )}
+      {hasIncompleteInternationalUserRequest && (
+        <Alert color="danger">
+          There is an incomplete International User Justification form that requires your attention.
+          Check the &ldquo;Intl. Users&rdquo; tab for more details.
+        </Alert>
+      )}
       {/*
         react-bootstrap put this element's `mt-3 mb-3` on the tab *bar*, so the
         bottom margin sat between the bar and the panel (see `TabsContent`),
@@ -108,6 +123,9 @@ export default function Request({
           <TabsTrigger value="users" disabled={disabledTabs.includes("users")}>
             Users + Roles
           </TabsTrigger>
+          {hasInternationalUserRequests && (
+            <TabsTrigger value="international">Intl. Users</TabsTrigger>
+          )}
           <TabsTrigger value="publications">Publications</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -120,6 +138,11 @@ export default function Request({
         <TabsContent value="users">
           <Users grantNumber={grantNumber} />
         </TabsContent>
+        {hasInternationalUserRequests && (
+          <TabsContent value="international">
+            <InternationalUserRequest project={project} requestId={requestId} />
+          </TabsContent>
+        )}
         <TabsContent value="publications">
           <ProjectPublications grantNumber={grantNumber} routes={routes} />
         </TabsContent>

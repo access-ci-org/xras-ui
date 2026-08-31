@@ -36,6 +36,13 @@ export type Resource = {
   isNew: boolean;
   minimumExchange: number;
   name: string;
+  /**
+   * A decommissioned resource: it can still appear in a request that already
+   * holds a balance, but that balance may only be exchanged *down*. Set from
+   * the API's `negativeOnly` flag, defaulted to `false` - see `makeResource`
+   * in atoms.ts.
+   */
+  negativeOnly: boolean;
   questions?: ResourceQuestion[];
   requires?: number[];
   resourceProvider: {
@@ -136,6 +143,12 @@ export type UsageDetail = {
 };
 
 export type User = {
+  /**
+   * Whether this user's role may be changed from the Users + Roles grid. The
+   * API decides (a user with an open request of their own can't be demoted,
+   * for instance); the grid only disables the select - see Users.tsx.
+   */
+  canChangeRoles?: boolean;
   eligibility: string;
   eligibilityReason?: string;
   email?: string;
@@ -154,9 +167,30 @@ export type User = {
   isNew?: boolean;
 };
 
+export type InternationalUserRequestSummary = {
+  id: number;
+  /**
+   * The XRAS request the justification belongs to. Optional because it is only
+   * as old as xras_submit_access commit 87e1f6d0 ("Added \"requestId\" to the
+   * InternationalUserRequests hash") - this library is versioned separately
+   * from the apps that mount it, so a host that hasn't picked that up still
+   * sends only `id`/`status`/`submittedAt`/`reviewerComments`. See
+   * InternationalUserRequest.tsx for what happens then.
+   */
+  requestId?: number;
+  status: string;
+  submittedAt?: string | null;
+};
+
 export type Project = {
   currentRequestId: number | null;
   grantNumber: string;
+  /**
+   * Present only for projects whose allocation requires International User
+   * Justification forms; absent (not empty) otherwise, which is what gates
+   * the "Intl. Users" tab in Request.tsx.
+   */
+  internationalUserRequests?: InternationalUserRequestSummary[] | null;
   isManager: boolean;
   requestsList: RequestListItem[];
   selectedRequestId: number;
@@ -178,6 +212,7 @@ export type ProjectListEntry = {
 };
 
 export type SearchedUser = {
+  canChangeRoles?: boolean;
   eligibility: string;
   eligibilityReason?: string;
   email?: string;

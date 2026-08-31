@@ -130,12 +130,14 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
       key: "role",
       name: "Role",
       width: 100,
+      // `canChangeRoles` is per-user and API-supplied: the grid never decides on
+      // its own that a role is locked, it only disables the select.
       format: (value, row) => (
         <select
           className="select-caret absolute inset-0 truncate border-0 bg-transparent px-3 py-1.5 disabled:bg-[#e9ecef]"
           value={value}
           onChange={(e) => setUserRole(row.username, e.target.value)}
-          disabled={!canManageUsers || value == "pi" || value == "co_pi"}
+          disabled={!canManageUsers || !row.canChangeRoles || value == "pi" || value == "co_pi"}
         >
           {selectableRoles(String(value)).map(({ role, name }) => (
             <option key={role} value={role}>

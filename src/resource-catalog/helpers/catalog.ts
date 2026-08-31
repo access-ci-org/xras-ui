@@ -171,7 +171,34 @@ export function processCatalogResponse(
         resourceSorting[a.sortCategory] - resourceSorting[b.sortCategory],
     );
 
-  return { filters, resources: sortedResources };
+  return { filters, resources: withCloudBankDetails(sortedResources) };
+}
+
+// The three public clouds are allocated through CloudBank, so their cards
+// describe CloudBank rather than themselves: everything but the resource's own
+// name and id comes from the CloudBank Research entry. That includes the
+// features - the badges and the filters they answer to - which is deliberate,
+// since it is the CloudBank allocation the catalog is describing.
+//
+// Applied after sorting, as the redux version was: the sort keys it would
+// affect (`resourceName`, `sortCategory`) are already spent, so it cannot
+// reorder the list.
+const CLOUDBANK_RESOURCE = "CloudBank Research";
+const CLOUDBANK_ALLOCATED = [
+  "Amazon Web Services",
+  "Microsoft Azure",
+  "Google Cloud Platform",
+];
+
+function withCloudBankDetails(resources: Resource[]): Resource[] {
+  const cloudBank = resources.find((r) => r.resourceName === CLOUDBANK_RESOURCE);
+  if (!cloudBank) return resources;
+
+  return resources.map((r) =>
+    CLOUDBANK_ALLOCATED.includes(r.resourceName)
+      ? { ...cloudBank, resourceName: r.resourceName, resourceId: r.resourceId }
+      : r,
+  );
 }
 
 export function computeFilteredResources(

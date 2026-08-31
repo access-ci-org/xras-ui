@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.35.3](https://github.com/access-ci-org/xras-ui/compare/v0.35.2...v0.35.3) (2026-08-25)
+
+
+### Bug Fixes
+
+* InternationalUserRequests now uses the requestId from the form ([b01ef11](https://github.com/access-ci-org/xras-ui/commit/b01ef11457b1209e1e2057583e2a1a2e8736f664))
+
+## [0.35.2](https://github.com/access-ci-org/xras-ui/compare/v0.35.1...v0.35.2) (2026-08-19)
+
+
+### Bug Fixes
+
+* Resource IDs will now be preserved when re-assigning to CloudBank ([39f4e9d](https://github.com/access-ci-org/xras-ui/commit/39f4e9dd85bc75f803d16b32d06beeaba1a51dce))
+
+## [0.35.1](https://github.com/access-ci-org/xras-ui/compare/v0.35.0...v0.35.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* Added Google to the resources to be replaced by CloudBank ([97719b5](https://github.com/access-ci-org/xras-ui/commit/97719b5a0fdf3c528b63ff5498bbef385734682e))
+
+## [0.35.0](https://github.com/access-ci-org/xras-ui/compare/v0.34.0...v0.35.0) (2026-08-18)
+
+
+### Features
+
+* Added Resource Description swap for AWS and Azure. ([3b3a6ee](https://github.com/access-ci-org/xras-ui/commit/3b3a6eed7543136479ed2769539295ef99b6ca4f))
+
+## [0.34.0](https://github.com/access-ci-org/xras-ui/compare/v0.33.0...v0.34.0) (2026-08-11)
+
+
+### Features
+
+* Decommissioned Machines are filtered out of resource list with corresponding exchange action controls enabled ([676d732](https://github.com/access-ci-org/xras-ui/commit/676d732bb435d11a623abb1cd3cde02b88408f9b))
+
+## [0.33.0](https://github.com/access-ci-org/xras-ui/compare/v0.32.0...v0.33.0) (2026-08-05)
+
+
+### Features
+
+* **projects:** restrict role changes based on API data ([23643c9](https://github.com/access-ci-org/xras-ui/commit/23643c9d4726423830f4ec5c60eca17c6a3a8f3e))
+
+## [0.32.0](https://github.com/access-ci-org/xras-ui/compare/v0.31.0...v0.32.0) (2026-07-24)
+
+
+### Features
+
+* Added Justification form status to xras-ui ([30e0b1e](https://github.com/access-ci-org/xras-ui/commit/30e0b1e36ab097f7cfe103601e9d0880c010985b))
+* Release of International Users Features ([e399762](https://github.com/access-ci-org/xras-ui/commit/e3997625ad6be12b98b0fb793d03cb59e12feb9b))
+
+## [0.31.0](https://github.com/access-ci-org/xras-ui/compare/v0.30.3...v0.31.0) (2026-06-30)
+
+
+### Features
+
+* HBS banner for survey implemented ([7ced1e4](https://github.com/access-ci-org/xras-ui/commit/7ced1e42f20aec45333ef9ea69899e66c2300fb6))
+
 ## [0.30.3](https://github.com/access-ci-org/xras-ui/compare/v0.30.2...v0.30.3) (2026-04-27)
 
 

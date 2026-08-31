@@ -13,6 +13,14 @@ export type Routes = {
   request_action_path: (requestId: number | string, actionId: number | string) => string;
   request_actions_path: (requestId: number | string) => string;
   request_path: (requestId: number | string) => string;
+  request_international_user_request_path: (
+    requestId: number | string,
+    id: number | string,
+  ) => string;
+  edit_request_international_user_request_path: (
+    requestId: number | string,
+    id: number | string,
+  ) => string;
   resources_path: () => string;
   search_people_path: () => string;
   usage_detail_path: (grantNumber: string, resourceId: number | string) => string;
@@ -74,6 +82,17 @@ export const defaultRoutes: Routes = {
     `${baseUrl}/requests/${requestId}/actions/${actionId}`,
   request_actions_path: (requestId) => `${baseUrl}/requests/${requestId}/actions`,
   request_path: (requestId) => `${baseUrl}/requests/${requestId}`,
+
+  // The International User Justification form, nested under its request in
+  // xras_submit_access. Root-relative like the publications routes below: the
+  // links are rendered inside a page that app already serves. Note the path
+  // segment is `justifications`, not the resource name - that app declares the
+  // route `resources :international_user_requests, path: 'justifications'`, so
+  // only the *helper* names carry the longer spelling.
+  request_international_user_request_path: (requestId, id) =>
+    `/requests/${requestId}/justifications/${id}`,
+  edit_request_international_user_request_path: (requestId, id) =>
+    `/requests/${requestId}/justifications/${id}/edit`,
   resources_path: () => `${baseUrl}/resources`,
   search_people_path: () => `${baseUrl}/search/people`,
   usage_detail_path: (grantNumber, resourceId) => `/usage/${grantNumber}/${resourceId}`,

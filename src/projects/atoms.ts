@@ -80,6 +80,7 @@ const makeResource = ({
   endDate,
   exchangeRate,
   minimumExchange,
+  negativeOnly,
   organizationId,
   organizationFaviconUrl,
   organizationName,
@@ -116,6 +117,7 @@ const makeResource = ({
     isNew: false,
     minimumExchange: minimumExchange,
     name: displayResourceName.trim(),
+    negativeOnly: negativeOnly ?? false,
     questions: (attributeSets || [])
       .filter(({ isActive }: any) => isActive)
       .sort(sortRelativeOrder)
@@ -283,6 +285,10 @@ const addRequest = (
         resource.questions = exchangeResources[resource.resourceId].questions || [];
         // Add required resource IDs.
         resource.requires = exchangeResources[resource.resourceId].requires || [];
+        // The decommissioned flag only comes back on the Exchange action's
+        // resource list, not on the request's own resources, so a resource
+        // already held in the request learns it from here.
+        resource.negativeOnly = exchangeResources[resource.resourceId].negativeOnly ?? false;
       }
   }
 
@@ -305,6 +311,7 @@ const addRequest = (
         isNew: false,
         minimumExchange: 0,
         name: "Credit Equivalents",
+        negativeOnly: false,
         requested: 0,
         requires: [],
         resourceId: 0,
@@ -319,7 +326,15 @@ const addRequest = (
 
 const addProject = (
   draft: Draft<ApiState>,
-  { grantNumber, projectManager, requestMasterId, requests, title, users }: any,
+  {
+    grantNumber,
+    internationalUserRequests = null,
+    projectManager,
+    requestMasterId,
+    requests,
+    title,
+    users,
+  }: any,
   projectStatus: string,
 ) => {
   grantNumber = grantNumber || requestMasterId;
@@ -329,6 +344,7 @@ const addProject = (
   draft.projects[grantNumber] = {
     currentRequestId,
     grantNumber,
+    internationalUserRequests,
     isManager: projectManager,
     requestsList: requests.map((request: any) => {
       const { actions, allocationType, endDate, requestId, startDate, status } = request;
@@ -346,6 +362,7 @@ const addProject = (
     users: users
       .map(
         ({
+          canChangeRoles,
           eligibleReason,
           email,
           firstName,
@@ -369,6 +386,7 @@ const addProject = (
           const resourceUsernames: Record<number, string> = {};
           for (const res of userResources) resourceUsernames[res.xrasResourceId] = res.resourceUsername;
           return {
+            canChangeRoles,
             eligibility: isEligible,
             eligibilityReason: eligibleReason,
             email,
@@ -448,6 +466,7 @@ export const searchUsersAtom = atom(null, async (get, _set, searchText: string):
   const res = await fetch(`${get(routesAtom).search_people_path()}?${params}`);
   return (await res.json()).map(
     ({
+      can_change_roles,
       eligible_reason,
       email,
       first_name,
@@ -456,6 +475,7 @@ export const searchUsersAtom = atom(null, async (get, _set, searchText: string):
       username,
       organization,
     }: any): SearchedUser => ({
+      canChangeRoles: can_change_roles,
       eligibility: is_eligible,
       eligibilityReason: eligible_reason,
       email,
@@ -887,6 +907,27 @@ export const setResourceRequestAtom = atom(
       }
 
       if (credit) credit.requested = roundNumber(availableCredits, credit.decimalPlaces, "floor");
+
+      // A decommissioned resource's balance can only go down. Reported here
+      // rather than by disabling the input so the user can see what they typed
+      // and why it isn't allowed; Resources.tsx also blocks submission while
+      // `exchangeErrors` is non-empty.
+      const invalidResource = request.resources.find(
+        (resource) => resource.negativeOnly && Number(resource.requested) > Number(resource.allocated),
+      );
+
+      if (invalidResource) {
+        request.exchangeErrors = [
+          `${invalidResource.name} is decommissioned. Its balance can only be decreased`,
+        ];
+        request.exchangeStatus = statuses.error;
+      } else {
+        request.exchangeErrors = [];
+
+        // Only clear the status if *this* validation is what set it - a saved
+        // or failed save status belongs to saveResourcesAtom.
+        if (request.exchangeStatus === statuses.error) request.exchangeStatus = null;
+      }
     });
   },
 );

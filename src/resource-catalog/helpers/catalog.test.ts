@@ -239,6 +239,80 @@ describe("processCatalogResponse", () => {
   });
 });
 
+describe("processCatalogResponse (CloudBank-allocated clouds)", () => {
+  function cloudBank(overrides: Record<string, any> = {}) {
+    return apiResource({
+      resourceName: "CloudBank Research",
+      resourceId: 50,
+      organization: "CloudBank",
+      units: "Credits",
+      resourceDescription: "Cloud credits, brokered",
+      description: "CloudBank brokers cloud allocations",
+      recommendedUse: "Cloud workloads",
+      ...overrides,
+    });
+  }
+
+  it("describes AWS, Azure and GCP with CloudBank's entry, keeping their own name and id", () => {
+    const { resources } = processCatalogResponse(
+      [
+        apiResource(), // Bridges-2, the control
+        cloudBank(),
+        apiResource({ resourceName: "Amazon Web Services", resourceId: 51, organization: "AWS" }),
+        apiResource({ resourceName: "Microsoft Azure", resourceId: 52, organization: "Microsoft" }),
+        apiResource({ resourceName: "Google Cloud Platform", resourceId: 53, organization: "Google" }),
+      ],
+      noParams(),
+    );
+
+    const aws = resources.find((r) => r.resourceName == "Amazon Web Services")!;
+    expect(aws.resourceId).toBe(51); // its own id, so its card still links to itself
+    expect(aws.organization).toBe("CloudBank");
+    expect(aws.description).toBe("CloudBank brokers cloud allocations");
+    expect(aws.recommendedUse).toBe("Cloud workloads");
+    expect(aws.units).toBe("Credits");
+
+    for (const name of ["Microsoft Azure", "Google Cloud Platform"]) {
+      const swapped = resources.find((r) => r.resourceName == name)!;
+      expect(swapped.organization).toBe("CloudBank");
+      expect(swapped.description).toBe("CloudBank brokers cloud allocations");
+    }
+
+    // Everything else, CloudBank itself included, is untouched.
+    expect(resources.find((r) => r.resourceName == "Bridges-2")!.organization).toBe("PSC");
+    expect(resources.find((r) => r.resourceName == "CloudBank Research")!.resourceId).toBe(50);
+  });
+
+  it("leaves the clouds alone when CloudBank isn't in the response", () => {
+    const { resources } = processCatalogResponse(
+      [apiResource({ resourceName: "Amazon Web Services", resourceId: 51, organization: "AWS" })],
+      noParams(),
+    );
+
+    expect(resources[0].organization).toBe("AWS");
+  });
+
+  // The swap runs after sorting, and it preserves `resourceName`, so it can't
+  // reorder the list - but `sortCategory` comes from CloudBank, so the sort key
+  // and the value on the resource can legitimately disagree afterwards.
+  it("does not reorder the list", () => {
+    const { resources } = processCatalogResponse(
+      [
+        cloudBank(),
+        apiResource({ resourceName: "Amazon Web Services", resourceId: 51 }),
+        secondApiResource(),
+      ],
+      noParams(),
+    );
+
+    expect(resources.map((r) => r.resourceName)).toEqual([
+      "Amazon Web Services",
+      "CloudBank Research",
+      "Expanse",
+    ]);
+  });
+});
+
 describe("activeFilters", () => {
   const filters: FilterCategoryType[] = [
     {
