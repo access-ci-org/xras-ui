@@ -1211,6 +1211,30 @@ describe("setResourceRequestAtom", () => {
     expect(updated.exchangeStatus).toBe(statuses.error);
   });
 
+  // The boundary, and the state a decommissioned resource sits in until it is
+  // touched: requesting exactly the allocation is not an increase, so it must
+  // not error. Without this case `>` and `>=` are indistinguishable to the
+  // suite, and `>=` would flag every untouched decommissioned resource the
+  // moment any resource on the request was edited.
+  it("accepts a decommissioned resource requested at exactly its allocation", () => {
+    const store = createStore();
+    const decommissioned = makeResourceFixture({
+      resourceId: 101,
+      name: "Retired Cluster",
+      negativeOnly: true,
+      allocated: 10,
+      requested: 10,
+    });
+    const request = makeRequestFixture({ resources: [decommissioned] });
+    store.set(apiStateAtom, seedState({ requests: { 555: request } }));
+
+    store.set(setResourceRequestAtom, { requestId: 555, resourceId: 101, requested: 10 });
+
+    const updated = store.get(apiStateAtom).requests[555];
+    expect(updated.exchangeErrors).toEqual([]);
+    expect(updated.exchangeStatus).toBeNull();
+  });
+
   it("allows a decommissioned resource to be decreased, and clears the error it had set", () => {
     const store = createStore();
     const decommissioned = makeResourceFixture({

@@ -48,12 +48,14 @@ export default defineConfig({
       // Phase 5 (src/main.test.tsx plus everything the three Phase 2-4 test
       // agents added) reached ~59/40/53/61% (stmts/branch/funcs/lines - see
       // `npm run test:coverage`); covering the supporting-grants modules that
-      // arrived with the section rework took it to ~68/50/63/69%.
+      // arrived with the section rework took it to ~68/50/63/69%. Testing the
+      // features merged from main took it to ~75/61/67/76% - the branch jump is
+      // Request/Users/Resources, three components with no test file before.
       thresholds: {
-        statements: 65,
-        branches: 47,
-        functions: 61,
-        lines: 66,
+        statements: 72,
+        branches: 58,
+        functions: 65,
+        lines: 73,
       },
     },
   },

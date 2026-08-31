@@ -169,8 +169,21 @@ describe("projects", () => {
     });
 
     // The mount wraps `Projects` in `MyProjectsPage`, which carries the survey
-    // recruitment banner - delete this assertion with the banner itself.
+    // recruitment banner - delete these assertions with the banner itself. The
+    // link targets are asserted because they are the banner's entire purpose:
+    // prose that survives a bad edit to either URL would be worse than no
+    // banner. Checked here rather than in a MyProjectsPage test of its own
+    // because that component renders `Projects`, so testing it standalone would
+    // duplicate this test's MSW plumbing to reach two `href`s.
     expect(shadowOf(target).getByText(/short voluntary survey/i)).toBeInTheDocument();
+    expect(shadowOf(target).getByRole("link", { name: "Take the survey" })).toHaveAttribute(
+      "href",
+      "https://harvard.az1.qualtrics.com/jfe/form/SV_7Us3XQgaeeYahO6",
+    );
+    expect(shadowOf(target).getByRole("link", { name: "kmyers@hbs.edu" })).toHaveAttribute(
+      "href",
+      "mailto:kmyers@hbs.edu",
+    );
   });
 
   // Regression test for the bug src/shared/routes.ts documents at length:
