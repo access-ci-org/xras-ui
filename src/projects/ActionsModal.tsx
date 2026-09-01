@@ -13,6 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { routesAtom } from "../shared/routes";
 import { getUpgrade } from "./helpers/upgrades";
 import { useProject, useRequest } from "./helpers/hooks";
@@ -195,12 +197,15 @@ export default function ActionsModal({
   });
 
   /*
-   * Bootstrap's `.btn.btn-secondary` as a full-height block: `.d-grid` on the
+   * The shared secondary button as a full-height block: `.d-grid` on the
    * column stretched the button to the row, and the row is as tall as the
-   * description beside it.
+   * description beside it. `whitespace-normal` undoes the base's `nowrap`,
+   * since these labels wrap in the narrow column.
    */
-  const actionButton =
-    "flex grow flex-col justify-center bg-secondary px-4 py-[9px] text-center font-semibold uppercase leading-normal text-secondary-foreground no-underline";
+  const actionButton = cn(
+    buttonVariants({ variant: "secondary" }),
+    "grow flex-col whitespace-normal text-center",
+  );
 
   const rows = actions.map(({ id, action, isEnabled, button, enabled, disabled, method }) => (
     /* Bootstrap's `.row`/`.col-sm-*`: the 20px gutter is padding inside the
@@ -211,8 +216,11 @@ export default function ActionsModal({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button type="button" className={actionButton}>
-                {/* `.dropdown-toggle`'s caret. */}
-                <span className="after:ml-1 after:inline-block after:border-x-[0.3em] after:border-t-[0.3em] after:border-x-transparent after:align-[0.255em] after:content-['']">
+                {/* `.dropdown-toggle`'s caret. `border-t-current` because the
+                    base layer defaults every `border-color` — pseudo-elements
+                    included — to `--color-border`, which left the triangle
+                    grey rather than the label's color. */}
+                <span className="after:ml-1 after:inline-block after:border-x-[0.3em] after:border-t-[0.3em] after:border-x-transparent after:border-t-current after:align-[0.255em] after:content-['']">
                   {button}
                 </span>
               </button>
@@ -229,7 +237,7 @@ export default function ActionsModal({
           </DropdownMenu>
         ) : (
           <a
-            className={`${actionButton} ${isEnabled ? "" : "pointer-events-none opacity-65"}`}
+            className={cn(actionButton, !isEnabled && "pointer-events-none opacity-65")}
             href={isEnabled ? (action as string) : ""}
             data-method={method}
           >

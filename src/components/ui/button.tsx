@@ -16,7 +16,7 @@ const btnHover =
    `ghost` get none: they set no `--bs-btn-focus-shadow-rgb` in the original, so
    its shadow declaration is invalid there and nothing is painted. */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-none border border-transparent font-semibold uppercase leading-normal no-underline transition-colors disabled:pointer-events-none disabled:opacity-65 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 outline-none",
+  "inline-flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded-none border-4 border-transparent font-semibold uppercase leading-normal no-underline transition-colors disabled:pointer-events-none disabled:opacity-65 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 outline-none",
   {
     variants: {
       variant: {
@@ -26,13 +26,18 @@ const buttonVariants = cva(
         outline: `border-input bg-background ${btnHover}`,
         ghost: "hover:bg-accent hover:text-accent-foreground",
       },
+      /* Bootstrap's padding less the 3px the base's `border-4` adds over the
+         1px original, on each side, so a button's overall size is unchanged:
+         16px/9px becomes 13px/6px and `.btn-sm`'s 12px/7px becomes 9px/4px.
+         `icon` needs no adjustment — `size-9` is a fixed width and height, and
+         preflight's `border-box` already counts the border inside it. */
       size: {
-        default: "px-4 py-[9px]",
+        default: "px-[13px] py-[6px]",
         /* `text-[14px] leading-[21px]` rather than `text-sm`: that pairs a
            line-height of its own, and an arbitrary font size resets the
            inherited one, so both halves of Bootstrap's `.btn-sm` metrics
            (14px / 1.5) have to be spelled out. */
-        sm: "px-3 py-[7px] text-[14px] leading-[21px]",
+        sm: "px-[9px] py-[4px] text-[14px] leading-[21px]",
         icon: "size-9",
       },
     },
