@@ -894,6 +894,38 @@ describe("submitResourceAtom", () => {
     expect(store.get(resourceDataAtom)).toEqual(refetched);
   });
 
+  it("sends the auto-approve exchange fields, which the form does not otherwise touch", async () => {
+    // `auto_approve_exchanges` has no control in the form: it only survives a
+    // save because the payload passes it back through, so a submit test is the
+    // only place it is pinned down.
+    let payload: any;
+    server.use(
+      http.patch(`${ROOT}/resources/${RESOURCE_ID}`, async ({ request }) => {
+        payload = await request.json();
+        return HttpResponse.json({ message: "Great success!" }, { status: 200 });
+      }),
+      http.get(`${ROOT}/resources/${RESOURCE_ID}.json`, () =>
+        HttpResponse.json(fixtureForSubmit()),
+      ),
+    );
+
+    const data = fixtureForSubmit();
+    data.resource_details.auto_approve_exchanges = true;
+    data.resource_details.auto_approve_exchange_limit = "500";
+
+    const store = createStore();
+    store.set(relativeUrlRootAtom, ROOT);
+    store.set(resourceIdAtom, RESOURCE_ID);
+    store.set(resourceDataAtom, data);
+
+    await store.set(submitResourceAtom);
+
+    expect(payload.resource).toMatchObject({
+      auto_approve_exchanges: true,
+      auto_approve_exchange_limit: "500",
+    });
+  });
+
   it("on a non-200 response with { errors }: populates errorsAtom from the array", async () => {
     server.use(
       http.patch(`${ROOT}/resources/${RESOURCE_ID}`, () =>

@@ -37,6 +37,8 @@ export type ResourceDetails = {
   min_exchange: number | string;
   dollar_value: number | string;
   allocation_types: AllocationType[];
+  auto_approve_exchanges?: boolean;
+  auto_approve_exchange_limit?: number | string;
   exchange_rates?: ExchangeRates;
 };
 

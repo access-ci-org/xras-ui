@@ -6,6 +6,7 @@ import AdminAlert from "../shared/AdminAlert";
 import { ADMIN_BODY, ADMIN_H2 } from "../shared/adminTheme";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import { AllocationTypesSection } from "./AllocationTypesGrid";
+import { ExchangeAutoApproval } from "./ExchangeAutoApproval";
 import { ExchangeRates } from "./ExchangeRates";
 import { ResourceForm } from "./ResourceForm";
 import {
@@ -94,7 +95,12 @@ function EditResourceInner({ setExternalSubmit }: Pick<EditResourceProps, "setEx
         </div>
         <ResourceForm />
       </div>
-      {usesExchangeRates && <ExchangeRates />}
+      {usesExchangeRates && (
+        <>
+          <ExchangeRates />
+          <ExchangeAutoApproval />
+        </>
+      )}
       <AllocationTypesSection />
     </div>
   );
