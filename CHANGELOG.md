@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.36.0](https://github.com/access-ci-org/xras-ui/compare/v0.35.3...v0.36.0) (2026-09-02)
+
+
+### Features
+
+* **resources:** Add support for resource auto_approve_exchange rules ([7d56cbe](https://github.com/access-ci-org/xras-ui/commit/7d56cbeba9f3dafff39e4a1884a74929334bc3fb))
+
 ## [0.35.3](https://github.com/access-ci-org/xras-ui/compare/v0.35.2...v0.35.3) (2026-08-25)
 
 
