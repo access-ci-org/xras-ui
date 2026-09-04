@@ -23,7 +23,7 @@ import {
 
 interface FieldWrapperProps {
   label?: string;
-  description?: string;
+  description?: React.ReactNode;
   required?: boolean;
 }
 
@@ -42,12 +42,19 @@ export function FieldInput({
   description,
   required,
   onBlur,
+  transformValue,
+  adornment,
   ...props
 }: FieldWrapperProps &
-  Omit<
-    React.ComponentProps<typeof Input>,
-    "id" | "value" | "onChange"
-  >) {
+  Omit<React.ComponentProps<typeof Input>, "id" | "value" | "onChange"> & {
+    /** Sanitizes each keystroke before it reaches form state, e.g. to
+     * constrain a grant number to digits. */
+    transformValue?: (raw: string) => string;
+    /** Rendered on the right-hand side of the input itself, e.g. a lookup
+     * spinner. Positioned against the input rather than the field, so a
+     * description line above doesn't shift it. */
+    adornment?: React.ReactNode;
+  }) {
   const field = useFieldContext<string>();
   const errors = useDisplayErrors(field);
 
@@ -59,16 +66,27 @@ export function FieldInput({
         </FormLabel>
       ) : null}
       <FormDescription>{description}</FormDescription>
-      <Input
-        id={field.name}
-        value={field.state.value ?? ""}
-        onChange={(e) => field.handleChange(e.target.value)}
-        onBlur={(e) => {
-          field.handleBlur();
-          onBlur?.(e);
-        }}
-        {...props}
-      />
+      <div className="relative">
+        <Input
+          id={field.name}
+          value={field.state.value ?? ""}
+          onChange={(e) =>
+            field.handleChange(
+              transformValue ? transformValue(e.target.value) : e.target.value,
+            )
+          }
+          onBlur={(e) => {
+            field.handleBlur();
+            onBlur?.(e);
+          }}
+          {...props}
+        />
+        {adornment ? (
+          <div className="absolute inset-y-0 right-2 flex items-center">
+            {adornment}
+          </div>
+        ) : null}
+      </div>
       <FormError errors={errors} />
     </FormItem>
   );

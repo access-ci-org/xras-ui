@@ -30,7 +30,13 @@
                     { id: 2, name: "Physics" },
                 ],
                 // initialIncludeSupportingGrants: true,
-                initialGrants: [],
+                initialGrants: [
+                    { grant_id: 999, funding_agency_id: 1, grant_number: "607505", is_pending: false,
+                        title: "Seeded", pi_name: "Test PI", begin_date: "2024-01-01", end_date: "2025-01-01",
+                        primary_fos_type_id: 1, awarded_amount: 1000, awarded_units: "Dollars",
+                        program_officer_name: "PO", program_officer_email: "po@nsf.gov", comments: "x" },
+                ],
+                initialIncludeSupportingGrants: true,
                 onSubmit: (grants) => console.log("submitted", grants),
             });
         </script>
