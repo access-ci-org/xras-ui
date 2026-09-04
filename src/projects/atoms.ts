@@ -6,6 +6,7 @@ import type {
   Action,
   AllowedAction,
   AllowedActionsMap,
+  Grant,
   Project,
   ProjectListEntry,
   Request,
@@ -13,6 +14,29 @@ import type {
   SearchedUser,
   User,
 } from "./types";
+
+// The text-ish editable fields, kept apart from `isPending` only because they
+// diff as strings where a boolean's `null` ("unanswered") is a value of its
+// own - see saveGrantAtom.
+export const GRANT_EDITABLE_TEXT_FIELDS = [
+  "beginDate",
+  "endDate",
+  "programOfficerName",
+  "programOfficerEmail",
+] as const;
+
+// The fields save_grants (xras_submit_access) allows editing after submission -
+// see GRANT_EDITABLE_FIELDS in the plan/server. Everything else on a Grant
+// (grant number, title, PI name, funding agency, amounts, ...) is read-only.
+export const GRANT_EDITABLE_FIELDS = [
+  ...GRANT_EDITABLE_TEXT_FIELDS,
+  "isPending",
+] as const;
+
+export type GrantEditableField = (typeof GRANT_EDITABLE_FIELDS)[number];
+
+/** A set of edits from the modal, for saveGrantAtom to diff and send. */
+export type GrantEdits = Partial<Pick<Grant, GrantEditableField>>;
 
 export const statuses = {
   error: "error",
@@ -150,6 +174,53 @@ const makeResource = ({
   };
 };
 
+// The API's grant hash (V1::Utils::Grant.to_hash in xras_api) already uses
+// these exact key names, so this is mostly a typed pass-through - but it's
+// still spelled out field-by-field, like makeResource above, rather than a
+// blind spread, so a payload that adds a new key doesn't silently leak into
+// state untyped.
+const makeGrant = ({
+  grantId,
+  fundingAgencyId,
+  fundingAgencyName,
+  fundingAgencyAbbr,
+  grantNumber,
+  piName,
+  title,
+  beginDate,
+  endDate,
+  awardedAmount,
+  awardedUnits,
+  percentageAward,
+  programOfficerName,
+  programOfficerEmail,
+  isPending,
+  subAwardNumber,
+  comments,
+  primaryFosTypeId,
+  primaryFosType,
+}: any): Grant => ({
+  grantId,
+  fundingAgencyId,
+  fundingAgencyName,
+  fundingAgencyAbbr,
+  grantNumber,
+  piName,
+  title,
+  beginDate,
+  endDate,
+  awardedAmount,
+  awardedUnits,
+  percentageAward,
+  programOfficerName,
+  programOfficerEmail,
+  isPending,
+  subAwardNumber,
+  comments,
+  primaryFosTypeId,
+  primaryFosType,
+});
+
 const makeAllowedActionsMap = (allowedActions: any[]): AllowedActionsMap => {
   const result: AllowedActionsMap = {};
   for (const { actionType, allowedResources, opportunityId, opportunityName } of allowedActions) {
@@ -181,6 +252,7 @@ const addRequest = (
     allocationType,
     allowedActions,
     endDate,
+    grants,
     requestId,
     requestType,
     resources,
@@ -226,6 +298,13 @@ const addRequest = (
     exchangeErrors: [],
     exchangeStatus: null,
     grantNumber,
+    // `grants` stays `undefined` (not `[]`) when the host API omits the key
+    // entirely, so Request.tsx can tell "no grants" from "grants not
+    // supported yet" and gate the tab on that - see the Grant type comment.
+    grants: grants ? grants.map(makeGrant) : undefined,
+    editGrantId: null,
+    grantsErrors: undefined,
+    grantsStatus: null,
     isMaximize: allocationType == "Maximize",
     requestId,
     resources: resources
@@ -620,6 +699,98 @@ export const deleteActionAtom = atom(
   },
 );
 
+// Saves one grant - the one the edit modal has open. `values` comes from the
+// modal's own form state, so this is where it first meets the copy in
+// `grants`: only the editable fields that actually differ are sent (the server
+// enforces the same allowlist, but there's no reason to send fields the user
+// never touched), and on success the new values are written into `grants`,
+// which is the baseline for the next edit.
+export const saveGrantAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    {
+      requestId,
+      grantId,
+      values,
+    }: {
+      requestId: number;
+      grantId: number;
+      values: GrantEdits;
+    },
+  ) => {
+    const request = get(apiStateAtom).requests[requestId];
+    const grant = (request.grants || []).find((g) => g.grantId == grantId);
+    if (!grant) return;
+
+    // `??`-normalized on both sides so `null` (the API's "no value") and `""`
+    // (an emptied input) don't register as a change against each other.
+    const changes: GrantEdits = {};
+    for (const field of GRANT_EDITABLE_TEXT_FIELDS) {
+      const next = values[field] ?? "";
+      if (next !== (grant[field] ?? "")) changes[field] = next;
+    }
+    // `isPending` is compared as-is: for a boolean, `null` is a real answer
+    // ("nobody has said") rather than an empty string in disguise.
+    if (values.isPending !== undefined && values.isPending !== grant.isPending) {
+      changes.isPending = values.isPending;
+    }
+
+    if (Object.keys(changes).length === 0) {
+      update(get, set, (draft) => {
+        draft.requests[requestId].editGrantId = null;
+      });
+      return;
+    }
+
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsStatus = statuses.pending;
+      draft.requests[requestId].grantsErrors = undefined;
+    });
+
+    const data = {
+      requestId,
+      grants: [{ grantId, ...changes }],
+      authenticity_token: getAuthToken(),
+    };
+
+    const res = await fetch(get(routesAtom).projects_save_grants_path(), {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (res.status == 200) {
+      update(get, set, (draft) => {
+        const draftRequest = draft.requests[requestId];
+        const draftGrant = (draftRequest.grants || []).find((g) => g.grantId == grantId);
+        if (draftGrant) Object.assign(draftGrant, changes);
+        draftRequest.editGrantId = null;
+        draftRequest.grantsErrors = undefined;
+        draftRequest.grantsStatus = statuses.success;
+      });
+      return;
+    }
+
+    // 403 (not a grant manager) and 422 (validation failure, e.g. xras_api's
+    // date-overlap check) both carry an `errors` array - see save_grants in
+    // xras_submit_access. The modal stays open so the errors land next to the
+    // fields that caused them.
+    let errors: string[] = [];
+    try {
+      const body = await res.json();
+      errors = body.errors;
+    } catch {
+      errors = ["Unable to save changes"];
+    }
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsErrors = errors;
+      draft.requests[requestId].grantsStatus = statuses.error;
+    });
+  },
+);
+
 export const saveResourcesAtom = atom(null, async (get, set, { requestId }: { requestId: number }) => {
   const request = get(apiStateAtom).requests[requestId];
   const requested_resources: Record<string, any> = {};
@@ -813,6 +984,26 @@ export const closeUsageDetailModalAtom = atom(null, (get, set, { requestId }: { 
     const request = draft.requests[requestId];
     request.usageDetail = null;
     request.usageDetailStatus = null;
+  });
+});
+
+// Opening the modal clears any status left over from a previous edit, so a
+// stale "saved"/"could not be saved" banner doesn't greet the next one.
+export const editGrantAtom = atom(
+  null,
+  (get, set, { requestId, grantId }: { requestId: number; grantId: number }) => {
+    update(get, set, (draft) => {
+      const request = draft.requests[requestId];
+      request.editGrantId = grantId;
+      request.grantsErrors = undefined;
+      request.grantsStatus = null;
+    });
+  },
+);
+
+export const closeGrantModalAtom = atom(null, (get, set, { requestId }: { requestId: number }) => {
+  update(get, set, (draft) => {
+    draft.requests[requestId].editGrantId = null;
   });
 });
 

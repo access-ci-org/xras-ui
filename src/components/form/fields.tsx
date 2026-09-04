@@ -113,8 +113,9 @@ export function FieldDatePicker({
   label,
   description,
   required,
+  disabled,
   placeholder = "YYYY-MM-DD",
-}: FieldWrapperProps & { placeholder?: string }) {
+}: FieldWrapperProps & { disabled?: boolean; placeholder?: string }) {
   const field = useFieldContext<string>();
   const errors = useDisplayErrors(field);
 
@@ -132,6 +133,7 @@ export function FieldDatePicker({
         value={field.state.value ?? ""}
         onValueChange={(value) => field.handleChange(value)}
         onBlur={field.handleBlur}
+        disabled={disabled}
       />
       <FormError errors={errors} />
     </FormItem>
@@ -147,9 +149,14 @@ export function FieldSelect({
   label,
   description,
   required,
+  disabled,
   placeholder,
   options,
-}: FieldWrapperProps & { placeholder?: string; options: SelectOption[] }) {
+}: FieldWrapperProps & {
+  disabled?: boolean;
+  placeholder?: string;
+  options: SelectOption[];
+}) {
   const field = useFieldContext<string | number | null>();
   const errors = useDisplayErrors(field);
 
@@ -164,6 +171,7 @@ export function FieldSelect({
       <Select
         value={field.state.value != null ? String(field.state.value) : ""}
         onValueChange={(value) => field.handleChange(value)}
+        disabled={disabled}
       >
         <SelectTrigger id={field.name} onBlur={field.handleBlur}>
           <SelectValue placeholder={placeholder} />
@@ -273,11 +281,13 @@ export function FieldRadio<TValue>({
   label,
   description,
   required,
+  disabled,
   options,
 }: {
   label: string;
   description?: string;
   required?: boolean;
+  disabled?: boolean;
   options: RadioOption<TValue>[];
 }) {
   const field = useFieldContext<TValue>();
@@ -305,6 +315,7 @@ export function FieldRadio<TValue>({
           value: radioKey(option.value),
           label: option.label,
         }))}
+        disabled={disabled}
       />
       <FormError errors={errors} />
     </FormItem>

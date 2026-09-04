@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AWARDED_UNITS,
   formatAsCurrency,
+  formatAsDollars,
   parseCurrencyAmount,
   unformatCurrency,
 } from "./currency";
@@ -77,6 +78,23 @@ describe("formatAsCurrency", () => {
     // leaving it alone lets the schema's "Enter a valid amount" issue fire.
     expect(formatAsCurrency("twelve million")).toBe("twelve million");
     expect(formatAsCurrency("")).toBe("");
+  });
+});
+
+describe("formatAsDollars", () => {
+  it("formats a number as whole US dollars", () => {
+    expect(formatAsDollars(12561813)).toBe("$12,561,813");
+  });
+
+  it("rounds to the nearest dollar rather than truncating", () => {
+    expect(formatAsDollars(1234.56)).toBe("$1,235");
+    expect(formatAsDollars("$1,234.49")).toBe("$1,234");
+  });
+
+  it("handles the empty and unparseable cases like formatAsCurrency", () => {
+    expect(formatAsDollars(0)).toBe("$0");
+    expect(formatAsDollars(null)).toBe("");
+    expect(formatAsDollars("twelve million")).toBe("twelve million");
   });
 });
 

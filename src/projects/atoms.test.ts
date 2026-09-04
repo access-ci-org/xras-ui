@@ -7,8 +7,10 @@ import {
   addResourceAtom,
   addUserAtom,
   apiStateAtom,
+  closeGrantModalAtom,
   closeUsageDetailModalAtom,
   deleteActionAtom,
+  editGrantAtom,
   errorAtom,
   fetchProjectDetailAtom,
   fetchProjectsListAtom,
@@ -18,6 +20,7 @@ import {
   projectsListAtom,
   resetResourcesAtom,
   resetUsersAtom,
+  saveGrantAtom,
   saveResourcesAtom,
   saveUsersAtom,
   searchUsersAtom,
@@ -34,8 +37,9 @@ import {
   toggleResourcesModalAtom,
   toggleUsersResourcesAtom,
   usernameAtom,
+  type GrantEdits,
 } from "@/projects/atoms";
-import type { Action, Project, Request, Resource, User } from "@/projects/types";
+import type { Action, Grant, Project, Request, Resource, User } from "@/projects/types";
 
 // ---------------------------------------------------------------------------
 // Fixture builders for the already-transformed shapes stored in
@@ -119,6 +123,31 @@ function makeActionFixture(overrides: Partial<Action> = {}): Action {
     showDeleteModal: false,
     status: "Approved",
     type: "Maximize",
+    ...overrides,
+  };
+}
+
+function makeGrantFixture(overrides: Partial<Grant> = {}): Grant {
+  return {
+    grantId: 1,
+    fundingAgencyId: 10,
+    fundingAgencyName: "National Science Foundation",
+    fundingAgencyAbbr: "NSF",
+    grantNumber: "NSF-12345",
+    piName: "Ada Lovelace",
+    title: "A Supporting Grant",
+    beginDate: "2024-01-01",
+    endDate: "2025-01-01",
+    awardedAmount: 100000,
+    awardedUnits: "Dollars",
+    percentageAward: 100,
+    programOfficerName: "Grace Hopper",
+    programOfficerEmail: "ghopper@example.test",
+    isPending: false,
+    subAwardNumber: null,
+    comments: null,
+    primaryFosTypeId: 5,
+    primaryFosType: "Computer Science",
     ...overrides,
   };
 }
@@ -1080,6 +1109,198 @@ describe("saveUsersAtom", () => {
   });
 });
 
+describe("saveGrantAtom", () => {
+  function makeGrantsRequest() {
+    return makeRequestFixture({
+      grants: [
+        makeGrantFixture({ grantId: 1 }),
+        makeGrantFixture({ grantId: 2, programOfficerName: "Someone Else" }),
+      ],
+    });
+  }
+
+  function makeGrantsStore() {
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      projects_save_grants_path: () => "https://example.test/save-grants",
+    });
+    store.set(apiStateAtom, seedState({ requests: { 555: makeGrantsRequest() } }));
+    // The modal is open on grant 1; a successful save is what closes it.
+    store.set(editGrantAtom, { requestId: 555, grantId: 1 });
+    return store;
+  }
+
+  // The modal always submits every editable field; the diff is what narrows
+  // it down. These match makeGrantFixture, so only the overrides differ.
+  const editedValues = (overrides: GrantEdits = {}): GrantEdits => ({
+    beginDate: "2024-01-01",
+    endDate: "2025-01-01",
+    isPending: false,
+    programOfficerName: "Grace Hopper",
+    programOfficerEmail: "ghopper@example.test",
+    ...overrides,
+  });
+
+  it("sends only the fields that actually differ, writes them into state, and closes the modal", async () => {
+    server.use(
+      http.post("https://example.test/save-grants", async ({ request }) => {
+        const body = (await request.json()) as any;
+        expect(body.requestId).toBe(555);
+        expect(body.grants).toEqual([
+          { grantId: 1, endDate: "2025-06-01", programOfficerName: "New PO" },
+        ]);
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+
+    const store = makeGrantsStore();
+
+    await store.set(saveGrantAtom, {
+      requestId: 555,
+      grantId: 1,
+      values: editedValues({ endDate: "2025-06-01", programOfficerName: "New PO" }),
+    });
+
+    const request = store.get(apiStateAtom).requests[555];
+    const grant = request.grants!.find((g) => g.grantId === 1)!;
+    expect(grant.endDate).toBe("2025-06-01");
+    expect(grant.programOfficerName).toBe("New PO");
+    expect(grant.beginDate).toBe("2024-01-01"); // unchanged fields left alone
+    // The other grant on the request is untouched by a single-grant save.
+    expect(request.grants!.find((g) => g.grantId === 2)!.programOfficerName).toBe("Someone Else");
+    expect(request.editGrantId).toBeNull();
+    expect(request.grantsStatus).toBe("success");
+    expect(request.grantsErrors).toBeUndefined();
+  });
+
+  it("treats a null stored value and an emptied input as the same value", async () => {
+    let requestBody: any = null;
+    server.use(
+      http.post("https://example.test/save-grants", async ({ request }) => {
+        requestBody = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      projects_save_grants_path: () => "https://example.test/save-grants",
+    });
+    store.set(
+      apiStateAtom,
+      seedState({
+        requests: {
+          555: makeRequestFixture({
+            grants: [makeGrantFixture({ grantId: 1, programOfficerName: null })],
+          }),
+        },
+      }),
+    );
+    store.set(editGrantAtom, { requestId: 555, grantId: 1 });
+
+    await store.set(saveGrantAtom, {
+      requestId: 555,
+      grantId: 1,
+      values: editedValues({ programOfficerName: "" }),
+    });
+
+    // Nothing differed, so no request went out at all...
+    expect(requestBody).toBeNull();
+    // ...and the modal still closed, rather than sitting there looking stuck.
+    const request = store.get(apiStateAtom).requests[555];
+    expect(request.editGrantId).toBeNull();
+    expect(request.grantsStatus).toBeNull();
+  });
+
+  it("sends a changed pending answer as a boolean, and tells null apart from false", async () => {
+    let body: any = null;
+    server.use(
+      http.post("https://example.test/save-grants", async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      projects_save_grants_path: () => "https://example.test/save-grants",
+    });
+    store.set(
+      apiStateAtom,
+      seedState({
+        requests: {
+          // An unanswered pending question, which is not the same as "no".
+          555: makeRequestFixture({ grants: [makeGrantFixture({ grantId: 1, isPending: null })] }),
+        },
+      }),
+    );
+    store.set(editGrantAtom, { requestId: 555, grantId: 1 });
+
+    await store.set(saveGrantAtom, {
+      requestId: 555,
+      grantId: 1,
+      values: editedValues({ isPending: false }),
+    });
+
+    expect(body.grants).toEqual([{ grantId: 1, isPending: false }]);
+    expect(store.get(apiStateAtom).requests[555].grants![0].isPending).toBe(false);
+  });
+
+  it("is a no-op for a grantId that isn't on the request", async () => {
+    const store = makeGrantsStore();
+
+    await store.set(saveGrantAtom, { requestId: 555, grantId: 999, values: editedValues() });
+
+    const request = store.get(apiStateAtom).requests[555];
+    expect(request.grantsStatus).toBeNull();
+    expect(request.editGrantId).toBe(1);
+  });
+
+  it("records server-provided errors on a rejected save and leaves the modal open", async () => {
+    server.use(
+      http.post("https://example.test/save-grants", () =>
+        HttpResponse.json({ errors: ["End date must be on or after the start date"] }, { status: 422 }),
+      ),
+    );
+
+    const store = makeGrantsStore();
+
+    await store.set(saveGrantAtom, {
+      requestId: 555,
+      grantId: 1,
+      values: editedValues({ endDate: "2023-01-01" }),
+    });
+
+    const request = store.get(apiStateAtom).requests[555];
+    expect(request.grantsStatus).toBe("error");
+    expect(request.grantsErrors).toEqual(["End date must be on or after the start date"]);
+    expect(request.editGrantId).toBe(1);
+    // The rejected value was not written into state.
+    expect(request.grants!.find((g) => g.grantId === 1)!.endDate).toBe("2025-01-01");
+  });
+
+  it("falls back to a generic error when the failure response body isn't JSON", async () => {
+    server.use(
+      http.post("https://example.test/save-grants", () => new HttpResponse("not json", { status: 500 })),
+    );
+
+    const store = makeGrantsStore();
+
+    await store.set(saveGrantAtom, {
+      requestId: 555,
+      grantId: 1,
+      values: editedValues({ programOfficerName: "New PO" }),
+    });
+
+    const request = store.get(apiStateAtom).requests[555];
+    expect(request.grantsStatus).toBe("error");
+    expect(request.grantsErrors).toEqual(["Unable to save changes"]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Synchronous (non-fetch) actions. These all go through the same `update()` /
 // immer `produce()` wrapper, so each test seeds `apiStateAtom` directly and
@@ -1363,6 +1584,51 @@ describe("setUserRoleAtom", () => {
     store.set(setUserRoleAtom, { grantNumber: "ABC123", username: "ghost", role: "pi" });
 
     expect(store.get(apiStateAtom).projects["ABC123"].users[0].role).toBe("user");
+  });
+});
+
+describe("editGrantAtom / closeGrantModalAtom", () => {
+  it("editGrantAtom opens the modal on a grant and clears any leftover save status", () => {
+    const store = createStore();
+    const request = makeRequestFixture({
+      grants: [makeGrantFixture({ grantId: 1 })],
+      grantsStatus: "error",
+      grantsErrors: ["End date must be on or after the start date"],
+    });
+    store.set(apiStateAtom, seedState({ requests: { 555: request } }));
+
+    store.set(editGrantAtom, { requestId: 555, grantId: 1 });
+
+    const updated = store.get(apiStateAtom).requests[555];
+    expect(updated.editGrantId).toBe(1);
+    expect(updated.grantsStatus).toBeNull();
+    expect(updated.grantsErrors).toBeUndefined();
+    expect(request.editGrantId).toBeUndefined(); // previous object untouched
+  });
+
+  it("closeGrantModalAtom closes the modal but leaves the errors in place", () => {
+    const store = createStore();
+    store.set(
+      apiStateAtom,
+      seedState({
+        requests: {
+          555: makeRequestFixture({
+            grants: [makeGrantFixture({ grantId: 1 })],
+            editGrantId: 1,
+            grantsStatus: "error",
+            grantsErrors: ["Unable to save changes"],
+          }),
+        },
+      }),
+    );
+
+    store.set(closeGrantModalAtom, { requestId: 555 });
+
+    const updated = store.get(apiStateAtom).requests[555];
+    expect(updated.editGrantId).toBeNull();
+    // Reopening is what clears these, so a subsequent editGrantAtom call is
+    // the only thing that has to know about them.
+    expect(updated.grantsErrors).toEqual(["Unable to save changes"]);
   });
 });
 

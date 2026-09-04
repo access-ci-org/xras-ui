@@ -7,22 +7,47 @@ import type { AppForm } from "@/components/form";
 import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
 import { formatAsCurrency } from "./currency";
 import { fetchNSFGrantDetails, nsfDateToIso } from "./nsf-lookup";
-import type { GrantFieldName, SupportingGrantsState } from "./types";
+import type {
+  GrantFieldName,
+  GrantFormFieldName,
+  SupportingGrantsState,
+} from "./types";
 
 interface GrantFieldsProps {
   form: AppForm<SupportingGrantsState>;
   index: number;
-  onRemove: () => void;
+  /**
+   * Fields to render read-only. My Projects reuses this whole form to edit an
+   * already-submitted grant, where only the dates, the pending answer and the
+   * program officer may change (see GRANT_EDITABLE_FIELDS in
+   * projects/atoms.ts); the submission form leaves this empty and everything
+   * stays editable.
+   */
+  disabledFields?: readonly GrantFormFieldName[];
+  /** Omitted where grants can't be removed, which hides the Remove button. */
+  onRemove?: () => void;
 }
 
-export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
+export function GrantFields({
+  form,
+  index,
+  disabledFields = [],
+  onRemove,
+}: GrantFieldsProps) {
   const fundingAgencies = useAtomValue(fundingAgenciesAtom);
   const fosTypes = useAtomValue(fosTypesAtom);
   const [nsfLookupStatus, setNsfLookupStatus] = useState<
     "idle" | "pending" | "error"
   >("idle");
 
+  const isDisabled = (field: GrantFormFieldName) =>
+    disabledFields.includes(field);
+
   async function handleGrantNumberBlur() {
+    // The lookup fills in fields from the grant number, so it has nothing to
+    // do where the grant number itself is fixed.
+    if (isDisabled("grantNumber")) return;
+
     setNsfLookupStatus("idle");
 
     const grant = form.getFieldValue(`grants[${index}]`);
@@ -84,6 +109,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
             <field.FieldSelect
               label="Funding Agency"
               required
+              disabled={isDisabled("fundingAgencyId")}
               placeholder="Select a funding agency"
               options={fundingAgencies.map((agency) => ({
                 value: String(agency.id),
@@ -101,6 +127,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
               <field.FieldInput
                 label="Grant Number"
                 required
+                disabled={isDisabled("grantNumber")}
                 onBlur={() => void handleGrantNumberBlur()}
               />
               {nsfLookupStatus === "pending" ? (
@@ -116,19 +143,32 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
         </form.AppField>
 
         <form.AppField name={`grants[${index}].title`}>
-          {(field) => <field.FieldInput label="Grant Title" required />}
+          {(field) => (
+            <field.FieldInput
+              label="Grant Title"
+              required
+              disabled={isDisabled("title")}
+            />
+          )}
         </form.AppField>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <form.AppField name={`grants[${index}].piName`}>
-          {(field) => <field.FieldInput label="PI Name" required />}
+          {(field) => (
+            <field.FieldInput
+              label="PI Name"
+              required
+              disabled={isDisabled("piName")}
+            />
+          )}
         </form.AppField>
 
         <form.AppField name={`grants[${index}].isPending`}>
           {(field) => (
             <field.FieldRadio
               required
+              disabled={isDisabled("isPending")}
               label="Is this grant pending?"
               options={[
                 { value: true, label: "Yes" },
@@ -150,6 +190,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
                   <field.FieldDatePicker
                     label="Start Date"
                     required={requireAwardDetails}
+                    disabled={isDisabled("beginDate")}
                   />
                 )}
               </form.AppField>
@@ -159,6 +200,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
                   <field.FieldDatePicker
                     label="End Date"
                     required={requireAwardDetails}
+                    disabled={isDisabled("endDate")}
                   />
                 )}
               </form.AppField>
@@ -170,6 +212,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
                   <field.FieldSelect
                     label="Field of Science"
                     required
+                    disabled={isDisabled("primaryFosTypeId")}
                     placeholder="-- Please select one --"
                     options={fosTypes.map((fos) => ({
                       value: String(fos.id),
@@ -184,6 +227,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
                   <field.FieldInput
                     label="Awarded Amount"
                     required={requireAwardDetails}
+                    disabled={isDisabled("awardedAmount")}
                     placeholder="Enter awarded amount"
                     onBlur={(e) =>
                       field.handleChange(formatAsCurrency(e.target.value))
@@ -202,6 +246,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
             <field.FieldInput
               label="Program Officer Name"
               required
+              disabled={isDisabled("programOfficerName")}
               placeholder="Enter program officer name"
             />
           )}
@@ -212,6 +257,7 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
             <field.FieldInput
               label="Program Officer Email"
               required
+              disabled={isDisabled("programOfficerEmail")}
               placeholder="Enter valid email"
             />
           )}
@@ -224,15 +270,18 @@ export function GrantFields({ form, index, onRemove }: GrantFieldsProps) {
             label="Explanation"
             description="Please explain how this supporting grant is related to your project. If the grant supports more than one ACCESS project, explain how your work is different from the existing projects."
             required
+            disabled={isDisabled("comments")}
             rows={4}
             placeholder="Enter your explanation"
           />
         )}
       </form.AppField>
 
-      <Button type="button" variant="destructive" onClick={onRemove}>
-        Remove
-      </Button>
+      {onRemove ? (
+        <Button type="button" variant="destructive" onClick={onRemove}>
+          Remove
+        </Button>
+      ) : null}
     </div>
   );
 }

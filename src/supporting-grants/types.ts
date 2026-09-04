@@ -22,6 +22,12 @@ export type GrantFieldName =
   | "programOfficerEmail"
   | "comments";
 
+/**
+ * Every field GrantFields renders an input for. A superset of GrantFieldName,
+ * which covers only the text-ish fields the NSF lookup can fill in.
+ */
+export type GrantFormFieldName = GrantFieldName | "isPending";
+
 export interface SupportingGrant {
   id?: number | string;
   fundingAgencyId: number | string | null;

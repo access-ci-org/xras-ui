@@ -5,8 +5,10 @@ import {
   addResourceAtom,
   addUserAtom,
   apiStateAtom,
+  closeGrantModalAtom,
   closeUsageDetailModalAtom,
   deleteActionAtom,
+  editGrantAtom,
   errorAtom,
   fetchProjectDetailAtom,
   fetchProjectsListAtom,
@@ -16,6 +18,7 @@ import {
   projectsListAtom,
   resetResourcesAtom,
   resetUsersAtom,
+  saveGrantAtom,
   saveResourcesAtom,
   saveUsersAtom,
   setRequestAtom,
@@ -31,6 +34,7 @@ import {
   toggleResourcesModalAtom,
   toggleUsersResourcesAtom,
   usernameAtom,
+  type GrantEdits,
 } from "../atoms";
 import type { SearchedUser } from "../types";
 
@@ -92,10 +96,13 @@ export const useRequest = (requestId: number | string | null | undefined, grantN
   const request = useAtomValue(requestSelector);
   const fetchRequestDetail = useSetAtom(fetchRequestDetailAtom);
   const addResource = useSetAtom(addResourceAtom);
+  const closeGrantModal = useSetAtom(closeGrantModalAtom);
   const closeUsageDetailModal = useSetAtom(closeUsageDetailModalAtom);
   const deleteAction = useSetAtom(deleteActionAtom);
+  const editGrant = useSetAtom(editGrantAtom);
   const fetchUsageDetail = useSetAtom(fetchUsageDetailAtom);
   const resetResources = useSetAtom(resetResourcesAtom);
+  const saveGrant = useSetAtom(saveGrantAtom);
   const saveResources = useSetAtom(saveResourcesAtom);
   const setResourceQuestionValues = useSetAtom(setResourceQuestionValuesAtom);
   const setResourceRequest = useSetAtom(setResourceRequestAtom);
@@ -114,9 +121,12 @@ export const useRequest = (requestId: number | string | null | undefined, grantN
     request,
     addResource: (resourceId: number) =>
       requestId != null && addResource({ requestId: requestId as number, resourceId }),
+    closeGrantModal: () => requestId != null && closeGrantModal({ requestId: requestId as number }),
     closeUsageDetailModal: () => requestId != null && closeUsageDetailModal({ requestId: requestId as number }),
     deleteAction: (actionId: number) =>
       requestId != null && deleteAction({ actionId, requestId: requestId as number }),
+    editGrant: (grantId: number) =>
+      requestId != null && editGrant({ requestId: requestId as number, grantId }),
     openUsageDetailModal: (resourceRepositoryKey: string) =>
       request &&
       fetchUsageDetail({
@@ -125,6 +135,8 @@ export const useRequest = (requestId: number | string | null | undefined, grantN
         resourceRepositoryKey,
       }),
     resetResources: () => requestId != null && resetResources({ requestId: requestId as number }),
+    saveGrant: (grantId: number, values: GrantEdits) =>
+      requestId != null && saveGrant({ requestId: requestId as number, grantId, values }),
     saveResources: () => requestId != null && saveResources({ requestId: requestId as number }),
     setResourceQuestionValues: (resourceId: number, attributeSetId: number, values: (number | string)[]) =>
       requestId != null &&

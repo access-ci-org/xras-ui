@@ -5,6 +5,7 @@ import { routesAtom, type RouteOverrides } from "../shared/routes";
 import ActionsModal from "./ActionsModal";
 import ConfirmModal from "./ConfirmModal";
 import DeleteModal from "./DeleteModal";
+import Grants from "./Grants";
 import History from "./History";
 import InternationalUserRequest from "./InternationalUserRequest";
 import Overview from "./Overview";
@@ -43,6 +44,12 @@ export default function Request({
   const ineligibleUsers = (project.users || []).filter(
     (user) => user.eligibility === "no" && user.role !== "user",
   );
+
+  // Same idea as `hasInternationalUserRequests` below: gated on the key being
+  // *present*, not non-empty. An older host API's `get_projects` never sent a
+  // `grants` key at all (see `addRequest` in atoms.ts), and that has to hide
+  // the tab rather than show it empty.
+  const hasGrants = request.grants !== undefined;
 
   // The tab is gated on the key being *present*, not on it being non-empty:
   // the API omits it entirely for projects whose allocation needs no
@@ -126,6 +133,7 @@ export default function Request({
           {hasInternationalUserRequests && (
             <TabsTrigger value="international">Intl. Users</TabsTrigger>
           )}
+          {hasGrants && <TabsTrigger value="grants">Grants</TabsTrigger>}
           <TabsTrigger value="publications">Publications</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -141,6 +149,11 @@ export default function Request({
         {hasInternationalUserRequests && (
           <TabsContent value="international">
             <InternationalUserRequest project={project} requestId={requestId} />
+          </TabsContent>
+        )}
+        {hasGrants && (
+          <TabsContent value="grants">
+            <Grants grantNumber={grantNumber} requestId={requestId} />
           </TabsContent>
         )}
         <TabsContent value="publications">
