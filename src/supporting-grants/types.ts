@@ -80,6 +80,12 @@ export interface SupportingGrantsProps {
   fosTypes: FosType[];
   initialGrants?: SupportingGrantAttributes[];
   initialIncludeSupportingGrants?: boolean | null;
+  /**
+   * True when this request's PI already has another active request with no
+   * supporting grants. Renders an advisory warning when the user answers "No";
+   * never affects validity — the user is still permitted to submit.
+  */
+  hasUnsupportedActiveAllocation?: boolean;
   onSubmit?: (grants: SupportingGrant[]) => void;
   /**
    * Called with the current grants and include-supporting-grants state on

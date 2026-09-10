@@ -51,6 +51,7 @@ function SupportingGrantsForm({
   onChange,
   onValidityChange,
   setExternalSubmit,
+  hasUnsupportedActiveAllocation,
 }: Pick<
   SupportingGrantsProps,
   | "initialGrants"
@@ -59,6 +60,7 @@ function SupportingGrantsForm({
   | "onChange"
   | "onValidityChange"
   | "setExternalSubmit"
+  | "hasUnsupportedActiveAllocation"
 >) {
   const fundingAgencies = useAtomValue(fundingAgenciesAtom);
   const formSchema = useMemo(
@@ -152,6 +154,32 @@ function SupportingGrantsForm({
           )}
         </form.AppField>
       </div>
+      
+      {includeSupportingGrants === false && hasUnsupportedActiveAllocation && (
+        <div
+          role="alert"
+          className="mb-4 space-y-2 rounded-md border border-amber-400 bg-amber-50 p-3 text-amber-900"
+        >
+          <p>
+            Researchers are allowed only one project without a supporting grant, and you
+            currently have another active project without a supporting grant. Submitting
+            this allocation request without an associated supporting grant will likely
+            result in the request being denied.
+          </p>
+          <p>
+            For help, please contact:{" "}
+            <a
+              href="https://support.access-ci.org/help-ticket"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              https://support.access-ci.org/help-ticket
+            </a>
+            .
+          </p>
+        </div>
+      )}
 
       {includeSupportingGrants && (
         <form.Field name="grants" mode="array">
@@ -213,6 +241,7 @@ export function SupportingGrantsSection(
           onChange={props.onChange}
           onValidityChange={props.onValidityChange}
           setExternalSubmit={props.setExternalSubmit}
+          hasUnsupportedActiveAllocation={props.hasUnsupportedActiveAllocation}
         />
       </HydrateAtoms>
     </Provider>

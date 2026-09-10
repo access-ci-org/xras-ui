@@ -24,6 +24,11 @@ const VALIDATION_MESSAGE = "Supporting grants has validation errors.";
  * `initialIncludeSupportingGrants` are plain JS properties (too complex for
  * HTML attributes) and must be set before the element is inserted into the
  * document, since they're only read once, in connectedCallback.
+ *
+ * `hasUnsupportedActiveAllocation` is the exception: it depends on who holds
+ * the PI role, which the host page can change after this element has mounted,
+ * so assigning it re-renders. Re-rendering the existing root keeps React
+ * state, so grants the user has already entered survive the update.
  */
 export class SupportingGrantsElement extends HTMLElement {
   static formAssociated = true;
@@ -45,6 +50,7 @@ export class SupportingGrantsElement extends HTMLElement {
   private root: Root | null = null;
   private container: HTMLDivElement;
   private stylesheetsAttached = false;
+  private unsupportedActiveAllocation = false;
 
   constructor() {
     super();
@@ -100,16 +106,33 @@ export class SupportingGrantsElement extends HTMLElement {
     else this.setAttribute("include-grants-field-name", value);
   }
 
+  get hasUnsupportedActiveAllocation(): boolean {
+    return this.unsupportedActiveAllocation;
+  }
+
+  set hasUnsupportedActiveAllocation(value: boolean) {
+    const next = Boolean(value);
+    if (next === this.unsupportedActiveAllocation) return;
+
+    this.unsupportedActiveAllocation = next;
+    this.render();
+  }
+
   connectedCallback() {
     this.attachStylesheets();
     this.root = ReactDOM.createRoot(this.container);
-    this.root.render(
+    this.render();
+  }
+
+  private render() {
+    this.root?.render(
       <PortalContainerContext.Provider value={this.shadowRoot}>
         <SupportingGrantsSection
           fundingAgencies={this.fundingAgencies}
           fosTypes={this.fosTypes}
           initialGrants={this.initialGrants}
           initialIncludeSupportingGrants={this.initialIncludeSupportingGrants}
+          hasUnsupportedActiveAllocation={this.unsupportedActiveAllocation}
           onChange={this.handleChange}
           onValidityChange={this.handleValidityChange}
         />
