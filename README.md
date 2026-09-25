@@ -93,4 +93,57 @@ The Bootstrap namespacing described in the previous section prevents the Bootstr
 </script>
 ```
 
-When using the shadow DOM, the stylesheets are injected into the shadow root by `shadowTarget` and do not need to be added to the document head.
+When using the shadow DOM, the stylesheets (`tailwind.css`, `xras-ui.css` and `access.css`) are injected into the shadow root by `shadowTarget` and do not need to be added to the document head. The web font is the exception: Chromium ignores `@font-face` rules declared inside a shadow tree, so `shadowTarget` adds that one link to the document head itself.
+
+The `projects` component is styled entirely with Tailwind, whose reset lives in a cascade layer and so loses to any unlayered rules on the host page. It therefore renders in the shadow DOM unconditionally — pass the host element as `target` and it attaches the shadow root for you:
+
+```html
+<div id="projects-react"></div>
+<script type="module">
+  import { projects } from "https://esm.sh/@xras/ui@0.1.3?exports=projects";
+  projects({
+    target: document.getElementById("projects-react"),
+    username: "myuser",
+    routes: { projects_path: () => "/projects" },
+  });
+</script>
+```
+
+Pass `baseUrl` or `stylesheets` to override where those sheets are loaded from, or pass a `shadowTarget(...)` as `target` to build the shadow root yourself.
+
+Every mount function returns an `unmount` function. A host page that tears down
+the markup around a component — a modal, a turbo-style page swap — should call
+it, so the component's effects, timers and in-flight requests stop instead of
+running on against detached DOM:
+
+```html
+<script type="module">
+  import { projects } from "https://esm.sh/@xras/ui@0.1.3?exports=projects";
+  const unmount = projects({
+    target: document.getElementById("projects-react"),
+    username: "myuser",
+    routes: { projects_path: () => "/projects" },
+  });
+  // Later, before removing #projects-react from the page:
+  unmount();
+</script>
+```
+
+It unmounts React and nothing else: the shadow root and the stylesheet links
+injected into it stay, since `attachShadow` can't be undone and the web font
+link in the document head is shared by every mount on the page. So it's a
+teardown, not a reset — mounting again wants a fresh host element.
+
+Against the Vite dev server there is no `dist`, so `shadowTarget` links the sources the dev server can serve (`tailwind.css` and `bootstrap/access.scss`) and copies in the `<style>` tags Vite injects into the document head — CSS modules only exist in that form during development, and a shadow tree can't see the document head.
+
+## Testing
+
+Tests run on [Vitest](https://vitest.dev) with [Testing Library](https://testing-library.com) and [MSW](https://mswjs.io) for mocked network requests, in a jsdom environment. They're colocated with the source they cover, as `*.test.ts`/`*.test.tsx` files next to the module under test (for example, `src/shared/helpers/utils.test.ts` next to `src/shared/helpers/utils.tsx`); shared test setup and helpers live under `src/test/`.
+
+```sh
+npm test              # run the suite once
+npm run test:watch    # re-run on file changes
+npm run test:coverage # run once and print a coverage report
+```
+
+`npm run typecheck` runs the TypeScript compiler without emitting output, which is also useful on its own while iterating. CI (`.github/workflows/ci.yml`) runs `lint`, `typecheck`, `test:coverage`, and `build` on every pull request.

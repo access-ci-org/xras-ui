@@ -1,26 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XRAS User Interface Components</title>
-
-  </head>
-  <body>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    />
-    <div id="resource-catalog-react"></div>
-
-    <script type="module">
-      import { resourceCatalog } from "/src/main.jsx";
-      resourceCatalog({
-        allowedCategories: ["AI Capabilities", "Resource Type", "Resource Category", "NAIRR Pilot Opportunity"],
-        apiUrl: "https://submit-nairr.xras.org/resources.json",
-        target: document.getElementById("resource-catalog-react")
-      });
-    </script>
-
-  </body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>XRAS User Interface Components</title>
+    </head>
+    <body>
+        <div id="supporting-grants-react"></div>
+        <script type="module">
+            import { supportingGrants, shadowTarget } from "/src/main.jsx";
+            supportingGrants({
+                target: shadowTarget(
+                    document.getElementById("supporting-grants-react"),
+                ),
+                fundingAgencies: [
+                    { id: 1, name: "National Science Foundation", abbr: "NSF" },
+                    { id: 2, name: "Department of Energy", abbr: "DOE" },
+                ],
+                fosTypes: [
+                    { id: 1, name: "Computer Science" },
+                    { id: 2, name: "Physics" },
+                ],
+                // initialIncludeSupportingGrants: true,
+                initialGrants: [],
+                onSubmit: (grants) => console.log("submitted", grants),
+            });
+        </script>
+    </body>
 </html>

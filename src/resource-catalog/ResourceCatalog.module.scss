@@ -1,0 +1,17 @@
+/*
+ * Unlayered, so that these outrank `tailwind.css`'s base layer: see
+ * `@/shared/bootstrap5.module.scss`, which carries the rest of the reboot this
+ * catalog needs.
+ */
+.catalog {
+  /*
+   * Radix wraps each accordion trigger in an `h3` for the document outline. It
+   * is a layout box, not a heading, and the reboot's heading rules would give
+   * it a size, a weight and a bottom margin.
+   */
+  h3[data-state] {
+    color: inherit;
+    font: inherit;
+    margin: 0;
+  }
+}
