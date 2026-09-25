@@ -6,32 +6,11 @@ import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { GrantFields } from "./GrantFields";
 import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
-import { AWARDED_UNITS, formatAsCurrency } from "./currency";
+import { formatAsCurrency } from "./currency";
+import { emptyGrant } from "./empty-grant";
 import { parseInitialGrants } from "./parse-initial-grants";
 import { supportingGrantsFormSchema } from "./schema";
-import type {
-  SupportingGrant,
-  SupportingGrantsProps,
-  SupportingGrantsState,
-} from "./types";
-
-function emptyGrant(): SupportingGrant {
-  return {
-    fundingAgencyId: null,
-    grantNumber: "",
-    isPending: null,
-    title: "",
-    piName: "",
-    beginDate: "",
-    endDate: "",
-    primaryFosTypeId: null,
-    awardedAmount: "",
-    awardedUnits: AWARDED_UNITS,
-    programOfficerName: "",
-    programOfficerEmail: "",
-    comments: "",
-  };
-}
+import type { SupportingGrantsProps, SupportingGrantsState } from "./types";
 
 function HydrateAtoms({
   values,
@@ -47,6 +26,7 @@ function HydrateAtoms({
 function SupportingGrantsForm({
   initialGrants,
   initialIncludeSupportingGrants,
+  applyNsfLock,
   onSubmit,
   onChange,
   onValidityChange,
@@ -55,6 +35,7 @@ function SupportingGrantsForm({
   SupportingGrantsProps,
   | "initialGrants"
   | "initialIncludeSupportingGrants"
+  | "applyNsfLock"
   | "onSubmit"
   | "onChange"
   | "onValidityChange"
@@ -158,6 +139,7 @@ function SupportingGrantsForm({
                   key={index}
                   form={form}
                   index={index}
+                  applyNsfLock={applyNsfLock}
                   onRemove={() => grantsField.removeValue(index)}
                 />
               ))}
@@ -193,6 +175,7 @@ export function SupportingGrantsSection(
         <SupportingGrantsForm
           initialGrants={props.initialGrants}
           initialIncludeSupportingGrants={props.initialIncludeSupportingGrants}
+          applyNsfLock={props.applyNsfLock}
           onSubmit={props.onSubmit}
           onChange={props.onChange}
           onValidityChange={props.onValidityChange}

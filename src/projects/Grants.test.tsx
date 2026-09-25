@@ -60,6 +60,7 @@ function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
     returnedForCorrections: false,
     returnedForCorrectionsNotes: "",
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     startDate: "2025-01-01",
@@ -132,6 +133,8 @@ function renderGrants({
       [requestId]: makeRequest({ requestId, grants, ...requestOverrides }),
     },
     username: "testuser",
+    fundingAgencies: [],
+    fosTypes: [],
   });
   return {
     store,
@@ -217,23 +220,47 @@ describe("Grants (compact listing)", () => {
 });
 
 describe("Grants (edit modal)", () => {
-  it("opens the supporting grants form with only the editable fields enabled", async () => {
+  // makeGrant() defaults isPending: false - already awarded - so only
+  // grantNumber and the pending radios stay locked (editableGrantFields in
+  // atoms.ts); everything else, including fields that used to be locked for
+  // every grant, is now editable.
+  it("opens the supporting grants form with only grantNumber and the pending answer locked, once the grant has been awarded", async () => {
     const user = userEvent.setup();
     renderGrants({ grants: [makeGrant()] });
 
     await openEditModal(user);
 
-    for (const label of ["Start Date", "End Date", "Program Officer Name", "Program Officer Email"]) {
+    for (const label of [
+      "Funding Agency",
+      "Grant Title",
+      "PI Name",
+      "Start Date",
+      "End Date",
+      "Field of Science",
+      "Awarded Amount",
+      "Program Officer Name",
+      "Program Officer Email",
+      "Explanation",
+    ]) {
       expect(screen.getByLabelText(label, { exact: false })).toBeEnabled();
     }
-    expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
-    expect(screen.getByRole("radio", { name: "No" })).toBeEnabled();
-    for (const label of ["Grant Number", "Grant Title", "PI Name", "Awarded Amount", "Explanation"]) {
-      expect(screen.getByLabelText(label, { exact: false })).toBeDisabled();
-    }
+    expect(screen.getByLabelText("Grant Number", { exact: false })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "Yes" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "No" })).toBeDisabled();
   });
 
-  it("saves a changed pending answer", async () => {
+  it("leaves every field, including grantNumber and the pending answer, enabled for a still-pending grant", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [makeGrant({ isPending: true })] });
+
+    await openEditModal(user);
+
+    expect(screen.getByLabelText("Grant Number", { exact: false })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "No" })).toBeEnabled();
+  });
+
+  it("saves a changed title on an already-awarded grant", async () => {
     const user = userEvent.setup();
     let body: any = null;
     server.use(
@@ -245,12 +272,70 @@ describe("Grants (edit modal)", () => {
     const { store } = renderGrants({ grants: [makeGrant({ isPending: false })] });
 
     await openEditModal(user);
-    await user.click(screen.getByRole("radio", { name: "Yes" }));
+    const title = screen.getByLabelText("Grant Title", { exact: false });
+    await user.clear(title);
+    await user.type(title, "A New Title");
     await user.click(screen.getByRole("button", { name: "Save Changes" }));
 
     await waitFor(() => expect(body).not.toBeNull());
-    expect(body.grants).toEqual([{ grantId: 1, isPending: true }]);
-    expect(store.get(apiStateAtom).requests[REQUEST_ID].grants![0].isPending).toBe(true);
+    expect(body.grants).toEqual([{ grantId: 1, title: "A New Title" }]);
+    expect(store.get(apiStateAtom).requests[REQUEST_ID].grants![0].title).toBe("A New Title");
+  });
+
+  it("saves a changed pending answer on a still-pending grant", async () => {
+    const user = userEvent.setup();
+    let body: any = null;
+    server.use(
+      http.post(SAVE_URL, async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    const { store } = renderGrants({ grants: [makeGrant({ isPending: true })] });
+
+    await openEditModal(user);
+    await user.click(screen.getByRole("radio", { name: "No" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body.grants).toEqual([{ grantId: 1, isPending: false }]);
+    expect(store.get(apiStateAtom).requests[REQUEST_ID].grants![0].isPending).toBe(false);
+  });
+
+  it("offers to mark a still-pending grant as not awarded, and removes it from state on confirmation", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(SAVE_URL, () => new HttpResponse(null, { status: 200 })),
+    );
+    const { store } = renderGrants({ grants: [makeGrant({ isPending: true })] });
+
+    await openEditModal(user);
+
+    expect(
+      screen.queryByRole("button", { name: "Yes, Grant Was Not Awarded" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Grant Was Not Awarded" }));
+    expect(
+      screen.getByText(/Are you sure this grant was never awarded/),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Yes, Grant Was Not Awarded" }));
+
+    await waitFor(() =>
+      expect(store.get(apiStateAtom).requests[REQUEST_ID].grants).toEqual([]),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("does not offer to mark an already-awarded grant as not awarded", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [makeGrant({ isPending: false })] });
+
+    await openEditModal(user);
+
+    expect(
+      screen.queryByRole("button", { name: "Grant Was Not Awarded" }),
+    ).not.toBeInTheDocument();
   });
 
   it("prefills the form from the grant and offers no add or remove controls", async () => {
@@ -381,6 +466,66 @@ describe("Grants (edit modal)", () => {
     const poName = screen.getByLabelText("Program Officer Name", { exact: false });
     await user.clear(poName);
     await user.type(poName, "New PO");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(called).toBe(false);
+  });
+});
+
+describe("Grants (add grant modal)", () => {
+  const addGrantButton = () => screen.getByRole("button", { name: "Add Supporting Grant" });
+
+  it("offers an Add Supporting Grant button to a manager on the current request", () => {
+    renderGrants({ grants: [] });
+
+    expect(addGrantButton()).toBeInTheDocument();
+  });
+
+  it("does not offer an Add Supporting Grant button to a non-manager", () => {
+    renderGrants({ grants: [], role: "user" });
+
+    expect(screen.queryByRole("button", { name: "Add Supporting Grant" })).not.toBeInTheDocument();
+  });
+
+  it("hides the Add Supporting Grant button for a manager viewing a superseded (non-current) request", () => {
+    renderGrants({ grants: [], role: "pi", requestId: 556, currentRequestId: 555 });
+
+    expect(screen.queryByRole("button", { name: "Add Supporting Grant" })).not.toBeInTheDocument();
+  });
+
+  it("opens a blank Add Supporting Grant form", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [] });
+
+    await user.click(addGrantButton());
+    await screen.findByRole("dialog");
+
+    expect(screen.getByRole("heading", { name: "Add Supporting Grant" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Grant Number", { exact: false })).toHaveValue("");
+    expect(screen.getByLabelText("Grant Number", { exact: false })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Add Grant" })).toBeInTheDocument();
+  });
+
+  // The full happy-path submission - filling in every field, including the
+  // Funding Agency and Field of Science selects, and asserting the posted
+  // body - is covered end-to-end in AddGrantModal.test.tsx, where the fixture
+  // setup for the selects' option lists lives; this file only pins that
+  // Grants wires the button and modal up.
+  it("Cancel closes the Add Supporting Grant modal without saving", async () => {
+    const user = userEvent.setup();
+    let called = false;
+    server.use(
+      http.post(SAVE_URL, () => {
+        called = true;
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    renderGrants({ grants: [] });
+
+    await user.click(addGrantButton());
+    await screen.findByRole("dialog");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());

@@ -20,10 +20,11 @@ const VALIDATION_MESSAGE = "Supporting grants has validation errors.";
  * <form>'s native submission and constraint validation even though its
  * inputs live outside the light DOM.
  *
- * `fundingAgencies`, `fosTypes`, `initialGrants`, and
- * `initialIncludeSupportingGrants` are plain JS properties (too complex for
- * HTML attributes) and must be set before the element is inserted into the
- * document, since they're only read once, in connectedCallback.
+ * `fundingAgencies`, `fosTypes`, `initialGrants`,
+ * `initialIncludeSupportingGrants`, and `applyNsfLock` are plain JS properties
+ * (too complex for HTML attributes) and must be set before the element is
+ * inserted into the document, since they're only read once, in
+ * connectedCallback.
  */
 export class SupportingGrantsElement extends HTMLElement {
   static formAssociated = true;
@@ -36,6 +37,8 @@ export class SupportingGrantsElement extends HTMLElement {
   fosTypes: FosType[] = [];
   initialGrants?: SupportingGrantAttributes[];
   initialIncludeSupportingGrants?: boolean | null;
+  /** Set to false to let an NSF grant's details be hand-edited here anyway - see GrantFields' `applyNsfLock`. */
+  applyNsfLock = true;
   /** Overrides where stylesheet hrefs are resolved from; defaults to this bundle's own directory, matching shadowTarget(). */
   baseUrl: string | null = null;
   /** Stylesheet hrefs (relative to baseUrl, or absolute) to link into the element's shadow root. */
@@ -110,6 +113,7 @@ export class SupportingGrantsElement extends HTMLElement {
           fosTypes={this.fosTypes}
           initialGrants={this.initialGrants}
           initialIncludeSupportingGrants={this.initialIncludeSupportingGrants}
+          applyNsfLock={this.applyNsfLock}
           onChange={this.handleChange}
           onValidityChange={this.handleValidityChange}
         />

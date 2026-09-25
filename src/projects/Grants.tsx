@@ -1,17 +1,20 @@
+import { Button } from "@/components/ui/button";
 import Alert from "../shared/Alert";
+import AddGrantModal from "./AddGrantModal";
 import Grant from "./Grant";
 import GrantEditModal from "./GrantEditModal";
 import { useProject, useRequest } from "./helpers/hooks";
 
-// Managers may edit begin/end date and program officer name/email; everything
-// else on a grant is read-only here (see GRANT_EDITABLE_FIELDS in atoms.ts,
-// enforced again server-side by save_grants in xras_submit_access).
+// Managers may edit most fields on a grant; grantNumber and the pending
+// answer lock once an existing grant has been awarded (see
+// editableGrantFields in atoms.ts, enforced again server-side by
+// save_grants in xras_submit_access).
 const MANAGER_ROLES = ["pi", "co_pi", "allocation_manager"];
 
 export default function Grants({ grantNumber, requestId }: { grantNumber: string; requestId?: number }) {
   const { project } = useProject(grantNumber);
   const effectiveRequestId = requestId ?? project?.currentRequestId ?? undefined;
-  const { request, editGrant, statuses } = useRequest(effectiveRequestId, grantNumber);
+  const { request, editGrant, statuses, toggleAddGrantModal } = useRequest(effectiveRequestId, grantNumber);
 
   if (!project || !request || project.error || request.error) return null;
 
@@ -49,7 +52,15 @@ export default function Grants({ grantNumber, requestId }: { grantNumber: string
         ))
       )}
       {canEdit && effectiveRequestId != null && (
-        <GrantEditModal grantNumber={grantNumber} requestId={effectiveRequestId} />
+        <>
+          <div className="mt-2">
+            <Button type="button" variant="outline" onClick={() => toggleAddGrantModal()}>
+              Add Supporting Grant
+            </Button>
+          </div>
+          <GrantEditModal grantNumber={grantNumber} requestId={effectiveRequestId} />
+          <AddGrantModal grantNumber={grantNumber} requestId={effectiveRequestId} />
+        </>
       )}
     </>
   );

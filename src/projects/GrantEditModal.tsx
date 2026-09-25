@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Provider, createStore, type WritableAtom } from "jotai";
+import { useMemo, useState } from "react";
+import { Provider, createStore, useAtomValue, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 
 import { useAppForm } from "@/components/form";
@@ -19,41 +19,21 @@ import { grantEditFormSchema } from "../supporting-grants/schema";
 import type {
   FosType,
   FundingAgency,
-  GrantFormFieldName,
   SupportingGrant,
   SupportingGrantsState,
 } from "../supporting-grants/types";
 import Alert from "../shared/Alert";
 import { formatDate } from "../shared/helpers/utils";
 import {
-  GRANT_EDITABLE_FIELDS,
-  GRANT_EDITABLE_TEXT_FIELDS,
+  ALL_GRANT_FIELDS,
+  copyGrantField,
+  editableGrantFields,
+  grantFosTypesAtom,
+  grantFundingAgenciesAtom,
   type GrantEdits,
 } from "./atoms";
 import { useRequest } from "./helpers/hooks";
 import type { Grant, Request } from "./types";
-
-// Every field GrantFields renders, so the disabled set below can be derived
-// from GRANT_EDITABLE_FIELDS rather than maintained as a second list that
-// could drift from it.
-const ALL_GRANT_FORM_FIELDS: readonly GrantFormFieldName[] = [
-  "fundingAgencyId",
-  "grantNumber",
-  "title",
-  "piName",
-  "isPending",
-  "beginDate",
-  "endDate",
-  "primaryFosTypeId",
-  "awardedAmount",
-  "programOfficerName",
-  "programOfficerEmail",
-  "comments",
-];
-
-const DISABLED_GRANT_FIELDS = ALL_GRANT_FORM_FIELDS.filter(
-  (field) => !(GRANT_EDITABLE_FIELDS as readonly string[]).includes(field),
-);
 
 /**
  * A *warning*, not a blocking error: the request's own dates aren't always
@@ -99,26 +79,6 @@ const toSupportingGrant = (grant: Grant): SupportingGrant => ({
   comments: grant.comments ?? "",
 });
 
-// The funding agency and field of science selects are disabled here, so they
-// only ever need to display the grant's own value - which the projects
-// payload already carries by name. That saves the modal from needing the full
-// lookup lists the submission form is handed.
-const grantFundingAgencies = (grant: Grant): FundingAgency[] =>
-  grant.fundingAgencyId == null
-    ? []
-    : [
-        {
-          id: grant.fundingAgencyId,
-          name: grant.fundingAgencyName ?? grant.fundingAgencyAbbr ?? "",
-          abbr: grant.fundingAgencyAbbr ?? "",
-        },
-      ];
-
-const grantFosTypes = (grant: Grant): FosType[] =>
-  grant.primaryFosTypeId == null
-    ? []
-    : [{ id: grant.primaryFosTypeId, name: grant.primaryFosType ?? "" }];
-
 function HydrateAtoms({
   values,
   children,
@@ -135,21 +95,36 @@ function GrantEditForm({
   request,
   errors,
   saving,
+  fundingAgencies,
+  fosTypes,
   onCancel,
   onSave,
+  onNotAwarded,
 }: {
   grant: Grant;
   request: Request;
   errors?: string[];
   saving: boolean;
+  fundingAgencies: FundingAgency[];
+  fosTypes: FosType[];
   onCancel: () => void;
   onSave: (values: GrantEdits) => void;
+  onNotAwarded: () => void;
 }) {
   // GrantFields reads its select options from the supporting-grants module's
   // atoms, which live in their own store there. Scoping a store to just those
   // children leaves the surrounding My Projects atoms reachable from the rest
   // of the modal.
   const store = useMemo(() => createStore(), []);
+  const [confirmingNotAwarded, setConfirmingNotAwarded] = useState(false);
+
+  // Locked fields are derived from the grant's *persisted* isPending, not the
+  // form's in-progress one - a user who flips the "Is this grant pending?"
+  // radio can't unlock grantNumber/isPending for themselves mid-edit; the
+  // server enforces the same allowlist against the stored grant regardless.
+  const disabledFields = ALL_GRANT_FIELDS.filter(
+    (field) => !editableGrantFields(grant).includes(field),
+  );
 
   const form = useAppForm({
     defaultValues: {
@@ -164,8 +139,8 @@ function GrantEditForm({
     },
     onSubmit: ({ value }) => {
       const edited = value.grants[0];
-      const values: GrantEdits = { isPending: edited.isPending };
-      for (const field of GRANT_EDITABLE_TEXT_FIELDS) values[field] = edited[field];
+      const values: GrantEdits = {};
+      for (const field of editableGrantFields(grant)) copyGrantField(values, edited, field);
       onSave(values);
     },
   });
@@ -199,16 +174,14 @@ function GrantEditForm({
           <HydrateAtoms
             values={
               new Map<WritableAtom<any, any[], any>, unknown>([
-                [fundingAgenciesAtom, grantFundingAgencies(grant)],
-                [fosTypesAtom, grantFosTypes(grant)],
+                [fundingAgenciesAtom, fundingAgencies],
+                [fosTypesAtom, fosTypes],
               ])
             }
           >
-            <GrantFields
-              form={form}
-              index={0}
-              disabledFields={DISABLED_GRANT_FIELDS}
-            />
+            {/* applyNsfLock is left at its default, which is on: My Projects
+                always applies the NSF lock. */}
+            <GrantFields form={form} index={0} disabledFields={disabledFields} />
           </HydrateAtoms>
         </Provider>
 
@@ -227,6 +200,49 @@ function GrantEditForm({
             ) : null;
           }}
         </form.Subscribe>
+
+        {/* Only offered while the grant is still awaiting an award decision -
+            once it's awarded there's nothing to walk back (see
+            editableGrantFields/GRANT_AWARDED_LOCKED_FIELDS). */}
+        {grant.isPending === true ? (
+          <div className="mt-4 border-t pt-4">
+            {confirmingNotAwarded ? (
+              <Alert color="warning">
+                <p>
+                  Are you sure this grant was never awarded? It will be
+                  removed from this request, and this can&apos;t be undone.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={saving}
+                    onClick={onNotAwarded}
+                  >
+                    {saving ? "Saving..." : "Yes, Grant Was Not Awarded"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={saving}
+                    onClick={() => setConfirmingNotAwarded(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </Alert>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={() => setConfirmingNotAwarded(true)}
+              >
+                Grant Was Not Awarded
+              </Button>
+            )}
+          </div>
+        ) : null}
       </DialogBody>
 
       <DialogFooter>
@@ -248,7 +264,12 @@ export default function GrantEditModal({
   grantNumber: string;
   requestId: number;
 }) {
-  const { request, closeGrantModal, saveGrant, statuses } = useRequest(requestId, grantNumber);
+  const { request, closeGrantModal, notAwarded, saveGrant, statuses } = useRequest(
+    requestId,
+    grantNumber,
+  );
+  const fundingAgencies = useAtomValue(grantFundingAgenciesAtom);
+  const fosTypes = useAtomValue(grantFosTypesAtom);
 
   const grant = request?.grants?.find((g) => g.grantId == request.editGrantId);
 
@@ -269,8 +290,11 @@ export default function GrantEditModal({
             request={request}
             errors={request.grantsErrors}
             saving={request.grantsStatus == statuses.pending}
+            fundingAgencies={fundingAgencies}
+            fosTypes={fosTypes}
             onCancel={() => closeGrantModal()}
             onSave={(values) => saveGrant(grant.grantId, values)}
+            onNotAwarded={() => notAwarded(grant.grantId)}
           />
         ) : null}
       </DialogContent>

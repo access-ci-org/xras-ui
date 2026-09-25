@@ -28,6 +28,7 @@ function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
     returnedForCorrections: false,
     returnedForCorrectionsNotes: "",
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     startDate: null,
@@ -85,6 +86,8 @@ function renderRequest({
     projects: { [GRANT]: makeProject({ internationalUserRequests, tab: tab || "overview" }) },
     requests: { [REQUEST_ID]: makeRequest() },
     username: "ada",
+    fundingAgencies: [],
+    fosTypes: [],
   });
   return render(
     <Provider store={store}>

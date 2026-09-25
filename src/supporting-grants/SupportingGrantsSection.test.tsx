@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
+import { server } from "@/test/msw";
 import { SupportingGrantsSection } from "./SupportingGrantsSection";
 import type { SupportingGrant, SupportingGrantAttributes, SupportingGrantsProps } from "./types";
+
+const AWARD_API = /research\.gov\/awardapi-service/;
 
 const AGENCIES = [
   { id: 1, name: "National Science Foundation", abbr: "NSF" },
@@ -57,6 +61,27 @@ function field(index: number, name: string) {
 
 function grantCount() {
   return document.querySelectorAll(".supporting-grant").length;
+}
+
+// attributes() is an NSF grant with a grant number, so every mount of one has
+// GrantFields ask NSF's award database whether to lock it (applyNsfLock in
+// GrantFields.tsx). Answer "no such award" by default - the answer that
+// changes nothing about these fields - and let the lock's own block below
+// prepend a real award where that is the point of the test.
+beforeEach(() => {
+  server.use(http.get(AWARD_API, () => HttpResponse.json({ response: { award: [] } })));
+});
+
+function serveNsfAward() {
+  server.use(
+    http.get(AWARD_API, () =>
+      HttpResponse.json({
+        response: {
+          award: [{ title: "A Study of Studies", pdPIName: "Ada Lovelace" }],
+        },
+      }),
+    ),
+  );
 }
 
 describe("SupportingGrantsSection", () => {
@@ -184,7 +209,11 @@ describe("SupportingGrantsSection", () => {
       const onChange = vi.fn();
       renderSection({
         onChange,
-        initialGrants: [attributes()],
+        // Not NSF, which keeps the NSF lock (on by default) out of a test
+        // about editing fields altogether, rather than leaving it resting on
+        // what the award endpoint happens to answer. See the applyNsfLock
+        // block below for the lock itself.
+        initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
 
@@ -224,7 +253,8 @@ describe("SupportingGrantsSection", () => {
       const onValidityChange = vi.fn();
       renderSection({
         onValidityChange,
-        initialGrants: [attributes()],
+        // Not NSF, so the lock leaves the fields editable - see above.
+        initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
       await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
@@ -285,7 +315,8 @@ describe("SupportingGrantsSection", () => {
       const setExternalSubmit = vi.fn();
       renderSection({
         setExternalSubmit,
-        initialGrants: [attributes()],
+        // Not NSF, so the lock leaves the fields editable - see above.
+        initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
       await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function));
@@ -293,6 +324,34 @@ describe("SupportingGrantsSection", () => {
       await user.clear(field(0, "programOfficerEmail")!);
 
       await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeNull());
+    });
+  });
+
+  // The lock itself is GrantFields' (see GrantFields.test.tsx); what matters
+  // here is that the prop reaches it, and that a client which says nothing
+  // gets the lock rather than not getting it.
+  describe("applyNsfLock", () => {
+    it("locks an NSF grant's fields by default, once NSF confirms the number", async () => {
+      serveNsfAward();
+      renderSection({
+        initialGrants: [attributes()],
+        initialIncludeSupportingGrants: true,
+      });
+
+      expect(await screen.findByText(/populated from NSF's records/)).toBeInTheDocument();
+      expect(field(0, "title")).toBeDisabled();
+    });
+
+    it("leaves them editable for a client that opts out", async () => {
+      serveNsfAward();
+      renderSection({
+        applyNsfLock: false,
+        initialGrants: [attributes()],
+        initialIncludeSupportingGrants: true,
+      });
+
+      await waitFor(() => expect(field(0, "title")).toBeEnabled());
+      expect(screen.queryByText(/populated from NSF's records/)).not.toBeInTheDocument();
     });
   });
 

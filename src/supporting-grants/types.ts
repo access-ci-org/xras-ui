@@ -86,6 +86,12 @@ export interface SupportingGrantsProps {
   fosTypes: FosType[];
   initialGrants?: SupportingGrantAttributes[];
   initialIncludeSupportingGrants?: boolean | null;
+  /**
+   * Whether to apply the NSF lock - see GrantFields' own `applyNsfLock`. On by
+   * default; here only so a client rendering these components itself can opt
+   * out, since nothing on the server enforces it.
+   */
+  applyNsfLock?: boolean;
   onSubmit?: (grants: SupportingGrant[]) => void;
   /**
    * Called with the current grants and include-supporting-grants state on

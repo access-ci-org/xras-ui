@@ -96,6 +96,7 @@ function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
     returnedForCorrections: false,
     returnedForCorrectionsNotes: "",
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     startDate: null,
@@ -134,6 +135,8 @@ function renderResources(requestOverrides: Partial<RequestType> = {}) {
     },
     requests: { [REQUEST_ID]: makeRequest(requestOverrides) },
     username: "ada",
+    fundingAgencies: [],
+    fosTypes: [],
   });
   return {
     store,

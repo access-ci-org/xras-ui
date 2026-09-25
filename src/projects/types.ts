@@ -149,6 +149,8 @@ export type Request = {
   returnedForCorrections: boolean;
   returnedForCorrectionsNotes: string;
   showActionsModal: boolean;
+  /** Whether AddGrantModal is open for this request - see Grants.tsx. */
+  showAddGrantModal: boolean;
   showConfirmModal: boolean;
   showResourcesModal: boolean;
   startDate?: string | null;
