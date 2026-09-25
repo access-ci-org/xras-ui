@@ -1,6 +1,6 @@
 # XRAS User Interface Components
 
-User interface components for XRAS implemented in JavaScript using React.
+User interface components for XRAS implemented in JavaScript/TypeScript using React, [Jotai](https://jotai.org) for state, and [Tailwind CSS](https://tailwindcss.com) for styling.
 
 ## Resource Catalog
 
@@ -11,7 +11,7 @@ This component provides a user interface to browse available Resources and their
 ```html
 <div id="resource-catalog-react"></div>
 <script type="module">
-  import { resourceCatalog } from "https://esm.sh/@xras/ui@0.1.3?exports=resourceCatalog";
+  import { resourceCatalog } from "https://esm.sh/@xras/ui@0.35.3?exports=resourceCatalog";
   resourceCatalog({
     apiUrl: "/path/to/catalog.json",
     allowedCategories: [],
@@ -37,79 +37,100 @@ This component provides a user interface to browse available Resources and their
 
 Note: Avoid combining `allowedCategories` and `excludedCategories`, or `allowedFilters` and `excludedFilters`. If an invalid combination is found, it will default to what is specified in the `allowed*` options
 
-## CSS
+## Supporting Grants field
 
-The XRAS user interface components rely on Bootstrap 5 styles as well as their own stylesheet. How these stylesheets should be included depends on whether the site already uses Bootstrap 5.
+There are two ways to embed the supporting grants editor, depending on how the surrounding form is built.
 
-### Sites with Bootstrap 5
+### As a form-associated custom element
 
-Sites that are already using Bootstrap 5 can simply add the component CSS in the document head:
-
-```html
-<link rel="stylesheet" href="https://esm.sh/@xras/ui@0.1.3/dist/xras-ui.css" />
-```
-
-### Sites without Bootstrap 5
-
-Sites that do not use Bootstrap 5 should also include `bootstrap.css`:
+`<supporting-grants-field>` participates in an ancestor `<form>`'s native submission and constraint validation like any other input, even though its fields live in a shadow root. This is the fit for a server-rendered form (for example, a Rails form) that expects a plain field among its other inputs.
 
 ```html
-<link
-  rel="stylesheet"
-  href="https://esm.sh/@xras/ui@0.1.3/dist/bootstrap.css"
-/>
-<link rel="stylesheet" href="https://esm.sh/@xras/ui@0.1.3/dist/xras-ui.css" />
-```
-
-In order for the Bootstrap styles to be applied, the component target element needs to be wrapped in elements with Bootstrap classes. These classes act as a namespace for the Bootstrap classes to prevent conflicts with the rest of the site's CSS:
-
-```html
-<div class="bootstrap">
-  <div class="bootstrap-variables">
-    <div class="bootstrap-fonts">
-      <div id="resource-catalog-react"></div>
-    </div>
-  </div>
-</div>
-```
-
-The `bootstrap-variables` and `bootstrap-fonts` classes on the inner wrapper are used to apply Bootstrap's default CSS variables and fonts, respectively, to the components. These classes are optional and can be omitted if the site defines its own typography rules and Bootstrap CSS variables.
-
-### Shadow DOM
-
-The Bootstrap namespacing described in the previous section prevents the Bootstrap styles from interfering with the host site's styles, but it does not prevent the host site's stylesheet from applying to the components. For complete isolation of the components from the host site's styles, render the component in the shadow DOM using the `shadowTarget` helper function:
-
-```html
-<div id="resource-catalog-react"></div>
+<form>
+  <supporting-grants-field name="supporting_grants"></supporting-grants-field>
+</form>
 <script type="module">
-  import {
-    resourceCatalog,
-    shadowTarget,
-  } from "https://esm.sh/@xras/ui@0.1.3?exports=resourceCatalog,shadowTarget";
-  resourceCatalog({
-    apiUrl: "/path/to/catalog.json",
-    target: shadowTarget(document.getElementById("resource-catalog-react")),
+  import { defineSupportingGrantsElement } from "https://esm.sh/@xras/ui@0.35.3?exports=defineSupportingGrantsElement";
+
+  await defineSupportingGrantsElement();
+
+  const field = document.querySelector("supporting-grants-field");
+  // Too complex for HTML attributes, so set as properties before the
+  // element is inserted into the document — they're only read once, in
+  // connectedCallback.
+  field.fundingAgencies = [{ id: 1, name: "National Science Foundation" }];
+  field.fosTypes = [{ id: 1, name: "Computer Science" }];
+</script>
+```
+
+`defineSupportingGrantsElement(tagName?)` takes an optional custom tag name (default `supporting-grants-field`) and polyfills `ElementInternals` first on browsers that lack it natively (Safari < 16.4, Firefox < 93, Chrome/Edge < 77). The element also accepts `baseUrl` and `stylesheets` properties with the same meaning as the mount functions' options, described below.
+
+### As a mount function
+
+`supportingGrants` follows the same `target`-based pattern as the library's other components, driving an external form (or any other state) through the `onChange`, `onValidityChange`, and `setExternalSubmit` callbacks instead of participating in a native `<form>`:
+
+```html
+<div id="supporting-grants-react"></div>
+<script type="module">
+  import { supportingGrants } from "https://esm.sh/@xras/ui@0.35.3?exports=supportingGrants";
+  supportingGrants({
+    target: document.getElementById("supporting-grants-react"),
+    fundingAgencies: [{ id: 1, name: "National Science Foundation", abbr: "NSF" }],
+    fosTypes: [{ id: 1, name: "Computer Science" }],
+    onChange: ({ grants, includeSupportingGrants }) => {
+      /* keep an external representation of the data in sync */
+    },
+    onValidityChange: (isValid) => {
+      /* gate an external submit action on the current state */
+    },
   });
 </script>
 ```
 
-When using the shadow DOM, the stylesheets (`tailwind.css`, `xras-ui.css` and `access.css`) are injected into the shadow root by `shadowTarget` and do not need to be added to the document head. The web font is the exception: Chromium ignores `@font-face` rules declared inside a shadow tree, so `shadowTarget` adds that one link to the document head itself.
+## CSS
 
-The `projects` component is styled entirely with Tailwind, whose reset lives in a cascade layer and so loses to any unlayered rules on the host page. It therefore renders in the shadow DOM unconditionally — pass the host element as `target` and it attaches the shadow root for you:
+The components carry no Bootstrap dependency and require no CSS setup on the host page. Every mount function (and the `supporting-grants-field` custom element) renders into its own isolated [Shadow DOM](#shadow-dom) and, by default, automatically links the stylesheets it needs — `tailwind.css`, the compiled component styles, and the ACCESS theme palette — resolved from the URL of the `@xras/ui` module itself. The host page's styles never leak in, and the components' styles never leak out.
+
+```html
+<div id="resource-catalog-react"></div>
+<script type="module">
+  import { resourceCatalog } from "https://esm.sh/@xras/ui@0.35.3?exports=resourceCatalog";
+  resourceCatalog({
+    apiUrl: "/path/to/catalog.json",
+    target: document.getElementById("resource-catalog-react"),
+  });
+</script>
+```
+
+Two options let you override where those stylesheets come from, if you're self-hosting `dist/` somewhere other than where the JS module was loaded from:
+
+- `baseUrl` — the base URL the default stylesheet hrefs are resolved against. Defaults to the directory the `@xras/ui` module itself was loaded from.
+- `stylesheets` — an explicit list of stylesheet URLs to link into the shadow root instead of the defaults.
+
+The web font is the one exception: Chromium ignores `@font-face` rules declared inside a shadow tree, so every mount function adds that one link to the document `<head>` itself instead.
+
+### Shadow DOM
+
+Every component is styled entirely with Tailwind, whose reset lives in a cascade layer and so loses to any unlayered rules on the host page. Components therefore render in the shadow DOM unconditionally — pass the host element as `target` and the mount function attaches the shadow root for you, as in the examples above.
+
+Mount functions build the shadow root for you from `baseUrl`/`stylesheets` as needed, but a host page that wants to inject additional stylesheets beyond those — its own icon font, say — can build the shadow root itself with the `shadowTarget` helper and pass the result as `target`:
 
 ```html
 <div id="projects-react"></div>
 <script type="module">
-  import { projects } from "https://esm.sh/@xras/ui@0.1.3?exports=projects";
+  import {
+    projects,
+    shadowTarget,
+  } from "https://esm.sh/@xras/ui@0.35.3?exports=projects,shadowTarget";
   projects({
-    target: document.getElementById("projects-react"),
+    target: shadowTarget(document.getElementById("projects-react"), {
+      extraStylesheets: ["/fonts/icons.css"],
+    }),
     username: "myuser",
     routes: { projects_path: () => "/projects" },
   });
 </script>
 ```
-
-Pass `baseUrl` or `stylesheets` to override where those sheets are loaded from, or pass a `shadowTarget(...)` as `target` to build the shadow root yourself.
 
 Every mount function returns an `unmount` function. A host page that tears down
 the markup around a component — a modal, a turbo-style page swap — should call
@@ -118,7 +139,7 @@ running on against detached DOM:
 
 ```html
 <script type="module">
-  import { projects } from "https://esm.sh/@xras/ui@0.1.3?exports=projects";
+  import { projects } from "https://esm.sh/@xras/ui@0.35.3?exports=projects";
   const unmount = projects({
     target: document.getElementById("projects-react"),
     username: "myuser",
