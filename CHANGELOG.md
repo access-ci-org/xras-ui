@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.36.0](https://github.com/access-ci-org/xras-ui/compare/v0.35.3...v0.36.0) (2026-09-25)
+
+
+### Features
+
+* **onramps-resource-catalog:** make API base URL configurable ([456cdad](https://github.com/access-ci-org/xras-ui/commit/456cdad311f9aea0f401cea6b90a1cb88bca367a))
+* **resources:** Add support for resource auto_approve_exchange rules ([7d56cbe](https://github.com/access-ci-org/xras-ui/commit/7d56cbeba9f3dafff39e4a1884a74929334bc3fb))
+* return unmount handler from renderShadow ([d7542a5](https://github.com/access-ci-org/xras-ui/commit/d7542a51a5532bd2dcf7f69071a7abe04da131f2))
+
+
+### Bug Fixes
+
+* **button:** update border and cursor styles ([4875ce5](https://github.com/access-ci-org/xras-ui/commit/4875ce55591de92c88125a05dc9bc4631f1883b4))
+* handle empty arrays in formatArray helper ([bbe0553](https://github.com/access-ci-org/xras-ui/commit/bbe0553d66fae1246d7c80716a0a1c90b4810e20))
+* **onramps-resource-catalog:** filter undefined info resource IDs ([8a00a7c](https://github.com/access-ci-org/xras-ui/commit/8a00a7cbe49413717d7e61cbce2bb1edda1f0b2f))
+* **onramps-resource-catalog:** guard against missing props in API ([859d82f](https://github.com/access-ci-org/xras-ui/commit/859d82fc1100ca95ad1c0cb0598aac6efa0903cc))
+* **projects:** do not overwrite an existing exchange action ID on failed ([a00a60f](https://github.com/access-ci-org/xras-ui/commit/a00a60f08b4e691a0af60edd0d1ea9e3b278e4f2))
+* **projects:** fix title attribute of delete button ([af66aab](https://github.com/access-ci-org/xras-ui/commit/af66aab05e293da9d451b21a6d47f8f4334bdc71))
+* **publications:** fix publication saving and improve tests ([0f741b8](https://github.com/access-ci-org/xras-ui/commit/0f741b87df953e76616682ad89031383e5a5d9c9))
+* **publications:** show user-facing alerts when requests fail ([2fb3ec8](https://github.com/access-ci-org/xras-ui/commit/2fb3ec81b9a65193eb6288d8d5dd98e7c5ac9a9f))
+* **utils:** correct and consolidate formatNumber helpers ([bdb972b](https://github.com/access-ci-org/xras-ui/commit/bdb972b14d483bb5d8cd0c128561ca46c4f6d86a))
+* **utils:** improve matching behavior of parseResourceName helper ([25d24c7](https://github.com/access-ci-org/xras-ui/commit/25d24c72f2b47c546d5052f8955e339f3e627277))
+
 ## [0.35.3](https://github.com/access-ci-org/xras-ui/compare/v0.35.2...v0.35.3) (2026-08-25)
 
 
