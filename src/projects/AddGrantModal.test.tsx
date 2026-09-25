@@ -98,23 +98,18 @@ async function selectOption(user: ReturnType<typeof userEvent.setup>, comboboxNa
   await user.click(await screen.findByRole("option", { name: optionName }));
 }
 
-// Uses the non-NSF agency deliberately: choosing NSF with a grant number
-// present has GrantFields look the number up at research.gov (to decide the
-// NSF lock, and again to autofill on blur) - that behavior belongs to
-// GrantFields.test.tsx, and an unmocked lookup would otherwise race this
-// test's own assertions.
+// Answers the pending question as Yes (still pending) deliberately: that's
+// the one answer that keeps this minimal, since grantNumber, the dates, the
+// awarded amount, and the program officer fields are all both hidden and
+// unrequired while a grant is pending (see GrantFields.test.tsx and
+// schema.test.ts). Uses the non-NSF agency too, so there's nothing here for
+// GrantFields' NSF lookup to key off of even once a grant number exists.
 async function fillOutMinimalGrant(user: ReturnType<typeof userEvent.setup>) {
   await selectOption(user, "Funding Agency", "Department of Energy");
-  await user.type(screen.getByLabelText("Grant Number", { exact: false }), "DOE-99999");
   await user.type(screen.getByLabelText("Grant Title", { exact: false }), "A New Grant");
   await user.type(screen.getByLabelText("PI Name", { exact: false }), "Ada Lovelace");
   await user.click(screen.getByRole("radio", { name: "Yes" }));
   await selectOption(user, "Field of Science", "Computer Science");
-  await user.type(screen.getByLabelText("Program Officer Name", { exact: false }), "Grace Hopper");
-  await user.type(
-    screen.getByLabelText("Program Officer Email", { exact: false }),
-    "ghopper@example.test",
-  );
   await user.type(
     screen.getByLabelText("Explanation", { exact: false }),
     "Supports the same research area.",
@@ -134,11 +129,17 @@ describe("AddGrantModal", () => {
     await screen.findByRole("dialog");
 
     expect(screen.getByRole("heading", { name: "Add Supporting Grant" })).toBeInTheDocument();
-    for (const label of ["Grant Number", "Grant Title", "PI Name", "Program Officer Name"]) {
+    for (const label of ["Grant Title", "PI Name"]) {
       const field = screen.getByLabelText(label, { exact: false });
       expect(field).toHaveValue("");
       expect(field).toBeEnabled();
     }
+    // Grant Number and Program Officer Name only mount once the pending
+    // question is answered as No - see GrantFields.test.tsx.
+    expect(screen.queryByLabelText("Grant Number", { exact: false })).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Program Officer Name", { exact: false }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
     expect(screen.getByRole("radio", { name: "No" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Add Grant" })).toBeInTheDocument();
@@ -171,7 +172,6 @@ describe("AddGrantModal", () => {
       expect(body.requestId).toBe(REQUEST_ID);
       expect(body.grants).toHaveLength(1);
       expect(body.grants[0].grantId).toBeUndefined();
-      expect(body.grants[0].grantNumber).toBe("DOE-99999");
       expect(body.grants[0].title).toBe("A New Grant");
       expect(body.grants[0].piName).toBe("Ada Lovelace");
       expect(body.grants[0].fundingAgencyId).toBe(20);
@@ -258,7 +258,15 @@ describe("AddGrantModal", () => {
     renderAddGrantModal();
     await screen.findByRole("dialog");
 
-    await user.type(screen.getByLabelText("Grant Number", { exact: false }), "NSF-12345");
+    // Grant Number only mounts once the pending question is answered as No.
+    // It also has to already look like a 7-digit NSF number: switching the
+    // funding agency to NSF clears anything that doesn't (GrantFields.tsx),
+    // which would otherwise wipe the field before the lock ever sees it.
+    await user.click(screen.getByRole("radio", { name: "No" }));
+    await user.type(
+      await screen.findByLabelText("Grant Number", { exact: false }),
+      "1234567",
+    );
     await selectOption(user, "Funding Agency", "National Science Foundation");
 
     expect(
@@ -279,7 +287,11 @@ describe("AddGrantModal", () => {
     renderAddGrantModal();
     await screen.findByRole("dialog");
 
-    await user.type(screen.getByLabelText("Grant Number", { exact: false }), "NSF-00000");
+    await user.click(screen.getByRole("radio", { name: "No" }));
+    await user.type(
+      await screen.findByLabelText("Grant Number", { exact: false }),
+      "0000000",
+    );
     await selectOption(user, "Funding Agency", "National Science Foundation");
 
     await waitFor(() => expect(lookups).toBe(1));

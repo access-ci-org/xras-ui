@@ -1,12 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { supportingGrantSchema, supportingGrantsFormSchema } from "./schema";
-import type { SupportingGrant } from "./types";
+import {
+  createSupportingGrantSchema,
+  createSupportingGrantsFormSchema,
+} from "./schema";
+import type { FundingAgency, SupportingGrant } from "./types";
 
 // The schema is what decides whether the surrounding <form> can submit at all
 // (element.tsx turns its verdict into ElementInternals.setValidity), so the
 // conditional rules are the ones worth pinning: which fields stop being
 // required while a grant is pending, and why answering "No" to the section's
 // own question must not fail on fields the user can no longer see.
+
+const fundingAgencies: FundingAgency[] = [
+  { id: 3, name: "National Science Foundation", abbr: "NSF" },
+  { id: 7, name: "Department of Energy", abbr: "DOE" },
+];
+
+const supportingGrantSchema = createSupportingGrantSchema(fundingAgencies);
+const supportingGrantsFormSchema =
+  createSupportingGrantsFormSchema(fundingAgencies);
 
 function grant(overrides: Partial<SupportingGrant> = {}): SupportingGrant {
   return {
@@ -89,27 +101,31 @@ describe("supportingGrantSchema", () => {
       ]);
     });
 
-    it("rejects a program officer email that is not an email", () => {
-      expect(issues(grant({ programOfficerEmail: "ghopper" }))).toContainEqual([
-        "programOfficerEmail",
-        "Enter a valid email",
+    it("caps the grant number at 40 characters regardless of pending status", () => {
+      const tooLong = "1".repeat(41);
+      expect(issues(grant({ fundingAgencyId: 7, isPending: true, grantNumber: tooLong }))).toContainEqual([
+        "grantNumber",
+        "Grant number must be 40 characters or fewer",
       ]);
-    });
-
-    it("reports a blank program officer email as missing rather than malformed", () => {
-      // The email check is piped after the required check, so an empty field
-      // gets the message that tells the user what to do.
-      expect(issues(grant({ programOfficerEmail: "" }))).toContainEqual([
-        "programOfficerEmail",
-        "This field is required",
+      expect(issues(grant({ fundingAgencyId: 7, grantNumber: tooLong }))).toContainEqual([
+        "grantNumber",
+        "Grant number must be 40 characters or fewer",
       ]);
     });
   });
 
   describe("fields required only once the grant is no longer pending", () => {
-    it("accepts a pending grant with no dates and no amount", () => {
+    it("accepts a pending grant with no dates, amount, grant number, or program officer info", () => {
       const result = supportingGrantSchema.safeParse(
-        grant({ isPending: true, beginDate: "", endDate: "", awardedAmount: "" }),
+        grant({
+          isPending: true,
+          beginDate: "",
+          endDate: "",
+          awardedAmount: "",
+          grantNumber: "",
+          programOfficerName: "",
+          programOfficerEmail: "",
+        }),
       );
 
       expect(result.success).toBe(true);
@@ -125,11 +141,31 @@ describe("supportingGrantSchema", () => {
       expect(found).toContainEqual(["awardedAmount", "This field is required"]);
     });
 
+    it("requires the grant number and program officer info once the grant is awarded", () => {
+      const found = issues(
+        grant({ isPending: false, grantNumber: "", programOfficerName: "", programOfficerEmail: "" }),
+      );
+
+      expect(found).toContainEqual(["grantNumber", "This field is required"]);
+      expect(found).toContainEqual(["programOfficerName", "This field is required"]);
+      expect(found).toContainEqual(["programOfficerEmail", "This field is required"]);
+    });
+
     it("does not require them while the question is still unanswered", () => {
       // isPending null produces exactly one issue - the unanswered question -
-      // rather than burying it under three more the user cannot act on yet.
+      // rather than burying it under more the user cannot act on yet.
       expect(
-        issues(grant({ isPending: null, beginDate: "", endDate: "", awardedAmount: "" })),
+        issues(
+          grant({
+            isPending: null,
+            beginDate: "",
+            endDate: "",
+            awardedAmount: "",
+            grantNumber: "",
+            programOfficerName: "",
+            programOfficerEmail: "",
+          }),
+        ),
       ).toEqual([["isPending", "This field is required"]]);
     });
 
@@ -146,6 +182,54 @@ describe("supportingGrantSchema", () => {
       expect(supportingGrantSchema.safeParse(grant({ awardedAmount: "$500,000.00" })).success).toBe(
         true,
       );
+    });
+
+    it("rejects a program officer email that is not an email", () => {
+      expect(issues(grant({ programOfficerEmail: "ghopper" }))).toContainEqual([
+        "programOfficerEmail",
+        "Enter a valid email",
+      ]);
+    });
+
+    it("reports a blank program officer email as missing rather than malformed", () => {
+      // The email check runs only once the field isn't blank, so a blank
+      // field gets the message that tells the user what to do.
+      expect(issues(grant({ programOfficerEmail: "" }))).toContainEqual([
+        "programOfficerEmail",
+        "This field is required",
+      ]);
+    });
+  });
+
+  describe("NSF grant number format", () => {
+    it("requires exactly 7 digits for an awarded NSF grant", () => {
+      expect(
+        issues(grant({ fundingAgencyId: 3, isPending: false, grantNumber: "12345" })),
+      ).toContainEqual(["grantNumber", "NSF grant number must be exactly 7 digits"]);
+    });
+
+    it("accepts a 7-digit number for an awarded NSF grant", () => {
+      expect(
+        supportingGrantSchema.safeParse(
+          grant({ fundingAgencyId: 3, isPending: false, grantNumber: "1234567" }),
+        ).success,
+      ).toBe(true);
+    });
+
+    it("does not apply the NSF format check to other agencies", () => {
+      expect(
+        supportingGrantSchema.safeParse(
+          grant({ fundingAgencyId: 7, isPending: false, grantNumber: "DOE-12345" }),
+        ).success,
+      ).toBe(true);
+    });
+
+    it("does not apply the NSF format check while the grant is still pending", () => {
+      expect(
+        supportingGrantSchema.safeParse(
+          grant({ fundingAgencyId: 3, isPending: true, grantNumber: "abc" }),
+        ).success,
+      ).toBe(true);
     });
   });
 
@@ -230,12 +314,40 @@ describe("supportingGrantsFormSchema", () => {
     expect(found.filter(([path]) => path.startsWith("grants.0"))).toEqual([]);
   });
 
-  it("rejects a Yes answer with no grants entered as incomplete only via the grants themselves", () => {
-    // An empty list passes: the UI pushes an empty grant the moment "Yes" is
-    // chosen, so "Yes with zero grants" isn't a state the user can sit in.
+  it("requires at least one live grant once the answer is Yes", () => {
     expect(
-      supportingGrantsFormSchema.safeParse({ includeSupportingGrants: true, grants: [] })
-        .success,
+      issues({ includeSupportingGrants: true, grants: [] }, supportingGrantsFormSchema),
+    ).toContainEqual([
+      "includeSupportingGrants",
+      "Add at least one supporting grant, or answer No above.",
+    ]);
+  });
+
+  it("excludes grants marked for deletion from both the live-grant count and validation", () => {
+    // A soft-deleted grant is still posted back (carrying _destroy) so the
+    // server issues the delete, but it's neither counted toward "at least
+    // one grant" nor validated - its fields are gone from the form.
+    const found = issues(
+      {
+        includeSupportingGrants: true,
+        grants: [grant({ title: "", _destroy: true })],
+      },
+      supportingGrantsFormSchema,
+    );
+
+    expect(found).toContainEqual([
+      "includeSupportingGrants",
+      "Add at least one supporting grant, or answer No above.",
+    ]);
+    expect(found.filter(([path]) => path.startsWith("grants.0"))).toEqual([]);
+  });
+
+  it("does not require a second grant when a live one already exists alongside a deleted one", () => {
+    expect(
+      supportingGrantsFormSchema.safeParse({
+        includeSupportingGrants: true,
+        grants: [grant({ title: "", _destroy: true }), grant()],
+      }).success,
     ).toBe(true);
   });
 });

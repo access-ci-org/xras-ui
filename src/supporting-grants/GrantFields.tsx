@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
+import { useStore } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,20 @@ export function GrantFields({
 }: GrantFieldsProps) {
   const fundingAgencies = useAtomValue(fundingAgenciesAtom);
   const fosTypes = useAtomValue(fosTypesAtom);
+
+  // Subscribed rather than read through form.getFieldValue(), which doesn't
+  // subscribe — the input mask, character limit, and award-search link all
+  // depend on this and have to recompute when the agency changes.
+  const fundingAgencyId = useStore(
+    form.store,
+    (state) => state.values.grants[index]?.fundingAgencyId,
+  );
+
+  const isNSF =
+    fundingAgencies.find(
+      (agency) => String(agency.id) === String(fundingAgencyId),
+    )?.abbr === "NSF";
+
   const [nsfLookupStatus, setNsfLookupStatus] = useState<
     "idle" | "pending" | "error"
   >("idle");
@@ -162,8 +177,11 @@ export function GrantFields({
 
     if (fundingAgency?.abbr !== "NSF") return;
 
+    // NSF award numbers are exactly 7 digits, so anything shorter is a
+    // half-typed number — looking it up would only 404 and flash an error at
+    // someone who is still typing.
     const grantNumber = grant.grantNumber.replace(/[^0-9]+/g, "");
-    if (!grantNumber) return;
+    if (!/^\d{7}$/.test(grantNumber)) return;
 
     setNsfLookupStatus("pending");
     const details = await fetchNSFGrantDetails(grantNumber);
@@ -202,11 +220,6 @@ export function GrantFields({
     setIfEmpty("programOfficerName", poName);
     setIfEmpty("programOfficerEmail", poEmail);
 
-    // If grant information is available from the API, it has already been awarded.
-    if (form.getFieldValue(`grants[${index}].isPending`) === null) {
-      form.setFieldValue(`grants[${index}].isPending`, false);
-    }
-
     // NSF answered for this number, which is the whole condition for the
     // lock. Engage it last, so the autofill above is what the user is left
     // looking at in the now read-only fields.
@@ -223,10 +236,42 @@ export function GrantFields({
       ) : null}
 
       <div className="grid grid-cols-1 gap-4">
+        <form.AppField name={`grants[${index}].isPending`}>
+          {(field) => (
+            <field.FieldRadio
+              required
+              disabled={isDisabled("isPending")}
+              label="Is this grant pending?"
+              options={[
+                { value: true, label: "Yes" },
+                { value: false, label: "No" },
+              ]}
+            />
+          )}
+        </form.AppField>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
         <form.AppField
           name={`grants[${index}].fundingAgencyId`}
           listeners={{
             onChange: ({ value }) => {
+              const nowNSF =
+                fundingAgencies.find((a) => String(a.id) === String(value))
+                  ?.abbr === "NSF";
+              if (nowNSF) {
+                // Masking a number issued by another agency down to 7 digits
+                // would fabricate a plausible NSF award number, which the blur
+                // lookup would then happily resolve to someone else's grant.
+                // Anything that isn't already a valid NSF number gets cleared
+                // instead. Switching away from NSF needs no cleanup, since any
+                // string within the length limit is valid for other agencies.
+                const current =
+                  form.getFieldValue(`grants[${index}].grantNumber`) ?? "";
+                if (current && !/^\d{7}$/.test(current)) {
+                  form.setFieldValue(`grants[${index}].grantNumber`, "");
+                }
+              }
               void checkNsfLock(
                 value,
                 form.getFieldValue(`grants[${index}].grantNumber`),
@@ -250,27 +295,6 @@ export function GrantFields({
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <form.AppField name={`grants[${index}].grantNumber`}>
-          {(field) => (
-            <div className="relative">
-              <field.FieldInput
-                label="Grant Number"
-                required
-                disabled={isDisabled("grantNumber")}
-                onBlur={() => void handleGrantNumberBlur()}
-              />
-              {nsfLookupStatus === "pending" ? (
-                <Loader2 className="absolute right-2 top-8 size-4 animate-spin text-muted-foreground" />
-              ) : null}
-              {nsfLookupStatus === "error" ? (
-                <p className="text-sm text-destructive">
-                  Could not find an NSF grant with this number.
-                </p>
-              ) : null}
-            </div>
-          )}
-        </form.AppField>
-
         <form.AppField name={`grants[${index}].title`}>
           {(field) => (
             <field.FieldInput
@@ -280,9 +304,7 @@ export function GrantFields({
             />
           )}
         </form.AppField>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <form.AppField name={`grants[${index}].piName`}>
           {(field) => (
             <field.FieldInput
@@ -292,17 +314,25 @@ export function GrantFields({
             />
           )}
         </form.AppField>
+      </div>
 
-        <form.AppField name={`grants[${index}].isPending`}>
+      {/* Required whether or not the grant is pending, so it has to stay
+          outside the conditional block below — otherwise answering "Yes,
+          pending" leaves the form invalid with an error on a field that
+          isn't on screen, and element.tsx blocks submit with nothing for
+          the user to fix. */}
+      <div className="grid grid-cols-1 gap-4">
+        <form.AppField name={`grants[${index}].primaryFosTypeId`}>
           {(field) => (
-            <field.FieldRadio
+            <field.FieldSelect
+              label="Field of Science"
               required
-              disabled={isDisabled("isPending")}
-              label="Is this grant pending?"
-              options={[
-                { value: true, label: "Yes" },
-                { value: false, label: "No" },
-              ]}
+              disabled={isDisabled("primaryFosTypeId")}
+              placeholder="-- Please select one --"
+              options={fosTypes.map((fos) => ({
+                value: String(fos.id),
+                label: fos.name,
+              }))}
             />
           )}
         </form.AppField>
@@ -311,87 +341,123 @@ export function GrantFields({
       <form.Subscribe
         selector={(state) => state.values.grants[index]?.isPending === false}
       >
-        {(requireAwardDetails) => (
-          <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <form.AppField name={`grants[${index}].beginDate`}>
-                {(field) => (
-                  <field.FieldDatePicker
-                    label="Start Date"
-                    required={requireAwardDetails}
-                    disabled={isDisabled("beginDate")}
-                  />
-                )}
-              </form.AppField>
+        {(requireAwardDetails) =>
+          requireAwardDetails ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <form.AppField name={`grants[${index}].grantNumber`}>
+                  {(field) => (
+                    <div>
+                      <field.FieldInput
+                        label="Grant Number"
+                        required
+                        disabled={isDisabled("grantNumber")}
+                        // maxLength is the native guard; transformValue is what
+                        // actually enforces the limit, since it also covers
+                        // paste and programmatic changes.
+                        maxLength={isNSF ? 7 : 40}
+                        transformValue={(raw) =>
+                          isNSF
+                            ? raw.replace(/\D/g, "").slice(0, 7)
+                            : raw.slice(0, 40)
+                        }
+                        onBlur={() => void handleGrantNumberBlur()}
+                        adornment={
+                          nsfLookupStatus === "pending" ? (
+                            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                          ) : null
+                        }
+                        description={
+                          isNSF ? (
+                            <>
+                              Award information is filled in automatically once
+                              the grant number is entered.{" "}
+                              <a
+                                href="https://www.nsf.gov/awardsearch/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline"
+                              >
+                                Look up an NSF grant number
+                              </a>
+                              .
+                            </>
+                          ) : null
+                        }
+                      />
+                      {nsfLookupStatus === "error" ? (
+                        <p className="text-sm text-destructive">
+                          Could not find an NSF grant with this number.
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+                </form.AppField>
 
-              <form.AppField name={`grants[${index}].endDate`}>
-                {(field) => (
-                  <field.FieldDatePicker
-                    label="End Date"
-                    required={requireAwardDetails}
-                    disabled={isDisabled("endDate")}
-                  />
-                )}
-              </form.AppField>
-            </div>
+                <form.AppField name={`grants[${index}].beginDate`}>
+                  {(field) => (
+                    <field.FieldDatePicker
+                      label="Start Date"
+                      required
+                      disabled={isDisabled("beginDate")}
+                    />
+                  )}
+                </form.AppField>
+              </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <form.AppField name={`grants[${index}].primaryFosTypeId`}>
-                {(field) => (
-                  <field.FieldSelect
-                    label="Field of Science"
-                    required
-                    disabled={isDisabled("primaryFosTypeId")}
-                    placeholder="-- Please select one --"
-                    options={fosTypes.map((fos) => ({
-                      value: String(fos.id),
-                      label: fos.name,
-                    }))}
-                  />
-                )}
-              </form.AppField>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <form.AppField name={`grants[${index}].endDate`}>
+                  {(field) => (
+                    <field.FieldDatePicker
+                      label="End Date"
+                      required
+                      disabled={isDisabled("endDate")}
+                    />
+                  )}
+                </form.AppField>
 
-              <form.AppField name={`grants[${index}].awardedAmount`}>
-                {(field) => (
-                  <field.FieldInput
-                    label="Awarded Amount"
-                    required={requireAwardDetails}
-                    disabled={isDisabled("awardedAmount")}
-                    placeholder="Enter awarded amount"
-                    onBlur={(e) =>
-                      field.handleChange(formatAsCurrency(e.target.value))
-                    }
-                  />
-                )}
-              </form.AppField>
-            </div>
-          </>
-        )}
+                <form.AppField name={`grants[${index}].awardedAmount`}>
+                  {(field) => (
+                    <field.FieldInput
+                      label="Awarded Amount"
+                      required
+                      disabled={isDisabled("awardedAmount")}
+                      placeholder="Enter awarded amount"
+                      onBlur={(e) =>
+                        field.handleChange(formatAsCurrency(e.target.value))
+                      }
+                    />
+                  )}
+                </form.AppField>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <form.AppField name={`grants[${index}].programOfficerName`}>
+                  {(field) => (
+                    <field.FieldInput
+                      label="Program Officer Name"
+                      required
+                      disabled={isDisabled("programOfficerName")}
+                      placeholder="Enter program officer name"
+                    />
+                  )}
+                </form.AppField>
+
+                <form.AppField name={`grants[${index}].programOfficerEmail`}>
+                  {(field) => (
+                    <field.FieldInput
+                      label="Program Officer Email"
+                      required
+                      disabled={isDisabled("programOfficerEmail")}
+                      placeholder="Enter valid email"
+                    />
+                  )}
+                </form.AppField>
+              </div>
+            </>
+          ) : null
+        }
       </form.Subscribe>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <form.AppField name={`grants[${index}].programOfficerName`}>
-          {(field) => (
-            <field.FieldInput
-              label="Program Officer Name"
-              required
-              disabled={isDisabled("programOfficerName")}
-              placeholder="Enter program officer name"
-            />
-          )}
-        </form.AppField>
-
-        <form.AppField name={`grants[${index}].programOfficerEmail`}>
-          {(field) => (
-            <field.FieldInput
-              label="Program Officer Email"
-              required
-              disabled={isDisabled("programOfficerEmail")}
-              placeholder="Enter valid email"
-            />
-          )}
-        </form.AppField>
-      </div>
 
       <form.AppField name={`grants[${index}].comments`}>
         {(field) => (

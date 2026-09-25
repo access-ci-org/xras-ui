@@ -104,7 +104,9 @@ describe("SupportingGrantsSection", () => {
     await user.click(includeRadio("true"));
 
     await waitFor(() => expect(grantCount()).toBe(1));
-    expect(field(0, "grantNumber")).toHaveValue("");
+    // grantNumber itself is hidden until isPending is answered (see
+    // GrantFields.test.tsx) - title is one of the fields that's always there.
+    expect(field(0, "title")).toHaveValue("");
   });
 
   it("adds and removes grants", async () => {

@@ -249,13 +249,17 @@ describe("Grants (edit modal)", () => {
     expect(screen.getByRole("radio", { name: "No" })).toBeDisabled();
   });
 
-  it("leaves every field, including grantNumber and the pending answer, enabled for a still-pending grant", async () => {
+  it("leaves the pending answer enabled, with grantNumber hidden, for a still-pending grant", async () => {
+    // Grant number, dates, amount, and program officer info aren't knowable
+    // until the grant is no longer pending - GrantFields doesn't mount those
+    // fields at all until isPending is answered No, in My Projects same as
+    // the submission form (see GrantFields.test.tsx).
     const user = userEvent.setup();
     renderGrants({ grants: [makeGrant({ isPending: true })] });
 
     await openEditModal(user);
 
-    expect(screen.getByLabelText("Grant Number", { exact: false })).toBeEnabled();
+    expect(screen.queryByLabelText("Grant Number", { exact: false })).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
     expect(screen.getByRole("radio", { name: "No" })).toBeEnabled();
   });
@@ -353,17 +357,17 @@ describe("Grants (edit modal)", () => {
     ).not.toBeInTheDocument();
   });
 
-  // A grant submitted while still pending has no dates yet, and filling them
-  // in is exactly what a manager comes here to do - so the pending answer
-  // must not make the date fields unreachable.
-  it("still shows the date fields for a pending grant", async () => {
+  // Dates aren't knowable until the grant is no longer pending, so they stay
+  // hidden here the same as everywhere else GrantFields renders - a manager
+  // answers No before there's anything to fill in.
+  it("hides the date fields for a pending grant", async () => {
     const user = userEvent.setup();
     renderGrants({ grants: [makeGrant({ isPending: true, beginDate: null, endDate: null })] });
 
     await openEditModal(user);
 
-    expect(screen.getByLabelText("Start Date", { exact: false })).toBeEnabled();
-    expect(screen.getByLabelText("End Date", { exact: false })).toBeEnabled();
+    expect(screen.queryByLabelText("Start Date", { exact: false })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("End Date", { exact: false })).not.toBeInTheDocument();
   });
 
   it("saves only the fields that changed", async () => {
@@ -502,8 +506,8 @@ describe("Grants (add grant modal)", () => {
     await screen.findByRole("dialog");
 
     expect(screen.getByRole("heading", { name: "Add Supporting Grant" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Grant Number", { exact: false })).toHaveValue("");
-    expect(screen.getByLabelText("Grant Number", { exact: false })).toBeEnabled();
+    // Grant Number only mounts once the pending question is answered No.
+    expect(screen.queryByLabelText("Grant Number", { exact: false })).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Add Grant" })).toBeInTheDocument();
   });

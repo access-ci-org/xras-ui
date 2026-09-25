@@ -36,17 +36,31 @@ function grant(overrides: Partial<SupportingGrant> = {}): SupportingGrant {
   };
 }
 
+// The grant number, dates, amount, and program officer fields only mount
+// once the grant has been answered as no-longer-pending (see GrantFields'
+// requireAwardDetails block) - so any test that needs to interact with them
+// has to start from that answered state.
+function awardedGrant(overrides: Partial<SupportingGrant> = {}): SupportingGrant {
+  return grant({ isPending: false, ...overrides });
+}
+
 // The fields themselves are declarative wrappers around form.AppField; what
 // is worth testing here is the behaviour GrantFields adds on top of them -
-// the NSF autofill on blur, the currency reformat on blur, and which labels
-// pick up a required marker once the grant is no longer pending.
+// which fields mount once the grant is no longer pending, the NSF grant
+// number mask, the NSF autofill on blur, and the currency reformat on blur.
 // applyNsfLock is passed straight through rather than defaulted here, so
 // omitting it exercises GrantFields' own default (which is on).
 function renderFields({
   values = grant(),
   onRemove = vi.fn(),
   applyNsfLock,
-}: { values?: SupportingGrant; onRemove?: () => void; applyNsfLock?: boolean } = {}) {
+  showRemoveButton = true,
+}: {
+  values?: SupportingGrant;
+  onRemove?: () => void;
+  applyNsfLock?: boolean;
+  showRemoveButton?: boolean;
+} = {}) {
   const store = createStore();
   store.set(fundingAgenciesAtom, AGENCIES);
   store.set(fosTypesAtom, FOS_TYPES);
@@ -59,7 +73,14 @@ function renderFields({
       } as SupportingGrantsState,
       onSubmit: () => {},
     });
-    return <GrantFields form={form} index={0} onRemove={onRemove} applyNsfLock={applyNsfLock} />;
+    return (
+      <GrantFields
+        form={form}
+        index={0}
+        onRemove={showRemoveButton ? onRemove : undefined}
+        applyNsfLock={applyNsfLock}
+      />
+    );
   }
 
   render(
@@ -133,24 +154,67 @@ function serveAwardLookupFailure() {
 }
 
 describe("GrantFields", () => {
-  it("renders every grant field", () => {
+  it("renders the fields that are always visible", () => {
     renderFields();
 
     for (const label of [
+      "Is this grant pending?",
       "Funding Agency",
-      "Grant Number",
       "Grant Title",
       "PI Name",
+      "Field of Science",
+      "Explanation",
+    ]) {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      expect(screen.getByText(new RegExp(`^${escaped}\\*?$`))).toBeInTheDocument();
+    }
+  });
+
+  it("hides the award-detail fields until the grant is answered as no longer pending", () => {
+    renderFields();
+
+    for (const label of [
+      "Grant Number",
       "Start Date",
       "End Date",
-      "Field of Science",
       "Awarded Amount",
       "Program Officer Name",
       "Program Officer Email",
-      "Explanation",
     ]) {
-      expect(screen.getByText(new RegExp(`^${label}\\*?$`))).toBeInTheDocument();
+      expect(screen.queryByText(new RegExp(`^${label}\\*?$`))).not.toBeInTheDocument();
     }
+  });
+
+  it("keeps the award-detail fields hidden while the grant is still pending", () => {
+    renderFields({ values: grant({ isPending: true }) });
+
+    expect(screen.queryByText(/^Grant Number\*?$/)).not.toBeInTheDocument();
+  });
+
+  it("shows the award-detail fields, all required, once the grant is answered as awarded", async () => {
+    const user = userEvent.setup();
+    renderFields();
+
+    await user.click(screen.getByRole("radio", { name: "No" }));
+
+    await waitFor(() => expect(labelFor("grantNumber").textContent).toBe("Grant Number*"));
+    expect(labelFor("beginDate").textContent).toBe("Start Date*");
+    expect(labelFor("endDate").textContent).toBe("End Date*");
+    expect(labelFor("awardedAmount").textContent).toBe("Awarded Amount*");
+    expect(labelFor("programOfficerName").textContent).toBe("Program Officer Name*");
+    expect(labelFor("programOfficerEmail").textContent).toBe("Program Officer Email*");
+  });
+
+  it("hides the award-detail fields again if the answer is switched back to pending", async () => {
+    const user = userEvent.setup();
+    renderFields();
+
+    await user.click(screen.getByRole("radio", { name: "No" }));
+    await waitFor(() => expect(labelFor("grantNumber").textContent).toBe("Grant Number*"));
+
+    await user.click(screen.getByRole("radio", { name: "Yes" }));
+
+    expect(screen.queryByText(/^Grant Number\*?$/)).not.toBeInTheDocument();
   });
 
   it("calls onRemove when the remove button is clicked", async () => {
@@ -162,43 +226,65 @@ describe("GrantFields", () => {
     expect(onRemove).toHaveBeenCalledOnce();
   });
 
-  describe("required markers", () => {
-    it("leaves the award details optional while the pending question is unanswered", () => {
-      renderFields();
+  it("does not render a remove button when onRemove is omitted", () => {
+    // My Projects' single-grant modals (GrantEditModal.tsx, AddGrantModal.tsx)
+    // never pass onRemove - there's nothing to remove a lone grant from.
+    renderFields({ showRemoveButton: false });
 
-      expect(labelFor("beginDate").textContent).toBe("Start Date");
-      expect(labelFor("endDate").textContent).toBe("End Date");
-      expect(labelFor("awardedAmount").textContent).toBe("Awarded Amount");
-      // The fields that are required regardless, for contrast.
-      expect(labelFor("title").textContent).toBe("Grant Title*");
-      expect(labelFor("primaryFosTypeId").textContent).toBe("Field of Science*");
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+  });
+
+  describe("grant number formatting per funding agency", () => {
+    it("masks the grant number to digits only, up to 7 characters, for NSF", async () => {
+      const user = userEvent.setup();
+      renderFields({ values: awardedGrant({ fundingAgencyId: 1 }), applyNsfLock: false });
+
+      await user.type(field("grantNumber"), "ab12-3456789");
+
+      expect(field("grantNumber")).toHaveValue("1234567");
     });
 
-    it("marks them required once the grant is answered as awarded", async () => {
+    it("allows up to 40 characters of any text for a non-NSF agency", async () => {
       const user = userEvent.setup();
-      renderFields();
+      renderFields({ values: awardedGrant({ fundingAgencyId: 2 }) });
 
-      await user.click(screen.getByRole("radio", { name: "No" }));
+      await user.type(field("grantNumber"), "DOE-Award-12345");
 
-      await waitFor(() => expect(labelFor("beginDate").textContent).toBe("Start Date*"));
-      expect(labelFor("endDate").textContent).toBe("End Date*");
-      expect(labelFor("awardedAmount").textContent).toBe("Awarded Amount*");
+      expect(field("grantNumber")).toHaveValue("DOE-Award-12345");
     });
 
-    it("keeps them optional for a grant that is still pending", async () => {
+    it("clears the grant number when the agency is switched to NSF and the value isn't a valid NSF number", async () => {
       const user = userEvent.setup();
-      renderFields();
+      renderFields({ values: awardedGrant({ fundingAgencyId: 2, grantNumber: "DOE-12345" }) });
 
-      await user.click(screen.getByRole("radio", { name: "Yes" }));
+      await selectFundingAgency(user, "National Science Foundation");
 
-      expect(labelFor("awardedAmount").textContent).toBe("Awarded Amount");
+      expect(field("grantNumber")).toHaveValue("");
+    });
+
+    it("keeps the grant number when switching to NSF if it's already a valid 7-digit number", async () => {
+      const user = userEvent.setup();
+      renderFields({ values: awardedGrant({ fundingAgencyId: 2, grantNumber: "1234567" }) });
+
+      await selectFundingAgency(user, "National Science Foundation");
+
+      expect(field("grantNumber")).toHaveValue("1234567");
+    });
+
+    it("keeps the grant number when switching away from NSF", async () => {
+      const user = userEvent.setup();
+      renderFields({ values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }) });
+
+      await selectFundingAgency(user, "Department of Energy");
+
+      expect(field("grantNumber")).toHaveValue("1234567");
     });
   });
 
   describe("the awarded amount", () => {
     it("is reformatted as currency when the field is blurred", async () => {
       const user = userEvent.setup();
-      renderFields();
+      renderFields({ values: awardedGrant() });
 
       await user.type(field("awardedAmount"), "500000");
       await user.tab();
@@ -208,7 +294,7 @@ describe("GrantFields", () => {
 
     it("leaves an entry with no number in it as typed, for the schema to flag", async () => {
       const user = userEvent.setup();
-      renderFields();
+      renderFields({ values: awardedGrant() });
 
       await user.type(field("awardedAmount"), "half a million");
       await user.tab();
@@ -232,7 +318,7 @@ describe("GrantFields", () => {
     it("fills in the empty fields from the award record", async () => {
       const user = userEvent.setup();
       const requests = serveAward();
-      renderUnlocked(grant({ grantNumber: "1234567" }));
+      renderUnlocked(awardedGrant({ grantNumber: "1234567" }));
 
       await blurGrantNumber(user);
 
@@ -248,34 +334,13 @@ describe("GrantFields", () => {
       expect(requests).toHaveLength(1);
     });
 
-    it("answers the pending question as No, since an award record exists", async () => {
-      const user = userEvent.setup();
-      serveAward();
-      renderUnlocked(grant({ grantNumber: "1234567" }));
-
-      await blurGrantNumber(user);
-
-      await waitFor(() => expect(screen.getByRole("radio", { name: "No" })).toBeChecked());
-    });
-
-    it("does not overwrite an answer the user has already given", async () => {
-      const user = userEvent.setup();
-      serveAward();
-      renderUnlocked(grant({ grantNumber: "1234567", isPending: true }));
-
-      await blurGrantNumber(user);
-
-      await waitFor(() => expect(field("title")).toHaveValue("A Study of Studies"));
-      expect(screen.getByRole("radio", { name: "Yes" })).toBeChecked();
-    });
-
     it("does not overwrite fields the user has already typed into", async () => {
       // The whole point of setIfEmpty: the lookup fires on every blur of the
       // grant number, including ones after the user has edited the autofilled
       // values, and must not undo their edits.
       const user = userEvent.setup();
       serveAward();
-      renderUnlocked(grant({ grantNumber: "1234567", title: "My own title", piName: "" }));
+      renderUnlocked(awardedGrant({ grantNumber: "1234567", title: "My own title", piName: "" }));
 
       await blurGrantNumber(user);
 
@@ -286,7 +351,13 @@ describe("GrantFields", () => {
     it("strips non-digits out of the grant number before looking it up", async () => {
       const user = userEvent.setup();
       const requests = serveAward();
-      renderUnlocked(grant({ grantNumber: "NSF-123 4567" }));
+      renderUnlocked(awardedGrant({ grantNumber: "1234567" }));
+      // Typed rather than set via defaultValues, since the NSF mask (see
+      // "grant number formatting per funding agency" above) already strips
+      // non-digits from anything the user types - this exercises the same
+      // stripping the blur handler does on whatever reaches it.
+      await user.clear(field("grantNumber"));
+      await user.type(field("grantNumber"), "1234567");
 
       await blurGrantNumber(user);
 
@@ -297,7 +368,7 @@ describe("GrantFields", () => {
     it("shows a not-found message when the award number matches nothing", async () => {
       const user = userEvent.setup();
       serveAward(NO_SUCH_AWARD);
-      renderUnlocked(grant({ grantNumber: "0000000" }));
+      renderUnlocked(awardedGrant({ grantNumber: "0000000" }));
 
       await blurGrantNumber(user);
 
@@ -314,7 +385,7 @@ describe("GrantFields", () => {
       // that is no longer in the field.
       const user = userEvent.setup();
       serveAward(NO_SUCH_AWARD);
-      renderUnlocked(grant({ grantNumber: "0000000" }));
+      renderUnlocked(awardedGrant({ grantNumber: "0000000" }));
 
       await blurGrantNumber(user);
       await screen.findByText("Could not find an NSF grant with this number.");
@@ -337,7 +408,7 @@ describe("GrantFields", () => {
     it("does not look anything up for a non-NSF funding agency", async () => {
       const user = userEvent.setup();
       const requests = serveAward();
-      renderUnlocked(grant({ fundingAgencyId: 2, grantNumber: "1234567" }));
+      renderUnlocked(awardedGrant({ fundingAgencyId: 2, grantNumber: "1234567" }));
 
       await blurGrantNumber(user);
 
@@ -348,7 +419,7 @@ describe("GrantFields", () => {
     it("does not look anything up before a funding agency has been chosen", async () => {
       const user = userEvent.setup();
       const requests = serveAward();
-      renderUnlocked(grant({ fundingAgencyId: null, grantNumber: "1234567" }));
+      renderUnlocked(awardedGrant({ fundingAgencyId: null, grantNumber: "1234567" }));
 
       await blurGrantNumber(user);
 
@@ -359,7 +430,7 @@ describe("GrantFields", () => {
     it("does not look anything up when the number has no digits in it", async () => {
       const user = userEvent.setup();
       const requests = serveAward();
-      renderUnlocked(grant({ grantNumber: "pending" }));
+      renderUnlocked(awardedGrant({ fundingAgencyId: 2, grantNumber: "pending" }));
 
       await blurGrantNumber(user);
 
@@ -375,12 +446,16 @@ describe("GrantFields", () => {
 //
 // The lock's trigger is a *successful* NSF lookup, not merely an NSF agency
 // with something in the grant number field, so every test here either serves
-// the award endpoint or asserts that nothing was asked of it.
+// the award endpoint or asserts that nothing was asked of it. Every fixture
+// answers isPending as false up front, since the mount-time check reads the
+// initial grant number/agency from form state regardless of what's on
+// screen, but the disabled/enabled assertions below need the award-detail
+// fields actually mounted to inspect.
 describe("applyNsfLock", () => {
   it("locks every field but Field of Science and Explanation when NSF recognises the initial grant number", async () => {
     serveAward();
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "1234567" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }),
       applyNsfLock: true,
     });
 
@@ -406,7 +481,7 @@ describe("applyNsfLock", () => {
   it("does not lock anything for a grant number NSF has no record of", async () => {
     const requests = serveAward(NO_SUCH_AWARD);
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "0000000" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "0000000" }),
       applyNsfLock: true,
     });
 
@@ -421,7 +496,7 @@ describe("applyNsfLock", () => {
     // defer to, so it must not cost the user their fields.
     const requests = serveAwardLookupFailure();
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "1234567" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }),
       applyNsfLock: true,
     });
 
@@ -436,7 +511,7 @@ describe("applyNsfLock", () => {
     // field before the user had a chance to enter one.
     const requests = serveAward();
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "" }),
       applyNsfLock: true,
     });
 
@@ -448,7 +523,10 @@ describe("applyNsfLock", () => {
 
   it("looks nothing up for a non-NSF initial funding agency", async () => {
     const requests = serveAward();
-    renderFields({ values: grant({ fundingAgencyId: 2, grantNumber: "1234567" }), applyNsfLock: true });
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 2, grantNumber: "1234567" }),
+      applyNsfLock: true,
+    });
 
     await waitFor(() => expect(field("title")).toBeEnabled());
     expect(requests).toHaveLength(0);
@@ -457,7 +535,7 @@ describe("applyNsfLock", () => {
 
   it("is on when left at its default, so a recognised NSF grant locks without being asked to", async () => {
     serveAward();
-    renderFields({ values: grant({ fundingAgencyId: 1, grantNumber: "1234567" }) });
+    renderFields({ values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }) });
 
     expect(await screen.findByText(/populated from NSF's records/)).toBeInTheDocument();
     expect(field("title")).toBeDisabled();
@@ -466,7 +544,7 @@ describe("applyNsfLock", () => {
   it("looks nothing up at all when a client opts out with false", async () => {
     const requests = serveAward();
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "1234567" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }),
       applyNsfLock: false,
     });
 
@@ -482,7 +560,7 @@ describe("applyNsfLock", () => {
     const user = userEvent.setup();
     serveAward();
     renderFields({
-      values: grant({ fundingAgencyId: 2, grantNumber: "1234567" }),
+      values: awardedGrant({ fundingAgencyId: 2, grantNumber: "1234567" }),
       applyNsfLock: true,
     });
     expect(field("title")).toBeEnabled();
@@ -496,7 +574,10 @@ describe("applyNsfLock", () => {
   it("does not lock the fields when the funding agency is changed to NSF but no grant number has been entered", async () => {
     const user = userEvent.setup();
     const requests = serveAward();
-    renderFields({ values: grant({ fundingAgencyId: 2, grantNumber: "" }), applyNsfLock: true });
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 2, grantNumber: "" }),
+      applyNsfLock: true,
+    });
 
     await selectFundingAgency(user, "National Science Foundation");
 
@@ -512,7 +593,7 @@ describe("applyNsfLock", () => {
     // combobox's disabled assertion in the first test in this block.
     serveAward();
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "1234567" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }),
       applyNsfLock: true,
     });
 
@@ -521,7 +602,10 @@ describe("applyNsfLock", () => {
 
   it("still allows switching away from NSF before a grant number has locked it in", async () => {
     const user = userEvent.setup();
-    renderFields({ values: grant({ fundingAgencyId: 1, grantNumber: "" }), applyNsfLock: true });
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "" }),
+      applyNsfLock: true,
+    });
     expect(field("title")).toBeEnabled();
 
     await selectFundingAgency(user, "Department of Energy");
@@ -536,7 +620,7 @@ describe("applyNsfLock", () => {
     const user = userEvent.setup();
     const requests = serveAward();
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "" }),
       applyNsfLock: true,
     });
     expect(field("title")).toBeEnabled();
@@ -554,7 +638,7 @@ describe("applyNsfLock", () => {
     const user = userEvent.setup();
     serveAward(NO_SUCH_AWARD);
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "" }),
       applyNsfLock: true,
     });
 
@@ -575,7 +659,7 @@ describe("applyNsfLock", () => {
     const user = userEvent.setup();
     serveAward();
     renderFields({
-      values: grant({ fundingAgencyId: 1, grantNumber: "" }),
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "" }),
       applyNsfLock: true,
     });
 

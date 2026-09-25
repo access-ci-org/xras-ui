@@ -15,7 +15,7 @@ import {
 import { GrantFields } from "../supporting-grants/GrantFields";
 import { fosTypesAtom, fundingAgenciesAtom } from "../supporting-grants/atoms";
 import { emptyGrant } from "../supporting-grants/empty-grant";
-import { grantEditFormSchema } from "../supporting-grants/schema";
+import { createGrantEditFormSchema } from "../supporting-grants/schema";
 import type { SupportingGrantsState } from "../supporting-grants/types";
 import Alert from "../shared/Alert";
 import {
@@ -54,6 +54,11 @@ function AddGrantForm({
   const store = useMemo(() => createStore(), []);
   const fundingAgencies = useAtomValue(grantFundingAgenciesAtom);
   const fosTypes = useAtomValue(grantFosTypesAtom);
+
+  const grantEditFormSchema = useMemo(
+    () => createGrantEditFormSchema(fundingAgencies),
+    [fundingAgencies],
+  );
 
   const form = useAppForm({
     defaultValues: {

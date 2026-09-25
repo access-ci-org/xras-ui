@@ -15,7 +15,7 @@ import {
 import { GrantFields } from "../supporting-grants/GrantFields";
 import { fosTypesAtom, fundingAgenciesAtom } from "../supporting-grants/atoms";
 import { AWARDED_UNITS, formatAsCurrency } from "../supporting-grants/currency";
-import { grantEditFormSchema } from "../supporting-grants/schema";
+import { createGrantEditFormSchema } from "../supporting-grants/schema";
 import type {
   FosType,
   FundingAgency,
@@ -124,6 +124,11 @@ function GrantEditForm({
   // server enforces the same allowlist against the stored grant regardless.
   const disabledFields = ALL_GRANT_FIELDS.filter(
     (field) => !editableGrantFields(grant).includes(field),
+  );
+
+  const grantEditFormSchema = useMemo(
+    () => createGrantEditFormSchema(fundingAgencies),
+    [fundingAgencies],
   );
 
   const form = useAppForm({
