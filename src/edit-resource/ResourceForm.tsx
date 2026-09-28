@@ -19,6 +19,7 @@ import {
   resourceTypesOptionsAtom,
   unitTypesOptionsAtom,
   updateResourceFieldAtom,
+  usesExchangeRatesAtom,
 } from "./atoms";
 
 type ResourceFormProps = {
@@ -37,6 +38,7 @@ export const ResourceForm = ({
   const unitTypesOptions = useAtomValue(unitTypesOptionsAtom);
   const updateResourceField = useSetAtom(updateResourceFieldAtom);
   const [isDollarValueEditing, setIsDollarValueEditing] = useState(false);
+  const usesExchangeRates = useAtomValue(usesExchangeRatesAtom);
 
   if (!resourceDetails) return null;
 
@@ -127,14 +129,23 @@ export const ResourceForm = ({
           ))}
         </select>
       </div>
-      <label className={ADMIN_LABEL}>
-        Minimum exchange amount, in{" "}
-        {
-          unitTypesOptions.find(
-            (option) => option.value.toString() === resourceDetails.unit_type_id.toString(),
-          )?.label
-        }
-      </label>
+        {usesExchangeRates && (
+            <>
+                <label className={ADMIN_LABEL}>
+                    Minimum exchange amount, in{" "}
+                    {
+                        unitTypesOptions.find(
+                            (option) => option.value.toString() === resourceDetails.unit_type_id.toString(),
+                        )?.label
+                    }
+                </label>
+                <input
+                    className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
+                    value={resourceDetails.min_exchange}
+                    onChange={(e) => updateResourceField({ field: "min_exchange", value: e.target.value })}
+                />
+            </>
+        )}
       <input
         className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
         value={resourceDetails.min_exchange}
