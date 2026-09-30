@@ -425,6 +425,7 @@ export const submitResourceAtom = atom(null, async (get, set) => {
   const updatedResource = {
     resource_name: resourceDetails.resource_name,
     description: resourceDetails.description,
+    instructions: resourceDetails.instructions,
     resource_type_id: resourceDetails.resource_type_id,
     unit_type_id: resourceDetails.unit_type_id,
     min_exchange: resourceDetails.min_exchange,

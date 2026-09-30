@@ -40,6 +40,7 @@ export type ResourceDetails = {
   auto_approve_exchanges?: boolean;
   auto_approve_exchange_limit?: number | string;
   exchange_rates?: ExchangeRates;
+  instructions?: string;
 };
 
 export type ResourceStateTypeAvailable = {

@@ -140,6 +140,21 @@ export const ResourceForm = ({
         value={resourceDetails.min_exchange}
         onChange={(e) => updateResourceField({ field: "min_exchange", value: e.target.value })}
       />
+      <label className={ADMIN_LABEL}> Resource Instructions </label>
+        <small className={ADMIN_HELP}>
+          Instructions that are communicated with user when they are granted an
+          username on your machine. Please provide any infromation for them to
+          upload SSH keys, where to log in, and anything else they need beyond a
+          username.
+        </small>
+      <textarea
+        className={cn(ADMIN_TEXTAREA, ADMIN_SPAN8)}
+        value={resourceDetails.instructions ?? ""}
+        rows={6}
+        onChange={(e) =>
+          updateResourceField({ field: "instructions", value: e.target.value })
+        }
+      />
     </>
   );
 };
