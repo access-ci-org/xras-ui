@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider, createStore } from "jotai";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/msw";
 import { defaultRoutes, routesAtom } from "@/shared/routes";
+import { ShadowRootProvider } from "@/lib/shadow-root";
 import AddGrantModal from "./AddGrantModal";
 import { apiStateAtom } from "./atoms";
 import type { Request as RequestType } from "./types";
@@ -55,7 +56,7 @@ function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
   };
 }
 
-function renderAddGrantModal({ requestOverrides = {} }: { requestOverrides?: Partial<RequestType> } = {}) {
+function makeStore(requestOverrides: Partial<RequestType> = {}) {
   const store = createStore();
   store.set(routesAtom, {
     ...defaultRoutes,
@@ -73,6 +74,11 @@ function renderAddGrantModal({ requestOverrides = {} }: { requestOverrides?: Par
     fundingAgencies: AGENCIES,
     fosTypes: FOS_TYPES,
   });
+  return store;
+}
+
+function renderAddGrantModal({ requestOverrides = {} }: { requestOverrides?: Partial<RequestType> } = {}) {
+  const store = makeStore(requestOverrides);
   return {
     store,
     ...render(
@@ -81,6 +87,30 @@ function renderAddGrantModal({ requestOverrides = {} }: { requestOverrides?: Par
       </Provider>,
     ),
   };
+}
+
+// The way main.jsx mounts My Projects on a real page: inside a shadow root,
+// with focus already in the shadow tree (on the button that opened the modal)
+// when the dialog autofocuses. Returns queries scoped to the shadow root,
+// since `screen` only searches the light DOM.
+function renderAddGrantModalInShadowRoot() {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const shadowRoot = host.attachShadow({ mode: "open" });
+  const target = document.createElement("div");
+  const opener = document.createElement("button");
+  shadowRoot.append(target, opener);
+  opener.focus();
+
+  render(
+    <ShadowRootProvider target={target}>
+      <Provider store={makeStore()}>
+        <AddGrantModal grantNumber={GRANT_NUMBER} requestId={REQUEST_ID} />
+      </Provider>
+    </ShadowRootProvider>,
+    { container: target },
+  );
+  return within(shadowRoot as unknown as HTMLElement);
 }
 
 async function selectOption(user: ReturnType<typeof userEvent.setup>, comboboxName: string, optionName: string) {
@@ -143,6 +173,21 @@ describe("AddGrantModal", () => {
     expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
     expect(screen.getByRole("radio", { name: "No" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Add Grant" })).toBeInTheDocument();
+  });
+
+  // Regression: Radix's dialog autofocus used to focus and blur every field
+  // in turn inside a shadow root (see focusFirstTabbable in dialog.tsx),
+  // marking them all touched, so the first change - which runs the form's
+  // validation - showed "required" on every field at once.
+  it("shows no errors on untouched fields after the first change inside a shadow root", async () => {
+    const user = userEvent.setup();
+    const shadow = renderAddGrantModalInShadowRoot();
+    await shadow.findByRole("dialog");
+
+    await user.click(shadow.getByRole("radio", { name: "Yes" }));
+
+    expect(shadow.getByRole("radio", { name: "Yes" })).toBeChecked();
+    expect(shadow.queryByText(/This field is required/)).not.toBeInTheDocument();
   });
 
   // fillOutMinimalGrant types out several fields character-by-character plus

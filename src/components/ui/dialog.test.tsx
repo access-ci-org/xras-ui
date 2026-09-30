@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ShadowRootProvider } from "@/lib/shadow-root";
 
 // Radix's Dialog is one of twelve Radix primitives in use across the package
 // (select, dialog, popover, dropdown-menu, tooltip, tabs, accordion,
@@ -39,5 +40,47 @@ describe("Dialog (Radix interaction)", () => {
 
     expect(await screen.findByText("Example dialog")).toBeInTheDocument();
     expect(screen.getByText("Dialog body content")).toBeInTheDocument();
+  });
+
+  // Radix's own autofocus decides it has succeeded when document.activeElement
+  // changes, which inside a shadow root it never does once focus is already in
+  // the shadow tree - so it focused every tabbable in turn (see
+  // focusFirstTabbable in dialog.tsx).
+  it("focuses only the first tabbable element when opened inside a shadow root", async () => {
+    const user = userEvent.setup();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const shadowRoot = host.attachShadow({ mode: "open" });
+    const target = document.createElement("div");
+    shadowRoot.appendChild(target);
+    const focused: string[] = [];
+    shadowRoot.addEventListener("focusin", (event) => {
+      const id = (event.target as HTMLElement).id;
+      if (id) focused.push(id);
+    });
+
+    render(
+      <ShadowRootProvider target={target}>
+        <Dialog>
+          <DialogTrigger>Open dialog</DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Example dialog</DialogTitle>
+            <DialogBody>
+              <input id="first" aria-label="First" />
+              <input id="second" aria-label="Second" />
+              <input id="third" aria-label="Third" />
+            </DialogBody>
+          </DialogContent>
+        </Dialog>
+      </ShadowRootProvider>,
+      { container: target },
+    );
+    const shadow = within(shadowRoot as unknown as HTMLElement);
+
+    await user.click(shadow.getByText("Open dialog"));
+    await shadow.findByRole("dialog");
+
+    expect(focused).toEqual(["first"]);
+    expect(shadowRoot.activeElement).toBe(shadow.getByLabelText("First"));
   });
 });

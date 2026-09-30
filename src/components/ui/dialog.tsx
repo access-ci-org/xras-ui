@@ -49,6 +49,35 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const keepScrollInside = (event: React.SyntheticEvent) => event.stopPropagation();
 
 /*
+ * Radix's FocusScope autofocuses the dialog by focusing each tabbable element
+ * in turn until `document.activeElement` changes. Inside a shadow root that
+ * is always the host, so once focus is already in the shadow tree (the button
+ * that opened the dialog, typically) it never changes: every tabbable gets
+ * focused and blurred in sequence, and every form field in the dialog is
+ * marked touched before the user has done anything - so the first change,
+ * which runs the form's validation, shows "required" on all of them at once.
+ * This is the same search, checking focus against the dialog's own root node
+ * instead. The candidates are the ones Radix picks: tabIndex >= 0, not
+ * disabled, not a hidden input, and not a link.
+ */
+function focusFirstTabbable(event: Event) {
+  event.preventDefault();
+  const content = event.currentTarget as HTMLElement;
+  const root = content.getRootNode() as Document | ShadowRoot;
+  for (const el of content.querySelectorAll<HTMLElement>("*")) {
+    if (el.tabIndex < 0 || el.tagName === "A") continue;
+    if ((el as HTMLInputElement).disabled) continue;
+    if (el instanceof HTMLInputElement && el.type === "hidden") continue;
+    el.focus({ preventScroll: true });
+    if (root.activeElement === el) {
+      if (el instanceof HTMLInputElement) el.select();
+      return;
+    }
+  }
+  content.focus({ preventScroll: true });
+}
+
+/*
  * Bootstrap's modal: 1.75rem below the top of the viewport rather than
  * centered in it, never taller than the viewport less that margin, and with
  * `DialogBody` as the only part that scrolls. Paragraphs inside it are
@@ -73,6 +102,10 @@ const DialogContent = React.forwardRef<
         className,
       )}
       {...props}
+      onOpenAutoFocus={(event) => {
+        props.onOpenAutoFocus?.(event);
+        if (!event.defaultPrevented) focusFirstTabbable(event);
+      }}
       onWheel={keepScrollInside}
       onTouchMove={keepScrollInside}
     >
