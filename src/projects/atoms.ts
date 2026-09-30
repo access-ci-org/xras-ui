@@ -620,6 +620,20 @@ export const deleteActionAtom = atom(
   },
 );
 
+// Submits a POST to a server action (e.g. renewing or upgrading a request)
+// that responds with a redirect, and follows the browser there. Unlike
+// deleteActionAtom, the target isn't a JSON API the SPA can apply to its own
+// state - it's a full page (the new request's edit form, or an error flash)
+// - so navigation is the correct outcome rather than an in-place update.
+export const submitPostAtom = atom(null, async (_get, _set, url: string) => {
+  const res = await fetch(url, {
+    body: `authenticity_token=${encodeURIComponent(getAuthToken())}`,
+    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+    method: "POST",
+  });
+  if (res.ok) window.location.href = res.url;
+});
+
 export const saveResourcesAtom = atom(null, async (get, set, { requestId }: { requestId: number }) => {
   const request = get(apiStateAtom).requests[requestId];
   const requested_resources: Record<string, any> = {};
