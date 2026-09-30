@@ -17,9 +17,12 @@ const DialogPortal = ({
 
 /*
  * Bootstrap's stacking order (backdrop 1050, modal 1055) rather than shadcn's
- * `z-50`, which the grid's sticky header sits above. Menus, popovers and
- * tooltips portal alongside the dialog instead of inside it, so they carry
- * higher values still.
+ * `z-50`, which the grid's sticky header sits above — scaled up 10x (10500,
+ * 10505) so it also clears the QA bot widget some host pages embed
+ * (react-chatbotify, fixed at z-index 9999), which would otherwise sit on top
+ * of the dialog and its footer buttons. Menus, popovers and tooltips portal
+ * alongside the dialog instead of inside it, so they carry higher values
+ * still, scaled up by the same factor.
  */
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -27,7 +30,7 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-[1050] bg-black/50", className)}
+    className={cn("fixed inset-0 z-[10500] bg-black/50", className)}
     {...props}
   />
 ));
@@ -69,7 +72,7 @@ const DialogContent = React.forwardRef<
       className={cn(
         // `mx-auto` rather than a translate: Tailwind's transform utilities
         // read `@property`-registered variables, which a Shadow Root ignores.
-        "fixed inset-x-0 top-7 z-[1055] mx-auto flex max-h-[calc(100%-3.5rem)] w-[calc(100%-1rem)] max-w-[500px] flex-col overflow-hidden border border-border-translucent bg-background bg-clip-padding",
+        "fixed inset-x-0 top-7 z-[10505] mx-auto flex max-h-[calc(100%-3.5rem)] w-[calc(100%-1rem)] max-w-[500px] flex-col overflow-hidden border border-border-translucent bg-background bg-clip-padding",
         className,
       )}
       {...props}
