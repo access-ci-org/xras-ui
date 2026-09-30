@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.36.2](https://github.com/access-ci-org/xras-ui/compare/v0.36.1...v0.36.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **dropdown-menu:** make menu at least as wide as the trigger ([d63c872](https://github.com/access-ci-org/xras-ui/commit/d63c872bf2e93e875cad2a6a983f64c8ba37a123))
+* **projects:** use a POST request for renewals ([c30095a](https://github.com/access-ci-org/xras-ui/commit/c30095aeab79679354c5e9ad86ce40e2f4bf7b41))
+
 ## [0.36.1](https://github.com/access-ci-org/xras-ui/compare/v0.36.0...v0.36.1) (2026-09-30)
 
 
