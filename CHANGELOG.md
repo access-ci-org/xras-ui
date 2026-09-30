@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.36.1](https://github.com/access-ci-org/xras-ui/compare/v0.36.0...v0.36.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* prevent QA bot from covering modals and other floating elements ([0edf11c](https://github.com/access-ci-org/xras-ui/commit/0edf11c93f3ddb30f006e432336c92bfdb57cb70))
+
 ## [0.36.0](https://github.com/access-ci-org/xras-ui/compare/v0.35.3...v0.36.0) (2026-09-25)
 
 
