@@ -202,23 +202,30 @@ export function GrantFields({
       poEmail,
     } = details;
 
-    const setIfEmpty = (field: GrantFieldName, value: string | undefined) => {
+    // With the lock on, NSF's record wins outright: the fields are about to
+    // become read-only, so anything already typed into them that disagrees
+    // with NSF could never be corrected. Without the lock the user keeps the
+    // last word, so only empty fields are filled in. Either way a field NSF
+    // has no value for is left alone.
+    const fillFromNsf = (field: GrantFieldName, value: string | undefined) => {
       if (!value) return;
-      const current = form.getFieldValue(`grants[${index}].${field}`);
-      if (typeof current === "string" && current.length > 0) return;
+      if (!applyNsfLock) {
+        const current = form.getFieldValue(`grants[${index}].${field}`);
+        if (typeof current === "string" && current.length > 0) return;
+      }
       form.setFieldValue(`grants[${index}].${field}`, value);
     };
 
-    setIfEmpty("title", title);
-    setIfEmpty("piName", pdPIName);
-    setIfEmpty("beginDate", startDate ? nsfDateToIso(startDate) : undefined);
-    setIfEmpty("endDate", expDate ? nsfDateToIso(expDate) : undefined);
-    setIfEmpty(
+    fillFromNsf("title", title);
+    fillFromNsf("piName", pdPIName);
+    fillFromNsf("beginDate", startDate ? nsfDateToIso(startDate) : undefined);
+    fillFromNsf("endDate", expDate ? nsfDateToIso(expDate) : undefined);
+    fillFromNsf(
       "awardedAmount",
       fundsObligatedAmt ? formatAsCurrency(fundsObligatedAmt) : undefined,
     );
-    setIfEmpty("programOfficerName", poName);
-    setIfEmpty("programOfficerEmail", poEmail);
+    fillFromNsf("programOfficerName", poName);
+    fillFromNsf("programOfficerEmail", poEmail);
 
     // NSF answered for this number, which is the whole condition for the
     // lock. Engage it last, so the autofill above is what the user is left
@@ -294,56 +301,15 @@ export function GrantFields({
         </form.AppField>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <form.AppField name={`grants[${index}].title`}>
-          {(field) => (
-            <field.FieldInput
-              label="Grant Title"
-              required
-              disabled={isDisabled("title")}
-            />
-          )}
-        </form.AppField>
-
-        <form.AppField name={`grants[${index}].piName`}>
-          {(field) => (
-            <field.FieldInput
-              label="PI Name"
-              required
-              disabled={isDisabled("piName")}
-            />
-          )}
-        </form.AppField>
-      </div>
-
-      {/* Required whether or not the grant is pending, so it has to stay
-          outside the conditional block below — otherwise answering "Yes,
-          pending" leaves the form invalid with an error on a field that
-          isn't on screen, and element.tsx blocks submit with nothing for
-          the user to fix. */}
-      <div className="grid grid-cols-1 gap-4">
-        <form.AppField name={`grants[${index}].primaryFosTypeId`}>
-          {(field) => (
-            <field.FieldSelect
-              label="Field of Science"
-              required
-              disabled={isDisabled("primaryFosTypeId")}
-              placeholder="-- Please select one --"
-              options={fosTypes.map((fos) => ({
-                value: String(fos.id),
-                label: fos.name,
-              }))}
-            />
-          )}
-        </form.AppField>
-      </div>
-
       <form.Subscribe
         selector={(state) => state.values.grants[index]?.isPending === false}
       >
         {(requireAwardDetails) =>
           requireAwardDetails ? (
             <>
+              {/* The grant number comes straight after the funding agency,
+                  which decides its format (NSF's 7-digit mask) and drives the
+                  NSF lookup. */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <form.AppField name={`grants[${index}].grantNumber`}>
                   {(field) => (
@@ -394,28 +360,6 @@ export function GrantFields({
                   )}
                 </form.AppField>
 
-                <form.AppField name={`grants[${index}].beginDate`}>
-                  {(field) => (
-                    <field.FieldDatePicker
-                      label="Start Date"
-                      required
-                      disabled={isDisabled("beginDate")}
-                    />
-                  )}
-                </form.AppField>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <form.AppField name={`grants[${index}].endDate`}>
-                  {(field) => (
-                    <field.FieldDatePicker
-                      label="End Date"
-                      required
-                      disabled={isDisabled("endDate")}
-                    />
-                  )}
-                </form.AppField>
-
                 <form.AppField name={`grants[${index}].awardedAmount`}>
                   {(field) => (
                     <field.FieldInput
@@ -426,6 +370,60 @@ export function GrantFields({
                       onBlur={(e) =>
                         field.handleChange(formatAsCurrency(e.target.value))
                       }
+                    />
+                  )}
+                </form.AppField>
+              </div>
+            </>
+          ) : null
+        }
+      </form.Subscribe>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <form.AppField name={`grants[${index}].title`}>
+          {(field) => (
+            <field.FieldInput
+              label="Grant Title"
+              required
+              disabled={isDisabled("title")}
+            />
+          )}
+        </form.AppField>
+
+        <form.AppField name={`grants[${index}].piName`}>
+          {(field) => (
+            <field.FieldInput
+              label="PI Name"
+              required
+              disabled={isDisabled("piName")}
+            />
+          )}
+        </form.AppField>
+      </div>
+
+      <form.Subscribe
+        selector={(state) => state.values.grants[index]?.isPending === false}
+      >
+        {(requireAwardDetails) =>
+          requireAwardDetails ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <form.AppField name={`grants[${index}].beginDate`}>
+                  {(field) => (
+                    <field.FieldDatePicker
+                      label="Start Date"
+                      required
+                      disabled={isDisabled("beginDate")}
+                    />
+                  )}
+                </form.AppField>
+
+                <form.AppField name={`grants[${index}].endDate`}>
+                  {(field) => (
+                    <field.FieldDatePicker
+                      label="End Date"
+                      required
+                      disabled={isDisabled("endDate")}
                     />
                   )}
                 </form.AppField>
@@ -458,6 +456,28 @@ export function GrantFields({
           ) : null
         }
       </form.Subscribe>
+
+      {/* Required whether or not the grant is pending, so it has to stay
+          outside the conditional blocks above — otherwise answering "Yes,
+          pending" leaves the form invalid with an error on a field that
+          isn't on screen, and element.tsx blocks submit with nothing for
+          the user to fix. */}
+      <div className="grid grid-cols-1 gap-4">
+        <form.AppField name={`grants[${index}].primaryFosTypeId`}>
+          {(field) => (
+            <field.FieldSelect
+              label="Field of Science"
+              required
+              disabled={isDisabled("primaryFosTypeId")}
+              placeholder="-- Please select one --"
+              options={fosTypes.map((fos) => ({
+                value: String(fos.id),
+                label: fos.name,
+              }))}
+            />
+          )}
+        </form.AppField>
+      </div>
 
       <form.AppField name={`grants[${index}].comments`}>
         {(field) => (

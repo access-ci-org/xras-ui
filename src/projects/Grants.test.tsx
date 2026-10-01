@@ -308,8 +308,12 @@ describe("Grants (edit modal)", () => {
 
   it("offers to mark a still-pending grant as not awarded, and removes it from state on confirmation", async () => {
     const user = userEvent.setup();
+    let body: any = null;
     server.use(
-      http.post(SAVE_URL, () => new HttpResponse(null, { status: 200 })),
+      http.post(SAVE_URL, async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
     );
     const { store } = renderGrants({ grants: [makeGrant({ isPending: true })] });
 
@@ -318,7 +322,15 @@ describe("Grants (edit modal)", () => {
     expect(
       screen.queryByRole("button", { name: "Yes, Grant Was Not Awarded" }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Grant Was Not Awarded" }));
+    // A destructive action, so red, and first in the footer - on the left,
+    // away from Cancel and Save Changes.
+    const notAwarded = screen.getByRole("button", { name: "Grant Was Not Awarded" });
+    expect(notAwarded).toHaveClass("bg-destructive");
+    expect(notAwarded.parentElement!.firstElementChild).toBe(notAwarded);
+    expect(notAwarded.parentElement).toContainElement(
+      screen.getByRole("button", { name: "Save Changes" }),
+    );
+    await user.click(notAwarded);
     expect(
       screen.getByText(/Are you sure this grant was never awarded/),
     ).toBeInTheDocument();
@@ -329,6 +341,10 @@ describe("Grants (edit modal)", () => {
       expect(store.get(apiStateAtom).requests[REQUEST_ID].grants).toEqual([]),
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    // The same shape as an edit - save_grants finds the grant through the
+    // requestId and only permits grant fields inside grants[].
+    expect(body.requestId).toBe(REQUEST_ID);
+    expect(body.grants).toEqual([{ grantId: 1, notAwarded: true }]);
   });
 
   it("does not offer to mark an already-awarded grant as not awarded", async () => {

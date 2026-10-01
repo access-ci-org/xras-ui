@@ -205,6 +205,29 @@ describe("GrantFields", () => {
     expect(labelFor("programOfficerEmail").textContent).toBe("Program Officer Email*");
   });
 
+  it("lays the fields out in order, with the grant number and awarded amount after the funding agency", () => {
+    renderFields({ values: awardedGrant() });
+
+    const fields = [...document.querySelectorAll("label[for^='grants[0].']")].map((label) =>
+      label.getAttribute("for")!.replace("grants[0].", ""),
+    );
+    expect(fields).toEqual([
+      "isPending-true",
+      "isPending-false",
+      "fundingAgencyId",
+      "grantNumber",
+      "awardedAmount",
+      "title",
+      "piName",
+      "beginDate",
+      "endDate",
+      "programOfficerName",
+      "programOfficerEmail",
+      "primaryFosTypeId",
+      "comments",
+    ]);
+  });
+
   it("hides the award-detail fields again if the answer is switched back to pending", async () => {
     const user = userEvent.setup();
     renderFields();
@@ -335,9 +358,10 @@ describe("GrantFields", () => {
     });
 
     it("does not overwrite fields the user has already typed into", async () => {
-      // The whole point of setIfEmpty: the lookup fires on every blur of the
-      // grant number, including ones after the user has edited the autofilled
-      // values, and must not undo their edits.
+      // Only with the lock off (see the applyNsfLock block for the lock-on
+      // counterpart): the lookup fires on every blur of the grant number,
+      // including ones after the user has edited the autofilled values, and
+      // with nothing locking those values in it must not undo their edits.
       const user = userEvent.setup();
       serveAward();
       renderUnlocked(awardedGrant({ grantNumber: "1234567", title: "My own title", piName: "" }));
@@ -632,6 +656,33 @@ describe("applyNsfLock", () => {
     // The blur's autofill lookup is the same answer the lock needs, so it is
     // not asked for twice.
     expect(requests).toHaveLength(1);
+  });
+
+  // With the lock about to engage, anything already typed into a field that
+  // disagrees with NSF's record would be frozen in place, so NSF's values
+  // replace it - unlike the lock-off lookup, which only fills empty fields.
+  it("overwrites fields already filled in with NSF's values when the blur engages the lock", async () => {
+    const user = userEvent.setup();
+    serveAward({ response: { award: [award({ poEmail: undefined })] } });
+    renderFields({
+      values: awardedGrant({
+        fundingAgencyId: 1,
+        grantNumber: "",
+        title: "My own title",
+        piName: "Someone Else",
+        programOfficerEmail: "po@example.org",
+      }),
+      applyNsfLock: true,
+    });
+
+    await user.type(field("grantNumber"), "1234567");
+    await blurGrantNumber(user);
+
+    await waitFor(() => expect(field("title")).toBeDisabled());
+    expect(field("title")).toHaveValue("A Study of Studies");
+    expect(field("piName")).toHaveValue("Ada Lovelace");
+    // A field NSF's record has no value for keeps whatever was there.
+    expect(field("programOfficerEmail")).toHaveValue("po@example.org");
   });
 
   it("leaves everything editable when the blurred grant number matches nothing", async () => {

@@ -8,6 +8,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ShadowRootProvider } from "@/lib/shadow-root";
 
 // Radix's Dialog is one of twelve Radix primitives in use across the package
@@ -82,5 +89,46 @@ describe("Dialog (Radix interaction)", () => {
 
     expect(focused).toEqual(["first"]);
     expect(shadowRoot.activeElement).toBe(shadow.getByLabelText("First"));
+  });
+
+  // While the Select is open the dialog has `pointer-events: none`, so in a
+  // browser a click anywhere but the listbox lands on the overlay. Radix's
+  // Dialog only acts on an outside press once its click arrives, by which
+  // time the Select has closed and the dialog is the top layer again - so it
+  // used to close as well (see useCoveredPointerDown in dialog.tsx).
+  // pointerEventsCheck is off because user-event otherwise refuses to click
+  // an element under `pointer-events: none`, which is the whole situation.
+  it("closes only an open Select, not the dialog, when the overlay is clicked", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    render(
+      <Dialog defaultOpen>
+        <DialogContent>
+          <DialogTitle>Example dialog</DialogTitle>
+          <DialogBody>
+            <Select>
+              <SelectTrigger aria-label="Agency">
+                <SelectValue placeholder="Pick one" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nsf">NSF</SelectItem>
+              </SelectContent>
+            </Select>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>,
+    );
+    const dialog = await screen.findByRole("dialog");
+    const overlay = dialog.previousElementSibling as HTMLElement;
+
+    await user.click(screen.getByRole("combobox", { name: "Agency" }));
+    await screen.findByRole("listbox");
+    await user.click(overlay);
+
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    // With nothing covering it, the same click still closes the dialog.
+    await user.click(overlay);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

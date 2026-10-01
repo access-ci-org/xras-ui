@@ -1534,7 +1534,7 @@ describe("notAwardedAtom", () => {
     return store;
   }
 
-  it("posts { grantId, notAwarded: true }, drops the grant from state, and closes the modal on success", async () => {
+  it("posts { requestId, grants: [{ grantId, notAwarded: true }] }, drops the grant from state, and closes the modal on success", async () => {
     let body: any = null;
     server.use(
       http.post("https://example.test/save-grants", async ({ request }) => {
@@ -1547,8 +1547,10 @@ describe("notAwardedAtom", () => {
 
     await store.set(notAwardedAtom, { requestId: 555, grantId: 1 });
 
-    expect(body.grantId).toBe(1);
-    expect(body.notAwarded).toBe(true);
+    // save_grants needs the requestId to find the grant, and only permits
+    // grant fields inside grants[] - the same shape saveGrantAtom posts.
+    expect(body.requestId).toBe(555);
+    expect(body.grants).toEqual([{ grantId: 1, notAwarded: true }]);
 
     const request = store.get(apiStateAtom).requests[555];
     expect(request.grants!.map((g) => g.grantId)).toEqual([2]);

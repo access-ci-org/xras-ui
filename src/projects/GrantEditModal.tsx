@@ -206,51 +206,52 @@ function GrantEditForm({
           }}
         </form.Subscribe>
 
-        {/* Only offered while the grant is still awaiting an award decision -
-            once it's awarded there's nothing to walk back (see
-            editableGrantFields/GRANT_AWARDED_LOCKED_FIELDS). */}
-        {grant.isPending === true ? (
-          <div className="mt-4 border-t pt-4">
-            {confirmingNotAwarded ? (
-              <Alert color="warning">
-                <p>
-                  Are you sure this grant was never awarded? It will be
-                  removed from this request, and this can&apos;t be undone.
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={saving}
-                    onClick={onNotAwarded}
-                  >
-                    {saving ? "Saving..." : "Yes, Grant Was Not Awarded"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={saving}
-                    onClick={() => setConfirmingNotAwarded(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </Alert>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => setConfirmingNotAwarded(true)}
-              >
-                Grant Was Not Awarded
-              </Button>
-            )}
-          </div>
-        ) : null}
       </DialogBody>
 
       <DialogFooter>
+        {/* Only offered while the grant is still awaiting an award decision -
+            once it's awarded there's nothing to walk back (see
+            editableGrantFields/GRANT_AWARDED_LOCKED_FIELDS). The confirmation
+            lives in the footer too, rather than at the bottom of DialogBody,
+            so it appears where the user just clicked instead of possibly
+            below the fold of a scrolled body. */}
+        {grant.isPending === true && confirmingNotAwarded ? (
+          <Alert color="warning" className="mb-2 mt-0 w-full">
+            <p>
+              Are you sure this grant was never awarded? It will be removed
+              from this request, and this can&apos;t be undone.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={saving}
+                onClick={onNotAwarded}
+              >
+                {saving ? "Saving..." : "Yes, Grant Was Not Awarded"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={saving}
+                onClick={() => setConfirmingNotAwarded(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </Alert>
+        ) : null}
+        {grant.isPending === true && !confirmingNotAwarded ? (
+          <Button
+            type="button"
+            variant="destructive"
+            className="mr-auto"
+            disabled={saving}
+            onClick={() => setConfirmingNotAwarded(true)}
+          >
+            Grant Was Not Awarded
+          </Button>
+        ) : null}
         <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>

@@ -78,6 +78,37 @@ function focusFirstTabbable(event: Event) {
 }
 
 /*
+ * A press that only closes a Select (or any other layer that disables outside
+ * pointer events) open over the dialog must not close the dialog as well.
+ * While such a layer is open, Radix gives the dialog `pointer-events: none`,
+ * so the press lands on the overlay behind it. The Select closes on
+ * pointerdown, but the dialog waits for the click (`deferPointerDownOutside`)
+ * before deciding the press was outside it - and by then it's the top layer
+ * again, so it closes too. Whether it does depends on where the pointer comes
+ * back up, since that decides whether a click is fired at all, hence
+ * "sometimes". Remembering, before any layer reacts, whether the dialog was
+ * covered at pointerdown is enough to ignore that press.
+ */
+function useCoveredPointerDown() {
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const coveredPointerDownRef = React.useRef<Event | null>(null);
+  React.useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      coveredPointerDownRef.current =
+        contentRef.current?.style.pointerEvents === "none" ? event : null;
+    };
+    // Capture phase, so this runs before the covering layer's own listener
+    // closes it and gives the dialog its pointer events back.
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, []);
+  return {
+    contentRef,
+    isCoveredPointerDown: (event: Event) => event === coveredPointerDownRef.current,
+  };
+}
+
+/*
  * Bootstrap's modal: 1.75rem below the top of the viewport rather than
  * centered in it, never taller than the viewport less that margin, and with
  * `DialogBody` as the only part that scrolls. Paragraphs inside it are
@@ -90,29 +121,42 @@ const DialogContent = React.forwardRef<
     /** Classes for the backdrop, whose opacity differs between the themes. */
     overlayClassName?: string;
   }
->(({ className, overlayClassName, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay className={overlayClassName} />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        // `mx-auto` rather than a translate: Tailwind's transform utilities
-        // read `@property`-registered variables, which a Shadow Root ignores.
-        "fixed inset-x-0 top-7 z-[1055] mx-auto flex max-h-[calc(100%-3.5rem)] w-[calc(100%-1rem)] max-w-[500px] flex-col overflow-hidden border border-border-translucent bg-background bg-clip-padding",
-        className,
-      )}
-      {...props}
-      onOpenAutoFocus={(event) => {
-        props.onOpenAutoFocus?.(event);
-        if (!event.defaultPrevented) focusFirstTabbable(event);
-      }}
-      onWheel={keepScrollInside}
-      onTouchMove={keepScrollInside}
-    >
-      {children}
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+>(({ className, overlayClassName, children, ...props }, ref) => {
+  const { contentRef, isCoveredPointerDown } = useCoveredPointerDown();
+  const composedRef = (node: HTMLDivElement | null) => {
+    contentRef.current = node;
+    if (typeof ref === "function") ref(node);
+    else if (ref) ref.current = node;
+  };
+
+  return (
+    <DialogPortal>
+      <DialogOverlay className={overlayClassName} />
+      <DialogPrimitive.Content
+        ref={composedRef}
+        className={cn(
+          // `mx-auto` rather than a translate: Tailwind's transform utilities
+          // read `@property`-registered variables, which a Shadow Root ignores.
+          "fixed inset-x-0 top-7 z-[1055] mx-auto flex max-h-[calc(100%-3.5rem)] w-[calc(100%-1rem)] max-w-[500px] flex-col overflow-hidden border border-border-translucent bg-background bg-clip-padding",
+          className,
+        )}
+        {...props}
+        onOpenAutoFocus={(event) => {
+          props.onOpenAutoFocus?.(event);
+          if (!event.defaultPrevented) focusFirstTabbable(event);
+        }}
+        onPointerDownOutside={(event) => {
+          props.onPointerDownOutside?.(event);
+          if (isCoveredPointerDown(event.detail.originalEvent)) event.preventDefault();
+        }}
+        onWheel={keepScrollInside}
+        onTouchMove={keepScrollInside}
+      >
+        {children}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 /* The close button lives in the header, as Bootstrap's `closeButton` does. */

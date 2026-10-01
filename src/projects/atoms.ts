@@ -890,8 +890,10 @@ export const saveGrantAtom = atom(
 // Not Awarded" button in the edit modal (GrantEditModal.tsx) - only ever
 // offered for a grant whose `isPending` is still `true`, so there's no
 // awarded state to reconcile server-side. save_grants (xras_submit_access)
-// treats `{ grantId, notAwarded: true }` as a request to drop the grant
-// entirely, with no other fields in the payload.
+// treats a `grants[]` entry of `{ grantId, notAwarded: true }` as a request to
+// drop the grant entirely, with no other fields in it. It's the same payload
+// shape saveGrantAtom sends - save_grants needs the requestId to find the
+// grant at all, and only permits grant fields inside `grants[]`.
 export const notAwardedAtom = atom(
   null,
   async (get, set, { requestId, grantId }: { requestId: number; grantId: number }) => {
@@ -905,8 +907,8 @@ export const notAwardedAtom = atom(
     });
 
     const data = {
-      grantId,
-      notAwarded: true,
+      requestId,
+      grants: [{ grantId, notAwarded: true }],
       authenticity_token: getAuthToken(),
     };
 

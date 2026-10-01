@@ -44,7 +44,7 @@ describe("fetchNSFGrantDetails", () => {
     await fetchNSFGrantDetails("1234567");
 
     expect(requested!.pathname).toBe("/awardapi-service/v1/awards/1234567.json");
-    // Every field GrantFields' setIfEmpty calls reference has to be in
+    // Every field GrantFields' fillFromNsf calls reference has to be in
     // printFields, or the API returns the award without it and the lookup
     // silently fills in nothing.
     const printFields = requested!.searchParams.get("printFields")!.split(",");
