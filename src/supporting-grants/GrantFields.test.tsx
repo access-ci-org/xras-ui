@@ -305,6 +305,16 @@ describe("GrantFields", () => {
   });
 
   describe("the awarded amount", () => {
+    it("asks for the full award, with any related portion noted in the explanation", () => {
+      renderFields({ values: awardedGrant() });
+
+      expect(
+        screen.getByText(
+          "Enter the full amount of the award. If only part of the funds are related to this project, note the portion that is related in the explanation below.",
+        ),
+      ).toBeInTheDocument();
+    });
+
     it("is reformatted as currency when the field is blurred", async () => {
       const user = userEvent.setup();
       renderFields({ values: awardedGrant() });

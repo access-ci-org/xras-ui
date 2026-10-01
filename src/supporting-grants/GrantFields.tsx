@@ -364,6 +364,7 @@ export function GrantFields({
                   {(field) => (
                     <field.FieldInput
                       label="Awarded Amount"
+                      description="Enter the full amount of the award. If only part of the funds are related to this project, note the portion that is related in the explanation below."
                       required
                       disabled={isDisabled("awardedAmount")}
                       placeholder="Enter awarded amount"
