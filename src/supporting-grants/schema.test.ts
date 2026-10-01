@@ -176,6 +176,23 @@ describe("supportingGrantSchema", () => {
       ]);
     });
 
+    it.each(["$999.99", "$999,999,999.01", "$1,000,000,000.00", "-5000"])(
+      "rejects an awarded amount of %s, outside $1,000 to $999,999,999",
+      (awardedAmount) => {
+        expect(issues(grant({ awardedAmount }))).toContainEqual([
+          "awardedAmount",
+          "Enter an amount between $1,000 and $999,999,999",
+        ]);
+      },
+    );
+
+    it.each(["$1,000.00", "$999,999,999.00"])(
+      "accepts an awarded amount of %s, at the ends of the range",
+      (awardedAmount) => {
+        expect(supportingGrantSchema.safeParse(grant({ awardedAmount })).success).toBe(true);
+      },
+    );
+
     it("accepts an amount still in its display formatting", () => {
       // Form state holds the formatted string, so this is the normal case,
       // not an edge one.

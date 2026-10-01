@@ -1,12 +1,16 @@
 import { z } from "zod";
 
-import { parseCurrencyAmount } from "./currency";
+import { formatAsDollars, parseCurrencyAmount } from "./currency";
 import type { FundingAgency, SupportingGrant } from "./types";
 
 const REQUIRED_MESSAGE = "This field is required";
 const EMAIL_MESSAGE = "Enter a valid email";
 
 const emailSchema = z.email();
+
+// Enforced here only, not by the server.
+export const MIN_AWARDED_AMOUNT = 1_000;
+export const MAX_AWARDED_AMOUNT = 999_999_999;
 
 const requiredIdSchema = z
   .union([z.string(), z.number()])
@@ -87,14 +91,22 @@ export function createSupportingGrantSchema(
           addRequiredIssue(ctx, "endDate");
         }
 
+        const awardedAmount = parseCurrencyAmount(grant.awardedAmount);
         if (!grant.awardedAmount.trim()) {
           addRequiredIssue(ctx, "awardedAmount");
-        } else if (
-          !Number.isFinite(parseCurrencyAmount(grant.awardedAmount))
-        ) {
+        } else if (!Number.isFinite(awardedAmount)) {
           ctx.addIssue({
             code: "custom",
             message: "Enter a valid amount",
+            path: ["awardedAmount"],
+          });
+        } else if (
+          awardedAmount < MIN_AWARDED_AMOUNT ||
+          awardedAmount > MAX_AWARDED_AMOUNT
+        ) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Enter an amount between ${formatAsDollars(MIN_AWARDED_AMOUNT)} and ${formatAsDollars(MAX_AWARDED_AMOUNT)}`,
             path: ["awardedAmount"],
           });
         }
