@@ -500,6 +500,8 @@ describe("Grants (add grant modal)", () => {
     renderGrants({ grants: [] });
 
     expect(addGrantButton()).toBeInTheDocument();
+    // The primary (teal) button, like the rest of My Projects' actions.
+    expect(addGrantButton()).toHaveClass("bg-primary");
   });
 
   it("does not offer an Add Supporting Grant button to a non-manager", () => {

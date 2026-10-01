@@ -54,7 +54,7 @@ export default function Grants({ grantNumber, requestId }: { grantNumber: string
       {canEdit && effectiveRequestId != null && (
         <>
           <div className="mt-2">
-            <Button type="button" variant="outline" onClick={() => toggleAddGrantModal()}>
+            <Button type="button" onClick={() => toggleAddGrantModal()}>
               Add Supporting Grant
             </Button>
           </div>
