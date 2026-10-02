@@ -636,6 +636,18 @@ export const submitPostAtom = atom(null, async (_get, _set, url: string) => {
 
 export const saveResourcesAtom = atom(null, async (get, set, { requestId }: { requestId: number }) => {
   const request = get(apiStateAtom).requests[requestId];
+
+  // Mark the save pending *before* the request goes out. Otherwise the modal's
+  // Submit button stays live for the whole round trip, and every extra click
+  // POSTs another exchange action (exchangeActionId is still null until the
+  // first response arrives). The modal stays open, showing its own
+  // "Submitting..." state, until the response below closes it. Bail out if a
+  // save is already in flight.
+  if (request.exchangeStatus == statuses.pending) return;
+  update(get, set, (draft) => {
+    draft.requests[requestId].exchangeStatus = statuses.pending;
+  });
+
   const requested_resources: Record<string, any> = {};
   const resource_attributes: Record<string, any> = {};
 

@@ -924,6 +924,44 @@ describe("saveResourcesAtom", () => {
     expect(request.showResourcesModal).toBe(false);
   });
 
+  // A double click on the modal's Submit button used to POST two exchange
+  // actions: nothing changed until the response arrived, so the button stayed
+  // enabled and exchangeActionId was still null.
+  it("marks the save pending immediately, ignoring repeat calls, and closes the modal when done", async () => {
+    let posts = 0;
+    let respond!: () => void;
+    const responded = new Promise<void>((resolve) => (respond = resolve));
+    server.use(
+      http.post("https://example.test/requests/555/actions.json", async () => {
+        posts++;
+        await responded;
+        return HttpResponse.json({ actionId: 777, errors: [] });
+      }),
+    );
+
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      request_actions_path: () => "https://example.test/requests/555/actions",
+    });
+    store.set(apiStateAtom, seedState({ requests: { 555: makeExchangeRequest() } }));
+
+    const first = store.set(saveResourcesAtom, { requestId: 555 });
+    let request = store.get(apiStateAtom).requests[555];
+    expect(request.exchangeStatus).toBe("pending");
+    expect(request.showResourcesModal).toBe(true);
+
+    const second = store.set(saveResourcesAtom, { requestId: 555 });
+    respond();
+    await Promise.all([first, second]);
+
+    expect(posts).toBe(1);
+    request = store.get(apiStateAtom).requests[555];
+    expect(request.exchangeStatus).toBe("success");
+    expect(request.showResourcesModal).toBe(false);
+    expect(request.exchangeActionId).toBe(777);
+  });
+
   it("records an edit failure with the server's errors, using PUT for an existing exchange action", async () => {
     server.use(
       http.put("https://example.test/requests/555/actions/100.json", () =>

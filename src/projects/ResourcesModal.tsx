@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,10 +19,12 @@ export default function ResourcesModal({
   requestId: number;
   grantNumber: string;
 }) {
-  const { request, saveResources, toggleResourcesModal } = useRequest(requestId, grantNumber);
+  const { request, saveResources, statuses, toggleResourcesModal } = useRequest(requestId, grantNumber);
   const { project } = useProject(grantNumber || request?.grantNumber);
 
   if (!request || !project || request.error || project.error) return null;
+
+  const saving = request.exchangeStatus == statuses.pending;
 
   const questions: NonNullable<(typeof request.resources)[number]["questions"]> = [];
   const changes = request.resources
@@ -59,8 +62,11 @@ export default function ResourcesModal({
     ({ attributes, values }) => values.length == 0 && attributes[0].required,
   );
 
+  // While saving, the modal can't be dismissed: saveResourcesAtom closes it
+  // once the response arrives, and closing it early would look like the
+  // submission had been cancelled when it hadn't.
   return (
-    <Dialog open={request.showResourcesModal} onOpenChange={() => toggleResourcesModal()}>
+    <Dialog open={request.showResourcesModal} onOpenChange={() => saving || toggleResourcesModal()}>
       <DialogContent className="max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Complete Your Exchange</DialogTitle>
@@ -94,13 +100,22 @@ export default function ResourcesModal({
           ) : null}
         </DialogBody>
         <DialogFooter>
-          <Button onClick={() => toggleResourcesModal()}>Continue Editing</Button>
+          <Button onClick={() => toggleResourcesModal()} disabled={saving}>
+            Continue Editing
+          </Button>
           <Button
             variant="secondary"
             onClick={() => saveResources()}
-            disabled={hasUnansweredQuestions}
+            disabled={hasUnansweredQuestions || saving}
           >
-            Submit
+            {saving ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              "Submit"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
