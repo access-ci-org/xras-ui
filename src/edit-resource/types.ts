@@ -72,6 +72,7 @@ export type UnassignedAllocationType = {
 export type ResourceData = {
   resource_details: ResourceDetails;
   uses_exchange_rates?: boolean;
+  uses_instructions?: boolean;
   resource_state_types_available?: ResourceStateTypeAvailable[];
   resource_types_available?: ResourceTypeAvailable[];
   unit_types_available?: UnitTypeAvailable[];

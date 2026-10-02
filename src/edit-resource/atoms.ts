@@ -25,6 +25,9 @@ export const resourceDetailsAtom = atom(
 export const usesExchangeRatesAtom = atom(
   (get) => get(resourceDataAtom)?.uses_exchange_rates ?? false,
 );
+export const usesInstructionsAtom = atom(
+  (get) => get(resourceDataAtom)?.uses_instructions ?? false,
+);
 
 export const allowedActionsOptionsAtom = atom((get) =>
   (get(resourceDataAtom)?.resource_state_types_available ?? []).map((state) => ({
