@@ -129,28 +129,31 @@ export const ResourceForm = ({
           ))}
         </select>
       </div>
-        {usesExchangeRates && (
-            <>
-                <label className={ADMIN_LABEL}>
-                    Minimum exchange amount, in{" "}
-                    {
-                        unitTypesOptions.find(
-                            (option) => option.value.toString() === resourceDetails.unit_type_id.toString(),
-                        )?.label
-                    }
-                </label>
-                <input
-                    className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
-                    value={resourceDetails.min_exchange}
-                    onChange={(e) => updateResourceField({ field: "min_exchange", value: e.target.value })}
-                />
-            </>
-        )}
-      <input
-        className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
-        value={resourceDetails.min_exchange}
-        onChange={(e) => updateResourceField({ field: "min_exchange", value: e.target.value })}
-      />
+      {usesExchangeRates && (
+          <>
+              <label className={ADMIN_LABEL}>
+                  Minimum exchange amount, in{" "}
+                  {
+                      unitTypesOptions.find(
+                          (option) =>
+                              option.value.toString() ===
+                              resourceDetails.unit_type_id.toString(),
+                      )?.label
+                  }
+              </label>
+
+              <input
+                  className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
+                  value={resourceDetails.min_exchange}
+                  onChange={(e) =>
+                      updateResourceField({
+                          field: "min_exchange",
+                          value: e.target.value,
+                      })
+                  }
+              />
+          </>
+      )}
     </>
   );
 };
