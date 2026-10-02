@@ -48,6 +48,7 @@ export class SupportingGrantsElement extends HTMLElement {
   private root: Root | null = null;
   private container: HTMLDivElement;
   private stylesheetsAttached = false;
+  private unsupportedActiveAllocation = false;
 
   constructor() {
     super();
@@ -102,11 +103,32 @@ export class SupportingGrantsElement extends HTMLElement {
     if (value == null) this.removeAttribute("include-grants-field-name");
     else this.setAttribute("include-grants-field-name", value);
   }
+  
+  // Unlike the other props, this one can change after mount: it depends on
+  // who holds the PI role, which the host page lets the user change. Setting
+  // it re-renders the existing root, which keeps the form's React state.
+  get hasUnsupportedActiveAllocation(): boolean {
+    return this.unsupportedActiveAllocation;
+  }
+
+  set hasUnsupportedActiveAllocation(value: boolean) {
+    const next = Boolean(value);
+    if (next === this.unsupportedActiveAllocation) return;
+
+    this.unsupportedActiveAllocation = next;
+    this.render();
+  }
 
   connectedCallback() {
     this.attachStylesheets();
     this.root = ReactDOM.createRoot(this.container);
-    this.root.render(
+    this.render();
+  }
+
+  // A no-op before connectedCallback, so setting the flag before the element
+  // is inserted just records it for the first render.
+  private render() {
+    this.root?.render(
       <PortalContainerContext.Provider value={this.shadowRoot}>
         <SupportingGrantsSection
           fundingAgencies={this.fundingAgencies}
@@ -114,6 +136,7 @@ export class SupportingGrantsElement extends HTMLElement {
           initialGrants={this.initialGrants}
           initialIncludeSupportingGrants={this.initialIncludeSupportingGrants}
           applyNsfLock={this.applyNsfLock}
+          hasUnsupportedActiveAllocation={this.unsupportedActiveAllocation}
           onChange={this.handleChange}
           onValidityChange={this.handleValidityChange}
         />

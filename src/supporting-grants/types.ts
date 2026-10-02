@@ -92,6 +92,12 @@ export interface SupportingGrantsProps {
    * out, since nothing on the server enforces it.
    */
   applyNsfLock?: boolean;
+  /**
+   * True when this request's PI already has another active request with no
+   * supporting grants. Shows an advisory warning when the user answers "No";
+   * it never affects validity, so the user can still submit.
+   */
+  hasUnsupportedActiveAllocation?: boolean;
   onSubmit?: (grants: SupportingGrant[]) => void;
   /**
    * Called with the current grants and include-supporting-grants state on
