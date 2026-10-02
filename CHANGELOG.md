@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.36.3](https://github.com/access-ci-org/xras-ui/compare/v0.36.2...v0.36.3) (2026-10-02)
+
+
+### Bug Fixes
+
+* **projects:** disable exchange submit button during save ([2010160](https://github.com/access-ci-org/xras-ui/commit/20101607ca8c3ed80c892fe16464b762550bb23e))
+
 ## [0.36.2](https://github.com/access-ci-org/xras-ui/compare/v0.36.1...v0.36.2) (2026-09-30)
 
 
