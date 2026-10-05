@@ -103,7 +103,8 @@ export type Grant = {
   title?: string | null;
   beginDate?: string | null;
   endDate?: string | null;
-  awardedAmount?: number | null;
+  // A string in practice: the API serializes the numeric column as one.
+  awardedAmount?: number | string | null;
   awardedUnits?: string | null;
   percentageAward?: number | null;
   programOfficerName?: string | null;

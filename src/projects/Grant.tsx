@@ -12,7 +12,11 @@ import {
 
 import { cn } from "@/lib/utils";
 import InlineButton from "../shared/InlineButton";
-import { AWARDED_UNITS, formatAsDollars } from "../supporting-grants/currency";
+import {
+  AWARDED_UNITS,
+  formatAsDollars,
+  parseCurrencyAmount,
+} from "../supporting-grants/currency";
 import { formatDate, formatNumber } from "../shared/helpers/utils";
 import type { Grant as GrantType } from "./types";
 
@@ -20,12 +24,16 @@ const formatAwardedAmount = (grant: GrantType): string | null => {
   if (grant.awardedAmount == null) return null;
   // Dollars are formatted as currency but to the nearest whole dollar: cents
   // are noise in a summary, and the edit form's field is where they matter.
+  // A grant with no units is dollars too, as the edit form already assumes.
   // Anything else is a count of whatever unit the grant names.
-  return grant.awardedUnits === AWARDED_UNITS
-    ? formatAsDollars(grant.awardedAmount)
-    : `${formatNumber(grant.awardedAmount, { decimalPlaces: 0 })}${
-        grant.awardedUnits ? ` ${grant.awardedUnits}` : ""
-      }`;
+  const units = grant.awardedUnits || AWARDED_UNITS;
+  if (units === AWARDED_UNITS) return formatAsDollars(grant.awardedAmount);
+
+  // The API serializes the numeric column as a string ("12561813.0"), which
+  // toLocaleString would pass through unformatted.
+  const amount = parseCurrencyAmount(grant.awardedAmount);
+  if (!Number.isFinite(amount)) return `${grant.awardedAmount} ${units}`;
+  return `${formatNumber(amount, { decimalPlaces: 0 })} ${units}`;
 };
 
 const formatDateRange = (grant: GrantType): string | null => {

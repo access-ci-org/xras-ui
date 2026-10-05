@@ -166,6 +166,16 @@ describe("Grants (compact listing)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it.each([
+    ["dollars, as the API's numeric string", "12561813.49", "Dollars", "$12,561,813"],
+    ["no units, which are dollars", "12561813.5", null, "$12,561,814"],
+    ["another unit", "1234567.0", "SUs", "1,234,567 SUs"],
+  ])("formats an awarded amount in %s", (_, awardedAmount, awardedUnits, expected) => {
+    renderGrants({ grants: [makeGrant({ awardedAmount, awardedUnits })], role: "user" });
+
+    expect(screen.getByText(expected)).toBeInTheDocument();
+  });
+
   it("summarizes each grant for a non-manager", () => {
     renderGrants({ grants: [makeGrant()], role: "user" });
 
