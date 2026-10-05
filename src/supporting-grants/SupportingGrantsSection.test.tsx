@@ -369,4 +369,36 @@ describe("SupportingGrantsSection", () => {
     expect(screen.queryByRole("button", { name: /^Submit$/i })).not.toBeInTheDocument();
     expect(document.querySelector('button[type="submit"]')).toBeNull();
   });
+  describe("unsupported active allocation warning", () => {
+    it("shows when the PI has one and the user answers No", async () => {
+      const user = userEvent.setup();
+      renderSection({ hasUnsupportedActiveAllocation: true });
+
+      await user.click(includeRadio("false"));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        /only one project without a supporting grant/,
+      );
+    });
+
+    it("stays hidden before the question is answered, and on Yes", async () => {
+      const user = userEvent.setup();
+      renderSection({ hasUnsupportedActiveAllocation: true });
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+      await user.click(includeRadio("true"));
+
+      await waitFor(() => expect(grantCount()).toBe(1));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("stays hidden when the PI has no unsupported allocation", async () => {
+      const user = userEvent.setup();
+      renderSection();
+
+      await user.click(includeRadio("false"));
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+  });
 });

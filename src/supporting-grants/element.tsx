@@ -127,6 +127,8 @@ export class SupportingGrantsElement extends HTMLElement {
     this.render();
   }
 
+  // A no-op before connectedCallback, so setting the flag before the element
+  // is inserted just records it for the first render.
   private render() {
     this.root?.render(
       <PortalContainerContext.Provider value={this.shadowRoot}>
