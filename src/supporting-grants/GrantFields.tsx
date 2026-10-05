@@ -8,7 +8,11 @@ import type { AppForm } from "@/components/form";
 import Alert from "../shared/Alert";
 import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
 import { formatAsCurrency } from "./currency";
-import { fetchNSFGrantDetails, nsfDateToIso } from "./nsf-lookup";
+import {
+  fetchNSFGrantDetails,
+  nsfDateToIso,
+  type NSFAwardDetails,
+} from "./nsf-lookup";
 import type {
   FundingAgency,
   GrantFieldName,
@@ -16,23 +20,44 @@ import type {
   SupportingGrantsState,
 } from "./types";
 
-// Every field except Field of Science and Explanation - once the lock
-// engages, those are the only two fields left editable (everything else is
-// expected to come from NSF's own award record, not be hand-edited alongside
-// it). Distinct from the server's own locked-field set
+// Once the lock engages, every field except Field of Science and Explanation
+// is expected to come from NSF's own award record rather than be edited
+// alongside it. Distinct from the server's own locked-field set
 // (GRANT_AWARDED_LOCKED_FIELDS in save_grants) - this restriction is UI-only.
+//
+// These identify the record itself, so they lock unconditionally.
 const NSF_LOCKED_FIELDS: readonly GrantFormFieldName[] = [
   "fundingAgencyId",
   "grantNumber",
-  "title",
-  "piName",
   "isPending",
-  "beginDate",
-  "endDate",
-  "awardedAmount",
-  "programOfficerName",
-  "programOfficerEmail",
 ];
+
+// These are filled in from the record, each in the form's own format, and
+// lock only where the record actually has a value. NSF's award records aren't
+// always complete - a missing program officer email is the usual gap - and
+// every one of these fields is required, so locking one empty would leave the
+// grant impossible to save.
+const NSF_FILLED_FIELDS: Partial<
+  Record<GrantFieldName, (award: NSFAwardDetails) => string | undefined>
+> = {
+  title: (award) => award.title,
+  piName: (award) => award.pdPIName,
+  beginDate: (award) =>
+    award.startDate ? nsfDateToIso(award.startDate) : undefined,
+  endDate: (award) => (award.expDate ? nsfDateToIso(award.expDate) : undefined),
+  awardedAmount: (award) =>
+    award.fundsObligatedAmt
+      ? formatAsCurrency(award.fundsObligatedAmt)
+      : undefined,
+  programOfficerName: (award) => award.poName,
+  programOfficerEmail: (award) => award.poEmail,
+};
+
+const nsfValueFor = (
+  field: GrantFormFieldName,
+  award: NSFAwardDetails,
+): string | undefined =>
+  NSF_FILLED_FIELDS[field as GrantFieldName]?.(award) || undefined;
 
 const isNsfAgency = (
   fundingAgencyId: unknown,
@@ -46,22 +71,23 @@ const isNsfAgency = (
 // the fields away. A number NSF doesn't recognise - a typo, most of the time -
 // has no record behind it to defer to, and locking on one would disable the
 // grant number field itself, trapping the user with a wrong number they can no
-// longer correct.
-async function nsfLockApplies(
+// longer correct. Resolves to the record the lock rests on, or null for no
+// lock.
+async function nsfLockingAward(
   fundingAgencyId: unknown,
   grantNumber: unknown,
   agencies: FundingAgency[],
-): Promise<boolean> {
-  if (!isNsfAgency(fundingAgencyId, agencies)) return false;
-  if (typeof grantNumber !== "string") return false;
+): Promise<NSFAwardDetails | null> {
+  if (!isNsfAgency(fundingAgencyId, agencies)) return null;
+  if (typeof grantNumber !== "string") return null;
   const digits = grantNumber.replace(/[^0-9]+/g, "");
-  if (!digits) return false;
+  if (!digits) return null;
   try {
-    return Boolean(await fetchNSFGrantDetails(digits));
+    return await fetchNSFGrantDetails(digits);
   } catch {
     // research.gov being unreachable says nothing about the grant, so leave
     // the fields editable rather than lock on an infrastructure failure.
-    return false;
+    return null;
   }
 }
 
@@ -78,8 +104,10 @@ interface GrantFieldsProps {
   /**
    * Once the funding agency is NSF and NSF's award database recognises the
    * grant number, locks every field except Field of Science and Explanation
-   * (see NSF_LOCKED_FIELDS) so nobody can contradict what NSF's own award
-   * record says. There is no server-side equivalent of this restriction,
+   * (see NSF_LOCKED_FIELDS and NSF_FILLED_FIELDS) so nobody can contradict
+   * what NSF's own award record says - except the fields that record has no
+   * value for, which the user would otherwise have no way to fill in. There
+   * is no server-side equivalent of this restriction,
    * which is why it can be turned off: it's on by default, and only a client
    * embedding these fields itself has any reason to opt out. Decided only on
    * mount, when the funding agency changes, and when the grant number is
@@ -117,7 +145,14 @@ export function GrantFields({
   const [nsfLookupStatus, setNsfLookupStatus] = useState<
     "idle" | "pending" | "error"
   >("idle");
-  const [nsfLocked, setNsfLocked] = useState(false);
+  // The NSF award record the lock rests on, or null while it isn't engaged.
+  const [nsfLockAward, setNsfLockAward] = useState<NSFAwardDetails | null>(null);
+  const nsfLocked = nsfLockAward !== null;
+  const nsfLeavesFieldsOpen =
+    nsfLocked &&
+    (Object.keys(NSF_FILLED_FIELDS) as GrantFieldName[]).some(
+      (field) => !nsfValueFor(field, nsfLockAward),
+    );
   // Only the most recent decision about the lock may stand. Each check claims
   // the next number before it awaits, so a lookup that comes back late can't
   // re-lock a grant number the user has since changed, or unlock one a newer
@@ -133,8 +168,8 @@ export function GrantFields({
     async (fundingAgencyId: unknown, grantNumber: unknown) => {
       if (!applyNsfLock) return;
       const check = ++nsfLockCheck.current;
-      const locked = await nsfLockApplies(fundingAgencyId, grantNumber, fundingAgencies);
-      if (nsfLockCheck.current === check) setNsfLocked(locked);
+      const award = await nsfLockingAward(fundingAgencyId, grantNumber, fundingAgencies);
+      if (nsfLockCheck.current === check) setNsfLockAward(award);
     },
     [applyNsfLock, fundingAgencies],
   );
@@ -143,7 +178,7 @@ export function GrantFields({
     // Mount only, and intentionally: an already-submitted NSF grant arrives
     // with its number filled in, which is the case the lock exists for (My
     // Projects' edit modal is nothing else). Afterwards the lock is re-decided
-    // by the two handlers below, not by re-running this.
+    // by lookUpNsfAward, not by re-running this.
     void checkNsfLock(
       form.getFieldValue(`grants[${index}].fundingAgencyId`),
       form.getFieldValue(`grants[${index}].grantNumber`),
@@ -153,14 +188,17 @@ export function GrantFields({
 
   const isDisabled = (field: GrantFormFieldName) =>
     disabledFields.includes(field) ||
-    (applyNsfLock && nsfLocked && (NSF_LOCKED_FIELDS as readonly string[]).includes(field));
+    (applyNsfLock &&
+      nsfLocked &&
+      (NSF_LOCKED_FIELDS.includes(field) ||
+        nsfValueFor(field, nsfLockAward) !== undefined));
 
-  async function handleGrantNumberBlur() {
-    const grant = form.getFieldValue(`grants[${index}]`);
-    const fundingAgency = fundingAgencies.find(
-      (agency) => String(agency.id) === String(grant.fundingAgencyId),
-    );
-
+  // The user-facing form of the lookup, run whenever the user supplies one
+  // half of what it needs - a grant number (on blur) or the funding agency -
+  // with the other already in place. Either order has to autofill: someone
+  // who types the number first and picks NSF second has asked for exactly the
+  // same thing as someone who does it the other way round.
+  async function lookUpNsfAward(fundingAgencyId: unknown, rawGrantNumber: unknown) {
     // The lookup fills in fields from the grant number, so it has nothing to
     // do where the grant number itself is fixed - which includes every case
     // where the lock is already engaged.
@@ -168,69 +206,61 @@ export function GrantFields({
 
     setNsfLookupStatus("idle");
 
-    // This blur's own lookup is the newest word on the lock, so claim a check
-    // number for it here rather than calling checkNsfLock and asking NSF about
-    // the same grant number twice. Claimed before the early returns below, and
-    // before the await, so that a silent check still in flight over an older
-    // grant number can no longer have the last word either way.
+    // This lookup is the newest word on the lock, so claim a check number for
+    // it here rather than calling checkNsfLock and asking NSF about the same
+    // grant number twice. Claimed before the early returns below, and before
+    // the await, so that a check still in flight over an older grant number
+    // or agency can no longer have the last word either way.
     const check = ++nsfLockCheck.current;
+    const settleLock = (award: NSFAwardDetails | null) => {
+      if (applyNsfLock && nsfLockCheck.current === check) setNsfLockAward(award);
+    };
 
-    if (fundingAgency?.abbr !== "NSF") return;
+    if (!isNsfAgency(fundingAgencyId, fundingAgencies)) return settleLock(null);
 
     // NSF award numbers are exactly 7 digits, so anything shorter is a
     // half-typed number — looking it up would only 404 and flash an error at
     // someone who is still typing.
-    const grantNumber = grant.grantNumber.replace(/[^0-9]+/g, "");
-    if (!/^\d{7}$/.test(grantNumber)) return;
+    const grantNumber =
+      typeof rawGrantNumber === "string" ? rawGrantNumber.replace(/[^0-9]+/g, "") : "";
+    if (!/^\d{7}$/.test(grantNumber)) return settleLock(null);
 
     setNsfLookupStatus("pending");
-    const details = await fetchNSFGrantDetails(grantNumber);
+    let details: NSFAwardDetails | null;
+    try {
+      details = await fetchNSFGrantDetails(grantNumber);
+    } catch {
+      // research.gov being unreachable says nothing about the grant, so it's
+      // neither a not-found nor grounds for a lock - see nsfLockingAward.
+      setNsfLookupStatus("idle");
+      return settleLock(null);
+    }
     if (!details) {
-      // No record to defer to, so nothing to lock - see nsfLockApplies.
+      // No record to defer to, so nothing to lock - see nsfLockingAward.
       setNsfLookupStatus("error");
-      return;
+      return settleLock(null);
     }
     setNsfLookupStatus("idle");
-
-    const {
-      title,
-      pdPIName,
-      startDate,
-      expDate,
-      fundsObligatedAmt,
-      poName,
-      poEmail,
-    } = details;
 
     // With the lock on, NSF's record wins outright: the fields are about to
     // become read-only, so anything already typed into them that disagrees
     // with NSF could never be corrected. Without the lock the user keeps the
     // last word, so only empty fields are filled in. Either way a field NSF
-    // has no value for is left alone.
-    const fillFromNsf = (field: GrantFieldName, value: string | undefined) => {
-      if (!value) return;
+    // has no value for is left alone - and, with the lock on, left editable.
+    for (const field of Object.keys(NSF_FILLED_FIELDS) as GrantFieldName[]) {
+      const value = nsfValueFor(field, details);
+      if (!value) continue;
       if (!applyNsfLock) {
         const current = form.getFieldValue(`grants[${index}].${field}`);
-        if (typeof current === "string" && current.length > 0) return;
+        if (typeof current === "string" && current.length > 0) continue;
       }
       form.setFieldValue(`grants[${index}].${field}`, value);
-    };
-
-    fillFromNsf("title", title);
-    fillFromNsf("piName", pdPIName);
-    fillFromNsf("beginDate", startDate ? nsfDateToIso(startDate) : undefined);
-    fillFromNsf("endDate", expDate ? nsfDateToIso(expDate) : undefined);
-    fillFromNsf(
-      "awardedAmount",
-      fundsObligatedAmt ? formatAsCurrency(fundsObligatedAmt) : undefined,
-    );
-    fillFromNsf("programOfficerName", poName);
-    fillFromNsf("programOfficerEmail", poEmail);
+    }
 
     // NSF answered for this number, which is the whole condition for the
     // lock. Engage it last, so the autofill above is what the user is left
     // looking at in the now read-only fields.
-    if (applyNsfLock && nsfLockCheck.current === check) setNsfLocked(true);
+    settleLock(details);
   }
 
   return (
@@ -238,7 +268,10 @@ export function GrantFields({
       {applyNsfLock && nsfLocked ? (
         <Alert color="info">
           This grant&apos;s details were populated from NSF&apos;s records and can&apos;t be
-          hand-edited here.
+          edited
+          {nsfLeavesFieldsOpen
+            ? ", except for any that NSF's records leave blank."
+            : "."}
         </Alert>
       ) : null}
 
@@ -279,7 +312,7 @@ export function GrantFields({
                   form.setFieldValue(`grants[${index}].grantNumber`, "");
                 }
               }
-              void checkNsfLock(
+              void lookUpNsfAward(
                 value,
                 form.getFieldValue(`grants[${index}].grantNumber`),
               );
@@ -327,7 +360,12 @@ export function GrantFields({
                             ? raw.replace(/\D/g, "").slice(0, 7)
                             : raw.slice(0, 40)
                         }
-                        onBlur={() => void handleGrantNumberBlur()}
+                        onBlur={() =>
+                          void lookUpNsfAward(
+                            form.getFieldValue(`grants[${index}].fundingAgencyId`),
+                            form.getFieldValue(`grants[${index}].grantNumber`),
+                          )
+                        }
                         adornment={
                           nsfLookupStatus === "pending" ? (
                             <Loader2 className="size-4 animate-spin text-muted-foreground" />

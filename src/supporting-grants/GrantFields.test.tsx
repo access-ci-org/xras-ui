@@ -141,7 +141,7 @@ function serveAward(body: Record<string, unknown> = { response: { award: [award(
 const NO_SUCH_AWARD = { response: { award: [] } };
 
 // research.gov unreachable, as opposed to answering that it has no such
-// award - the case nsfLockApplies swallows.
+// award - the case nsfLockingAward swallows.
 function serveAwardLookupFailure() {
   const requests: URL[] = [];
   server.use(
@@ -592,7 +592,7 @@ describe("applyNsfLock", () => {
   // (see AddGrantModal.test.tsx).
   it("locks the fields when the funding agency is changed to NSF and it recognises the grant number already present", async () => {
     const user = userEvent.setup();
-    serveAward();
+    const requests = serveAward();
     renderFields({
       values: awardedGrant({ fundingAgencyId: 2, grantNumber: "1234567" }),
       applyNsfLock: true,
@@ -603,6 +603,44 @@ describe("applyNsfLock", () => {
 
     await waitFor(() => expect(field("title")).toBeDisabled());
     expect(screen.getByText(/populated from NSF's records/)).toBeInTheDocument();
+    // Picking the agency second is the same request as blurring the number
+    // second, so it autofills too - locking without filling in would freeze
+    // whatever happened to be in the fields.
+    expect(field("title")).toHaveValue("A Study of Studies");
+    expect(field("programOfficerEmail")).toHaveValue("ghopper@nsf.gov");
+    expect(requests).toHaveLength(1);
+  });
+
+  it("autofills and locks when the grant number is typed before NSF is picked as the agency", async () => {
+    const user = userEvent.setup();
+    serveAward();
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: null, grantNumber: "" }),
+      applyNsfLock: true,
+    });
+
+    await user.type(field("grantNumber"), "1234567");
+    await blurGrantNumber(user);
+    await selectFundingAgency(user, "National Science Foundation");
+
+    await waitFor(() => expect(field("title")).toBeDisabled());
+    expect(field("title")).toHaveValue("A Study of Studies");
+    expect(field("piName")).toHaveValue("Ada Lovelace");
+  });
+
+  it("shows the not-found message when NSF is picked as the agency for a number it has no record of", async () => {
+    const user = userEvent.setup();
+    serveAward(NO_SUCH_AWARD);
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 2, grantNumber: "0000000" }),
+      applyNsfLock: true,
+    });
+
+    await selectFundingAgency(user, "National Science Foundation");
+
+    await screen.findByText("Could not find an NSF grant with this number.");
+    expect(field("grantNumber")).toBeEnabled();
+    expect(field("title")).toBeEnabled();
   });
 
   it("does not lock the fields when the funding agency is changed to NSF but no grant number has been entered", async () => {
@@ -695,6 +733,24 @@ describe("applyNsfLock", () => {
     expect(field("programOfficerEmail")).toHaveValue("po@example.org");
   });
 
+  it("leaves everything editable, with no not-found message, when the blur's lookup itself fails", async () => {
+    const user = userEvent.setup();
+    const requests = serveAwardLookupFailure();
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "" }),
+      applyNsfLock: true,
+    });
+
+    await user.type(field("grantNumber"), "1234567");
+    await blurGrantNumber(user);
+
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await waitFor(() => expect(document.querySelector(".animate-spin")).toBeNull());
+    expect(screen.queryByText("Could not find an NSF grant with this number.")).not.toBeInTheDocument();
+    expect(field("grantNumber")).toBeEnabled();
+    expect(field("title")).toBeEnabled();
+  });
+
   it("leaves everything editable when the blurred grant number matches nothing", async () => {
     const user = userEvent.setup();
     serveAward(NO_SUCH_AWARD);
@@ -710,6 +766,74 @@ describe("applyNsfLock", () => {
     expect(field("grantNumber")).toBeEnabled();
     expect(field("title")).toBeEnabled();
     expect(screen.queryByText(/populated from NSF's records/)).not.toBeInTheDocument();
+  });
+
+  // NSF's records don't always name the program officer's email, and the
+  // field is required, so locking it empty would leave the grant impossible to
+  // save.
+  it("leaves the program officer email editable when NSF recognises the initial grant number but has no email for it", async () => {
+    serveAward({ response: { award: [award({ poEmail: undefined })] } });
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }),
+      applyNsfLock: true,
+    });
+
+    expect(
+      await screen.findByText(/except for any that NSF's records leave blank/),
+    ).toBeInTheDocument();
+    expect(field("programOfficerName")).toBeDisabled();
+    expect(field("title")).toBeDisabled();
+    expect(field("programOfficerEmail")).toBeEnabled();
+  });
+
+  it("leaves every field NSF's record has no value for editable, and locks the rest", async () => {
+    serveAward({
+      response: { award: [award({ pdPIName: undefined, expDate: "", fundsObligatedAmt: undefined })] },
+    });
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }),
+      applyNsfLock: true,
+    });
+
+    await waitFor(() => expect(field("title")).toBeDisabled());
+    expect(field("piName")).toBeEnabled();
+    expect(field("endDate")).toBeEnabled();
+    expect(field("awardedAmount")).toBeEnabled();
+    expect(field("beginDate")).toBeDisabled();
+    expect(field("programOfficerName")).toBeDisabled();
+    expect(field("programOfficerEmail")).toBeDisabled();
+    // These identify the record rather than come from it, so they stay locked.
+    expect(field("grantNumber")).toBeDisabled();
+    expect(field("fundingAgencyId")).toBeDisabled();
+  });
+
+  it("says nothing about blank fields when NSF's record fills in every one", async () => {
+    serveAward();
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "1234567" }),
+      applyNsfLock: true,
+    });
+
+    expect(
+      await screen.findByText(/populated from NSF's records and can't be edited\.$/),
+    ).toBeInTheDocument();
+  });
+
+  it("leaves the program officer email editable when the blur engages the lock on a record with an empty email", async () => {
+    const user = userEvent.setup();
+    serveAward({ response: { award: [award({ poEmail: "" })] } });
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "" }),
+      applyNsfLock: true,
+    });
+
+    await user.type(field("grantNumber"), "1234567");
+    await blurGrantNumber(user);
+    await waitFor(() => expect(field("title")).toBeDisabled());
+
+    expect(field("programOfficerEmail")).toBeEnabled();
+    await user.type(field("programOfficerEmail"), "po@example.org");
+    expect(field("programOfficerEmail")).toHaveValue("po@example.org");
   });
 
   // Once it does engage there is no way back out of it: grantNumber and

@@ -290,7 +290,7 @@ describe("AddGrantModal", () => {
   // The NSF lock is a UI restriction (GrantFields.tsx), not a server-enforced
   // one, and My Projects always leaves it at its default, which is on. It
   // engages only once NSF's own award database recognises the grant number
-  // (GrantFields.tsx's nsfLockApplies), so this serves that lookup - a typo'd
+  // (GrantFields.tsx's nsfLockingAward), so this serves that lookup - a typo'd
   // number must not lock a brand-new grant, which is the whole reason the
   // trigger isn't "NSF agency plus something in the field".
   it("locks every field but Field of Science and Explanation once NSF confirms the grant number entered here", async () => {
