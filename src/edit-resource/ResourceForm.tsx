@@ -171,10 +171,12 @@ export const ResourceForm = ({
         <>
           <label className={ADMIN_LABEL}> Resource Instructions </label>
           <small className={ADMIN_HELP}>
-            Instructions that are communicated with user when they are granted
-            an username on your machine. Please provide any infromation for them
-            to upload SSH keys, where to log in, and anything else they need
-            beyond a username.
+            Instructions that will be emailed to a user who has been added to a
+            project on this resource when the local username has been mapped,
+            and the user account packet/task has been processed. Please provide
+            additional information to help the user get started (uploading SSH
+            keys, login hostname, link to documentation, etc.) Please use plain
+            text only, no HTML.
           </small>
           <textarea
             className={cn(ADMIN_TEXTAREA, ADMIN_SPAN8)}
