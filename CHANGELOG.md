@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.37.0](https://github.com/access-ci-org/xras-ui/compare/v0.36.3...v0.37.0) (2026-10-08)
+
+
+### Features
+
+* adding RP instructions field for resource login ([58e8f98](https://github.com/access-ci-org/xras-ui/commit/58e8f98ed9d63ca60c556e7105bd1a33a572e809))
+
 ## [0.36.3](https://github.com/access-ci-org/xras-ui/compare/v0.36.2...v0.36.3) (2026-10-02)
 
 
