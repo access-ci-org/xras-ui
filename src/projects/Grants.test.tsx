@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider, createStore } from "jotai";
 import { http, HttpResponse } from "msw";
@@ -97,12 +97,15 @@ function renderGrants({
   requestId = REQUEST_ID,
   currentRequestId = REQUEST_ID,
   requestOverrides = {},
+  otherRequests = [],
 }: {
   grants?: Grant[];
   role?: string;
   requestId?: number;
   currentRequestId?: number | null;
   requestOverrides?: Partial<RequestType>;
+  /** The project's other requests, alongside the one being rendered. */
+  otherRequests?: RequestType[];
 } = {}) {
   const store = createStore();
   store.set(routesAtom, { ...defaultRoutes, projects_save_grants_path: () => SAVE_URL });
@@ -125,12 +128,23 @@ function renderGrants({
     projectListLoading: false,
     projects: {
       [GRANT_NUMBER]: {
-        ...makeProject({ currentRequestId, users: [currentUser] }),
+        ...makeProject({
+          currentRequestId,
+          users: [currentUser],
+          // What the request menu lists - and so how the reminder names them.
+          requestsList: [{ requestId, status: "Active" }, ...otherRequests].map((r) => ({
+            allocationType: "Explore",
+            entryDate: "2026-01-01",
+            ...r,
+            requestId: r.requestId,
+          })),
+        }),
         currentUser,
       },
     },
     requests: {
       [requestId]: makeRequest({ requestId, grants, ...requestOverrides }),
+      ...Object.fromEntries(otherRequests.map((r) => [r.requestId, r])),
     },
     username: "testuser",
     fundingAgencies: [],
@@ -214,18 +228,150 @@ describe("Grants (compact listing)", () => {
   );
 
   // The server is the actual authority (save_grants checks the caller's role
-  // against the request directly); this only pins the UI affordance, per the
-  // plan's "requestId == project.currentRequestId" gate.
-  it("hides the edit button for a manager viewing a superseded (non-current) request", () => {
-    renderGrants({ grants: [makeGrant()], role: "pi", requestId: 556, currentRequestId: 555 });
+  // against the request directly); this only pins the UI affordance - see
+  // grantsEditableInProjects.
+  it("hides the edit button for a manager viewing a past request", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      role: "pi",
+      requestId: 554,
+      currentRequestId: 555,
+      requestOverrides: { timeStatus: "past" },
+    });
 
     expect(screen.queryByRole("button", { name: "Edit supporting grant" })).not.toBeInTheDocument();
+  });
+
+  it("offers the edit button to a manager viewing an approved request that hasn't started yet", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      role: "pi",
+      requestId: 556,
+      currentRequestId: 555,
+      requestOverrides: { timeStatus: "future" },
+    });
+
+    expect(editButton()).toBeInTheDocument();
   });
 
   it("shows the saved confirmation after a successful save", () => {
     renderGrants({ grants: [makeGrant()], requestOverrides: { grantsStatus: "success" } });
 
     expect(screen.getByText("Your changes have been saved.")).toBeInTheDocument();
+  });
+});
+
+describe("Grants (reminder about the project's other requests)", () => {
+  const RENEWAL_ID = 556;
+
+  // A request whose grants are edited in the request form - the request
+  // action allows Edit, as for an Incomplete renewal. Not yet approved, so it
+  // has no dates and no timeStatus.
+  const editableRenewal = (overrides: Partial<RequestType> = {}) =>
+    makeRequest({
+      actions: [
+        {
+          actionId: 1,
+          allowedOperations: ["Edit", "Delete"],
+          date: "2026-10-01",
+          deleteStatus: null,
+          detailAvailable: true,
+          isRequest: true,
+          resources: [],
+          showDeleteModal: false,
+          status: "Incomplete",
+          type: "Renewal",
+        },
+      ],
+      endDate: null,
+      entryDate: "2026-10-07",
+      requestId: RENEWAL_ID,
+      startDate: null,
+      status: "Incomplete",
+      timeStatus: undefined,
+      type: "Renewal",
+      ...overrides,
+    });
+
+  // An approved renewal that starts when the current request ends. Its grants
+  // are edited here, after selecting it in the request menu.
+  const approvedRenewal = (overrides: Partial<RequestType> = {}) =>
+    makeRequest({
+      actions: [],
+      endDate: "2027-10-10",
+      requestId: RENEWAL_ID,
+      startDate: "2026-10-11",
+      status: "Approved",
+      timeStatus: "future",
+      type: "Renewal",
+      ...overrides,
+    });
+
+  const reminderText = /You may want to make the same change/;
+
+  it("reminds the user about an editable renewal after a save, with a link to edit it", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [editableRenewal()],
+    });
+
+    expect(screen.getByText(reminderText)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit Explore: Started Oct 7, 2026" })).toHaveAttribute(
+      "href",
+      defaultRoutes.edit_request_path(RENEWAL_ID),
+    );
+  });
+
+  it("tells the user to select an approved future request in the request menu", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [approvedRenewal()],
+    });
+
+    const alert = screen.getByText(reminderText);
+    expect(alert).toHaveTextContent(
+      "Select Explore: Oct 11, 2026 to Oct 10, 2027 in the request menu above.",
+    );
+    expect(screen.queryByRole("link", { name: /^Edit / })).not.toBeInTheDocument();
+  });
+
+  it("doesn't remind the user until a change has been saved", () => {
+    renderGrants({ grants: [makeGrant()], otherRequests: [editableRenewal()] });
+
+    expect(screen.queryByText(reminderText)).not.toBeInTheDocument();
+  });
+
+  it("doesn't remind the user about requests that can't be edited", () => {
+    const pastRequest = approvedRenewal({ requestId: 554, timeStatus: "past" });
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [pastRequest],
+    });
+
+    expect(screen.getByText("Your changes have been saved.")).toBeInTheDocument();
+    expect(screen.queryByText(reminderText)).not.toBeInTheDocument();
+  });
+
+  it("lists each editable request when there's more than one", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [
+        approvedRenewal(),
+        editableRenewal({ requestId: 557, status: "Submitted", entryDate: "2026-10-08" }),
+      ],
+    });
+
+    const items = within(screen.getByText(reminderText)).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Select Explore: Oct 11, 2026 to Oct 10, 2027 in the request menu above");
+    expect(screen.getByRole("link", { name: "Edit Explore: Submitted Oct 8, 2026" })).toHaveAttribute(
+      "href",
+      defaultRoutes.edit_request_path(557),
+    );
   });
 });
 
@@ -520,8 +666,14 @@ describe("Grants (add grant modal)", () => {
     expect(screen.queryByRole("button", { name: "Add Supporting Grant" })).not.toBeInTheDocument();
   });
 
-  it("hides the Add Supporting Grant button for a manager viewing a superseded (non-current) request", () => {
-    renderGrants({ grants: [], role: "pi", requestId: 556, currentRequestId: 555 });
+  it("hides the Add Supporting Grant button for a manager viewing a past request", () => {
+    renderGrants({
+      grants: [],
+      role: "pi",
+      requestId: 554,
+      currentRequestId: 555,
+      requestOverrides: { timeStatus: "past" },
+    });
 
     expect(screen.queryByRole("button", { name: "Add Supporting Grant" })).not.toBeInTheDocument();
   });

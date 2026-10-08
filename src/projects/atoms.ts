@@ -143,6 +143,7 @@ export const errorAtom = atom((get) => get(apiStateAtom).error);
 export const projectsListAtom = atom((get) => get(apiStateAtom).projectsList);
 export const projectListLoadingAtom = atom((get) => get(apiStateAtom).projectListLoading);
 export const usernameAtom = atom((get) => get(apiStateAtom).username);
+export const requestsAtom = atom((get) => get(apiStateAtom).requests);
 
 // The select-list contents for editing a supporting grant, served alongside
 // the projects themselves by projects.json (ProjectsController#list_projects
@@ -508,6 +509,13 @@ const addProject = (
   requests.sort((a: any, b: any) => (getSortDate(a) > getSortDate(b) ? -1 : 1));
   const currentRequest = requests.find((request: any) => request.timeStatus == "current");
   const currentRequestId = currentRequest ? currentRequest.requestId : null;
+  // A refresh of a project that's already on screen (see createGrantAtom)
+  // leaves the user on the request and tab they were looking at, as long as
+  // that request is still there.
+  const previous = draft.projects[grantNumber];
+  const keepSelection =
+    previous?.selectedRequestId != null &&
+    requests.some((request: any) => request.requestId == previous.selectedRequestId);
   draft.projects[grantNumber] = {
     currentRequestId,
     grantNumber,
@@ -522,9 +530,9 @@ const addProject = (
       addRequest(draft, request, { entryDate, grantNumber });
       return { allocationType, endDate, entryDate, requestId, startDate, status };
     }),
-    selectedRequestId: currentRequestId || requests[0].requestId,
+    selectedRequestId: keepSelection ? previous.selectedRequestId : currentRequestId || requests[0].requestId,
     status: projectStatus,
-    tab: "overview",
+    tab: keepSelection ? previous.tab : "overview",
     title,
     users: users
       .map(
@@ -658,52 +666,62 @@ export const searchUsersAtom = atom(null, async (get, _set, searchText: string):
 // Async actions (ported from createAsyncThunk usages)
 // ---------------------------------------------------------------------------
 
-export const fetchProjectsListAtom = atom(null, async (get, set, username: string) => {
-  set(apiStateAtom, produce(get(apiStateAtom), (draft) => {
-    draft.projectListLoading = true;
-  }));
+// `background` refreshes the list without the loading spinner. The spinner
+// replaces every project (see Projects.tsx), unmounting them, so each one
+// would lose its expanded/collapsed state and the page would appear to reload.
+export const fetchProjectsListAtom = atom(
+  null,
+  async (get, set, username: string, { background = false }: { background?: boolean } = {}) => {
+    if (!background)
+      set(apiStateAtom, produce(get(apiStateAtom), (draft) => {
+        draft.projectListLoading = true;
+      }));
 
-  const res = await fetch(`${get(routesAtom).projects_path()}.json`);
-  if (res.status != 200) {
+    const res = await fetch(`${get(routesAtom).projects_path()}.json`);
+    // A failed background refresh leaves the projects already on screen alone
+    // rather than replacing them all with an error.
+    if (res.status != 200 && background) return;
+    if (res.status != 200) {
+      update(get, set, (draft) => {
+        draft.error = "Failed to load project list.";
+        draft.projectListLoading = false;
+      });
+      return;
+    }
+
+    const body = await res.json();
+    const projectsList = body.result;
+    projectsList.sort((a: any, b: any) => (getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1));
+
     update(get, set, (draft) => {
-      draft.error = "Failed to load project list.";
+      draft.username = username;
+      // Alongside the projects: the select lists for editing a supporting grant
+      // (see grantFundingAgenciesAtom). Defaulted rather than required so a
+      // client serving only `result` still loads its projects - the grants tab
+      // just can't offer a choice of funding agency or field of science.
+      draft.fundingAgencies = body.fundingAgencies ?? [];
+      draft.fosTypes = body.fosTypes ?? [];
+      draft.projectsList = projectsList.map((project: any) => {
+        const { grantNumber, requestMasterId, requests, status, title } = project;
+        const returnedForCorrections =
+          project.requests.filter((r: any) => r.actions.filter((a: any) => a.returnedForCorrections).length > 0)
+            .length > 0;
+        const projectStatus = returnedForCorrections
+          ? "Returned for Corrections"
+          : status ||
+            (requests &&
+              (requests.find(({ timeStatus }: any) => timeStatus == "current")
+                ? "Active"
+                : requests[0].timeStatus == "past"
+                  ? "Inactive"
+                  : requests[0].status));
+        if (requests) addProject(draft, project, projectStatus);
+        return { grantNumber: grantNumber || requestMasterId, status: projectStatus, title };
+      });
       draft.projectListLoading = false;
     });
-    return;
-  }
-
-  const body = await res.json();
-  const projectsList = body.result;
-  projectsList.sort((a: any, b: any) => (getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1));
-
-  update(get, set, (draft) => {
-    draft.username = username;
-    // Alongside the projects: the select lists for editing a supporting grant
-    // (see grantFundingAgenciesAtom). Defaulted rather than required so a
-    // client serving only `result` still loads its projects - the grants tab
-    // just can't offer a choice of funding agency or field of science.
-    draft.fundingAgencies = body.fundingAgencies ?? [];
-    draft.fosTypes = body.fosTypes ?? [];
-    draft.projectsList = projectsList.map((project: any) => {
-      const { grantNumber, requestMasterId, requests, status, title } = project;
-      const returnedForCorrections =
-        project.requests.filter((r: any) => r.actions.filter((a: any) => a.returnedForCorrections).length > 0)
-          .length > 0;
-      const projectStatus = returnedForCorrections
-        ? "Returned for Corrections"
-        : status ||
-          (requests &&
-            (requests.find(({ timeStatus }: any) => timeStatus == "current")
-              ? "Active"
-              : requests[0].timeStatus == "past"
-                ? "Inactive"
-                : requests[0].status));
-      if (requests) addProject(draft, project, projectStatus);
-      return { grantNumber: grantNumber || requestMasterId, status: projectStatus, title };
-    });
-    draft.projectListLoading = false;
-  });
-});
+  },
+);
 
 export const fetchProjectDetailAtom = atom(null, (get, set, grantNumber: string) => {
   update(get, set, (draft) => {
@@ -955,9 +973,9 @@ export const notAwardedAtom = atom(
 // fields (fundingAgencyName, primaryFosType, ...) to read the new grant back
 // from directly. Re-fetching the whole projects list is the only mechanism
 // this module already has for turning the API's raw shape into a fully
-// formed Grant, so that's what a successful create falls back on - at the
-// cost of a brief loading-spinner flash across all of the user's projects,
-// not just this one. fetchProjectsListAtom also rebuilds every Request from
+// formed Grant, so that's what a successful create falls back on, as a
+// background refresh of all of the user's projects rather than just this
+// one. fetchProjectsListAtom also rebuilds every Request from
 // scratch (see addRequest()), which is what resets showAddGrantModal back to
 // false and closes this modal on success.
 export const createGrantAtom = atom(
@@ -1002,7 +1020,15 @@ export const createGrantAtom = atom(
     });
 
     if (res.status == 200) {
-      await set(fetchProjectsListAtom, username);
+      // In the background, so the user stays where they are (addProject()
+      // keeps the project's tab and request) and sees the saved message - and
+      // any reminder about the project's other requests, see Grants.tsx -
+      // under the grant they just added.
+      await set(fetchProjectsListAtom, username, { background: true });
+      update(get, set, (draft) => {
+        const draftRequest = draft.requests[requestId];
+        if (draftRequest) draftRequest.grantsStatus = statuses.success;
+      });
       return;
     }
 

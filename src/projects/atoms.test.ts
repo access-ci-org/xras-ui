@@ -1661,6 +1661,89 @@ describe("createGrantAtom", () => {
     expect(store.get(apiStateAtom).projectsList).toEqual([]);
   });
 
+  it("keeps the project on the same tab and request, and marks the request saved, after refetching", async () => {
+    const rawRequest = (requestId: number, timeStatus: string) => ({
+      actions: [
+        {
+          actionId: requestId,
+          actionStatusType: "Approved",
+          actionType: "New",
+          allowedOperations: [],
+          approvedStartDate: null,
+          detailAvailable: true,
+          entryDate: "2025-01-02T00:00:00Z",
+          isRequest: true,
+          requestedStartDate: null,
+          resources: [],
+        },
+      ],
+      allocationType: "Explore",
+      allowedActions: [],
+      endDate: "2026-12-31",
+      grants: [],
+      requestId,
+      requestType: "New",
+      resources: [],
+      startDate: "2025-01-01",
+      status: "Active",
+      timeStatus,
+    });
+    server.use(
+      http.post("https://example.test/save-grants", () => new HttpResponse(null, { status: 200 })),
+      http.get("https://example.test/projects.json", () =>
+        HttpResponse.json({
+          result: [
+            {
+              grantNumber: "ABC123",
+              projectManager: true,
+              requestMasterId: "RM-1",
+              title: "Test Project",
+              requests: [rawRequest(555, "current"), rawRequest(554, "past")],
+              users: [],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const store = makeStore();
+    store.set(apiStateAtom, {
+      ...store.get(apiStateAtom),
+      projects: { ABC123: makeProjectFixture({ selectedRequestId: 555, tab: "grants" }) },
+    });
+    // The loading spinner replaces every project on the page (Projects.tsx),
+    // which is what made adding a grant look like a page reload.
+    const loadingStates: boolean[] = [];
+    store.sub(apiStateAtom, () => loadingStates.push(store.get(apiStateAtom).projectListLoading));
+
+    await store.set(createGrantAtom, { requestId: 555, username: "alice", values: newGrantValues() });
+
+    const state = store.get(apiStateAtom);
+    expect(loadingStates).not.toContain(true);
+    // addProject() would otherwise have reset these to "overview" and the
+    // current request.
+    expect(state.projects.ABC123.tab).toBe("grants");
+    expect(state.projects.ABC123.selectedRequestId).toBe(555);
+    expect(state.requests[555].grantsStatus).toBe("success");
+    expect(state.requests[554].grantsStatus).toBeNull();
+  });
+
+  it("leaves the page alone if the refresh after a create fails", async () => {
+    server.use(
+      http.post("https://example.test/save-grants", () => new HttpResponse(null, { status: 200 })),
+      http.get("https://example.test/projects.json", () => new HttpResponse(null, { status: 500 })),
+    );
+
+    const store = makeStore();
+
+    await store.set(createGrantAtom, { requestId: 555, username: "alice", values: newGrantValues() });
+
+    const state = store.get(apiStateAtom);
+    expect(state.error).toBeNull();
+    expect(state.projectListLoading).toBe(false);
+    expect(state.requests[555].grantsStatus).toBe("success");
+  });
+
   it("records server-provided errors on a rejected create", async () => {
     server.use(
       http.post("https://example.test/save-grants", () =>
