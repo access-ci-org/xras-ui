@@ -19,6 +19,7 @@ import {
   resourceTypesOptionsAtom,
   unitTypesOptionsAtom,
   updateResourceFieldAtom,
+  usesInstructionsAtom,
 } from "./atoms";
 
 type ResourceFormProps = {
@@ -37,20 +38,28 @@ export const ResourceForm = ({
   const unitTypesOptions = useAtomValue(unitTypesOptionsAtom);
   const updateResourceField = useSetAtom(updateResourceFieldAtom);
   const [isDollarValueEditing, setIsDollarValueEditing] = useState(false);
+  const usesInstructions = useAtomValue(usesInstructionsAtom);
 
   if (!resourceDetails) return null;
 
   const dollarValueLabel = "Dollar Value per SUs";
   const dollarValueInput = showDollarValue ? (
     <>
-      {!useAdvancedSettings && <label className={ADMIN_LABEL}>{dollarValueLabel}</label>}
+      {!useAdvancedSettings && (
+        <label className={ADMIN_LABEL}>{dollarValueLabel}</label>
+      )}
       <div className={ADMIN_INPUT_PREPEND}>
         <span className={ADMIN_ADDON}>$</span>
         <input
           type="number"
           className={cn(ADMIN_INPUT, ADMIN_SPAN4, ADMIN_ADDON_INPUT)}
           value={resourceDetails.dollar_value}
-          onChange={(e) => updateResourceField({ field: "dollar_value", value: e.target.value })}
+          onChange={(e) =>
+            updateResourceField({
+              field: "dollar_value",
+              value: e.target.value,
+            })
+          }
         />
       </div>
     </>
@@ -62,7 +71,9 @@ export const ResourceForm = ({
       <input
         className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
         value={resourceDetails.resource_name}
-        onChange={(e) => updateResourceField({ field: "resource_name", value: e.target.value })}
+        onChange={(e) =>
+          updateResourceField({ field: "resource_name", value: e.target.value })
+        }
       />
 
       {showResourceId && (
@@ -90,21 +101,28 @@ export const ResourceForm = ({
       )}
       <label className={ADMIN_LABEL}>Allocations Description</label>
       <small className={ADMIN_HELP}>
-        Appears below the resource name in the form when making a new request, as well as under the
-        header Allocations Description in resource catalogs
+        Appears below the resource name in the form when making a new request,
+        as well as under the header Allocations Description in resource catalogs
       </small>
       <textarea
         className={cn(ADMIN_TEXTAREA, ADMIN_SPAN8)}
         value={resourceDetails.description}
         rows={6}
-        onChange={(e) => updateResourceField({ field: "description", value: e.target.value })}
+        onChange={(e) =>
+          updateResourceField({ field: "description", value: e.target.value })
+        }
       />
       <div>
         <label className={ADMIN_LABEL}>Resource Type</label>
         <select
           className={cn(ADMIN_SELECT, ADMIN_SPAN8)}
           value={resourceDetails.resource_type_id ?? ""}
-          onChange={(e) => updateResourceField({ field: "resource_type_id", value: e.target.value })}
+          onChange={(e) =>
+            updateResourceField({
+              field: "resource_type_id",
+              value: e.target.value,
+            })
+          }
         >
           {resourceTypesOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -118,7 +136,12 @@ export const ResourceForm = ({
         <select
           className={cn(ADMIN_SELECT, ADMIN_SPAN8)}
           value={resourceDetails.unit_type_id ?? ""}
-          onChange={(e) => updateResourceField({ field: "unit_type_id", value: e.target.value })}
+          onChange={(e) =>
+            updateResourceField({
+              field: "unit_type_id",
+              value: e.target.value,
+            })
+          }
         >
           {unitTypesOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -131,15 +154,43 @@ export const ResourceForm = ({
         Minimum exchange amount, in{" "}
         {
           unitTypesOptions.find(
-            (option) => option.value.toString() === resourceDetails.unit_type_id.toString(),
+            (option) =>
+              option.value.toString() ===
+              resourceDetails.unit_type_id.toString(),
           )?.label
         }
       </label>
       <input
         className={cn(ADMIN_INPUT, ADMIN_SPAN8)}
         value={resourceDetails.min_exchange}
-        onChange={(e) => updateResourceField({ field: "min_exchange", value: e.target.value })}
+        onChange={(e) =>
+          updateResourceField({ field: "min_exchange", value: e.target.value })
+        }
       />
+      {usesInstructions && (
+        <>
+          <label className={ADMIN_LABEL}> Resource Instructions </label>
+          <small className={ADMIN_HELP}>
+            Instructions that will be emailed to a user who has been added to a
+            project on this resource when the local username has been mapped,
+            and the user account packet/task has been processed. Please provide
+            additional information to help the user get started (uploading SSH
+            keys, login hostname, link to documentation, etc.) Please use plain
+            text only, no HTML.
+          </small>
+          <textarea
+            className={cn(ADMIN_TEXTAREA, ADMIN_SPAN8)}
+            value={resourceDetails.instructions ?? ""}
+            rows={6}
+            onChange={(e) =>
+              updateResourceField({
+                field: "instructions",
+                value: e.target.value,
+              })
+            }
+          />
+        </>
+      )}
     </>
   );
 };

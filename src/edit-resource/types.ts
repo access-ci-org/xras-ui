@@ -40,6 +40,7 @@ export type ResourceDetails = {
   auto_approve_exchanges?: boolean;
   auto_approve_exchange_limit?: number | string;
   exchange_rates?: ExchangeRates;
+  instructions?: string;
 };
 
 export type ResourceStateTypeAvailable = {
@@ -71,6 +72,7 @@ export type UnassignedAllocationType = {
 export type ResourceData = {
   resource_details: ResourceDetails;
   uses_exchange_rates?: boolean;
+  uses_instructions?: boolean;
   resource_state_types_available?: ResourceStateTypeAvailable[];
   resource_types_available?: ResourceTypeAvailable[];
   unit_types_available?: UnitTypeAvailable[];
