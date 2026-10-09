@@ -142,9 +142,9 @@ function SupportingGrantsForm({
           className="mb-4 space-y-2 rounded-md border border-amber-400 bg-amber-50 p-3 text-amber-900"
         >
           <p>
-            Researchers are allowed only one project without a supporting grant, and you
-            currently have another active project without a supporting grant. Submitting
-            this allocation request without an associated supporting grant will likely
+            Researchers are only allowed one allocation without a supporting grant. 
+            Currently, you have another active allocation without a supporting grant. 
+            Submitting this allocation request without an associated supporting grant will likely
             result in the request being denied.
           </p>
           <p>
