@@ -190,7 +190,6 @@ export const initializeFiltersAtom = atom(
   (get, set) => {
     const urlParams = new URLSearchParams(window.location.search);
     const filters = urlParams.entries();
-    console.log(urlParams, filters)
     for(const [key, value] of filters) {
       set(filterSelectionsAtom, { ...get(filterSelectionsAtom), [key]: value });
     }
@@ -217,7 +216,6 @@ export const getPublicationsAtom = atom(null, async (get, set) => {
   const page = get(pageAtom);
   const usePagination = get(usePaginationAtom);
   const params: Record<string, unknown> = {};
-  const urlParams = new URLSearchParams(window.location.search);
 
   if (filters.doi) params.doi = filters.doi;
   if (filters.authorName) params.author_name = filters.authorName;
