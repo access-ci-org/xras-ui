@@ -4,7 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/msw";
 import { SupportingGrantsSection } from "./SupportingGrantsSection";
-import type { SupportingGrant, SupportingGrantAttributes, SupportingGrantsProps } from "./types";
+import type {
+  SupportingGrant,
+  SupportingGrantAttributes,
+  SupportingGrantsProps,
+} from "./types";
 
 const AWARD_API = /research\.gov\/awardapi-service/;
 
@@ -38,7 +42,9 @@ function attributes(
   };
 }
 
-function renderSection(props: Partial<Omit<SupportingGrantsProps, "target">> = {}) {
+function renderSection(
+  props: Partial<Omit<SupportingGrantsProps, "target">> = {},
+) {
   render(
     <SupportingGrantsSection
       fundingAgencies={AGENCIES}
@@ -56,7 +62,9 @@ function includeRadio(answer: "true" | "false") {
 }
 
 function field(index: number, name: string) {
-  return document.getElementById(`grants[${index}].${name}`) as HTMLInputElement | null;
+  return document.getElementById(
+    `grants[${index}].${name}`,
+  ) as HTMLInputElement | null;
 }
 
 function grantCount() {
@@ -69,7 +77,9 @@ function grantCount() {
 // changes nothing about these fields - and let the lock's own block below
 // prepend a real award where that is the point of the test.
 beforeEach(() => {
-  server.use(http.get(AWARD_API, () => HttpResponse.json({ response: { award: [] } })));
+  server.use(
+    http.get(AWARD_API, () => HttpResponse.json({ response: { award: [] } })),
+  );
 });
 
 function serveNsfAward() {
@@ -116,7 +126,9 @@ describe("SupportingGrantsSection", () => {
     await user.click(includeRadio("true"));
     await waitFor(() => expect(grantCount()).toBe(1));
 
-    await user.click(screen.getByRole("button", { name: "Add another supporting grant" }));
+    await user.click(
+      screen.getByRole("button", { name: "Add another supporting grant" }),
+    );
     await waitFor(() => expect(grantCount()).toBe(2));
 
     await user.click(screen.getAllByRole("button", { name: "Remove" })[0]);
@@ -168,7 +180,9 @@ describe("SupportingGrantsSection", () => {
       // section, not as props, so a selected id resolving to its label is
       // what shows the wiring works end to end.
       renderSection({
-        initialGrants: [attributes({ funding_agency_id: 2, primary_fos_type_id: 12 })],
+        initialGrants: [
+          attributes({ funding_agency_id: 2, primary_fos_type_id: 12 }),
+        ],
         initialIncludeSupportingGrants: true,
       });
 
@@ -223,7 +237,9 @@ describe("SupportingGrantsSection", () => {
       await user.type(field(0, "piName")!, "Grace Hopper");
 
       await waitFor(() => {
-        const state = onChange.mock.lastCall![0] as { grants: SupportingGrant[] };
+        const state = onChange.mock.lastCall![0] as {
+          grants: SupportingGrant[];
+        };
         expect(state.grants[0].piName).toBe("Grace Hopper");
       });
     });
@@ -236,7 +252,9 @@ describe("SupportingGrantsSection", () => {
       const onValidityChange = vi.fn();
       renderSection({ onValidityChange });
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(false),
+      );
     });
 
     it("reports valid once a complete grant is present", async () => {
@@ -247,7 +265,9 @@ describe("SupportingGrantsSection", () => {
         initialIncludeSupportingGrants: true,
       });
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(true),
+      );
     });
 
     it("reports invalid again when a required field is emptied", async () => {
@@ -259,11 +279,15 @@ describe("SupportingGrantsSection", () => {
         initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(true),
+      );
 
       await user.clear(field(0, "title")!);
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(false),
+      );
     });
 
     it("reports valid for a No answer even with an incomplete grant behind it", async () => {
@@ -274,7 +298,9 @@ describe("SupportingGrantsSection", () => {
         initialIncludeSupportingGrants: false,
       });
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(true),
+      );
     });
   });
 
@@ -297,7 +323,9 @@ describe("SupportingGrantsSection", () => {
         initialIncludeSupportingGrants: true,
       });
 
-      await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function));
+      await waitFor(() =>
+        expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function),
+      );
 
       const submit = setExternalSubmit.mock.lastCall![0] as () => Promise<void>;
       await act(async () => {
@@ -305,7 +333,9 @@ describe("SupportingGrantsSection", () => {
       });
 
       expect(onSubmit).toHaveBeenCalledOnce();
-      expect((onSubmit.mock.lastCall![0] as SupportingGrant[])[0]).toMatchObject({
+      expect(
+        (onSubmit.mock.lastCall![0] as SupportingGrant[])[0],
+      ).toMatchObject({
         id: 7,
         grantNumber: "1234567",
         piName: "Ada Lovelace",
@@ -321,11 +351,15 @@ describe("SupportingGrantsSection", () => {
         initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
-      await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function));
+      await waitFor(() =>
+        expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function),
+      );
 
       await user.clear(field(0, "programOfficerEmail")!);
 
-      await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeNull());
+      await waitFor(() =>
+        expect(setExternalSubmit.mock.lastCall![0]).toBeNull(),
+      );
     });
   });
 
@@ -340,7 +374,9 @@ describe("SupportingGrantsSection", () => {
         initialIncludeSupportingGrants: true,
       });
 
-      expect(await screen.findByText(/populated from NSF's records/)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/populated from NSF's records/),
+      ).toBeInTheDocument();
       expect(field(0, "title")).toBeDisabled();
     });
 
@@ -353,7 +389,9 @@ describe("SupportingGrantsSection", () => {
       });
 
       await waitFor(() => expect(field(0, "title")).toBeEnabled());
-      expect(screen.queryByText(/populated from NSF's records/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/populated from NSF's records/),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -366,7 +404,9 @@ describe("SupportingGrantsSection", () => {
       initialIncludeSupportingGrants: true,
     });
 
-    expect(screen.queryByRole("button", { name: /^Submit$/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Submit$/i }),
+    ).not.toBeInTheDocument();
     expect(document.querySelector('button[type="submit"]')).toBeNull();
   });
   describe("unsupported active allocation warning", () => {
@@ -377,7 +417,7 @@ describe("SupportingGrantsSection", () => {
       await user.click(includeRadio("false"));
 
       expect(await screen.findByRole("alert")).toHaveTextContent(
-        /only one project without a supporting grant/,
+        /only allowed one allocation without a supporting grant/,
       );
     });
 
