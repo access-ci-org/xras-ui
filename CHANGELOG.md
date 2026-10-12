@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.38.0](https://github.com/access-ci-org/xras-ui/compare/v0.37.0...v0.38.0) (2026-10-12)
+
+
+### Features
+
+* Added the ability to load a publication directly by supplying the DOI in the URL ([192da27](https://github.com/access-ci-org/xras-ui/commit/192da27eb3a6f6891d3edc5d90de40e238b30ca5))
+
+
+### Bug Fixes
+
+* Removed unused code to fix failing test ([b0c85d3](https://github.com/access-ci-org/xras-ui/commit/b0c85d350da51203fc611ff41bc5ea28241590f2))
+
 ## [0.37.0](https://github.com/access-ci-org/xras-ui/compare/v0.36.3...v0.37.0) (2026-10-08)
 
 
