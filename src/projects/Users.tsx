@@ -10,7 +10,7 @@ import UserName from "../shared/UserName";
 import gridStyle from "../shared/Grid.module.scss";
 import { routesAtom } from "../shared/routes";
 import { formatManagers } from "../shared/helpers/utils";
-import { filterResource, searchUsersAtom } from "./atoms";
+import { allocationsProcessNameAtom, filterResource, searchUsersAtom } from "./atoms";
 import { useProject, useRequest } from "./helpers/hooks";
 import { resourceTallies, selectableRoles } from "./helpers/users";
 import type { SearchedUser } from "./types";
@@ -28,6 +28,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
   } = useProject(grantNumber);
   const { request } = useRequest(requestId || project?.currentRequestId, grantNumber);
   const routes = useAtomValue(routesAtom);
+  const allocationsProcessName = useAtomValue(allocationsProcessNameAtom);
   const searchUsers = useSetAtom(searchUsersAtom);
 
   if (!project || !project.currentRequestId || !request || project.error || request.error) return null;
@@ -51,6 +52,13 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
       <Alert color="info">
         Your changes have been saved. Creation of user accounts can take some time. Users can check the
         status of their accounts on the Overview tab of the My Projects page.
+        {project.usersNotices && project.usersNotices.length > 0 && (
+          <ul className="mb-0">
+            {project.usersNotices.map((message, index) => (
+              <li key={index}>{message}</li>
+            ))}
+          </ul>
+        )}
       </Alert>
     );
   } else if (error) {
@@ -125,7 +133,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
       width: 200,
       format: (_value, row) => <UserName user={row as any} />,
     },
-    { key: "username", name: "ACCESS Username", width: 100 },
+    { key: "username", name: `${allocationsProcessName} Username`, width: 100 },
     {
       key: "role",
       name: "Role",

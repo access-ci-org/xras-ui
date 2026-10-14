@@ -540,6 +540,16 @@ describe("getResourceUsagePercent", () => {
     };
     expect(getResourceUsagePercent(request)).toBe(1);
   });
+
+  it("leaves a resource that doesn't report usage (used: null) out of both sides", () => {
+    const request = {
+      resources: [
+        { allocated: 100, used: 50, exchangeRates: { base: { unitCost: 1 } } },
+        { allocated: 900, used: null, exchangeRates: { base: { unitCost: 1 } } },
+      ],
+    };
+    expect(getResourceUsagePercent(request)).toBe(0.5);
+  });
 });
 
 describe("getCost", () => {

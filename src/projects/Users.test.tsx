@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { Provider, createStore } from "jotai";
 import { mergeRoutes, routesAtom } from "@/shared/routes";
 import Users from "./Users";
-import { apiStateAtom } from "./atoms";
+import { allocationsProcessNameAtom, apiStateAtom } from "./atoms";
 import type { Project, Request as RequestType, User } from "./types";
 
 const GRANT = "TEST000001";
@@ -62,9 +62,17 @@ function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
   };
 }
 
-function renderUsers(users: User[], { isManager = true }: { isManager?: boolean } = {}) {
+function renderUsers(
+  users: User[],
+  {
+    allocationsProcessName,
+    isManager = true,
+    project = {},
+  }: { allocationsProcessName?: string; isManager?: boolean; project?: Partial<Project> } = {},
+) {
   const store = createStore();
   store.set(routesAtom, mergeRoutes());
+  if (allocationsProcessName) store.set(allocationsProcessNameAtom, allocationsProcessName);
   store.set(apiStateAtom, {
     error: null,
     projectsList: [],
@@ -82,6 +90,7 @@ function renderUsers(users: User[], { isManager = true }: { isManager?: boolean 
         users,
         usersNewRowIndex: -1,
         usersStatus: null,
+        ...project,
       } satisfies Project,
     },
     requests: { [REQUEST_ID]: makeRequest() },
@@ -169,5 +178,42 @@ describe("Users role select (canChangeRoles, ported from main)", () => {
     const { store } = renderUsers([makeUser({ username: "ada", canChangeRoles: true })]);
     await user.selectOptions(roleSelectFor("ada"), "allocation_manager");
     expect(store.get(apiStateAtom).projects[GRANT].users[0].role).toBe("allocation_manager");
+  });
+});
+
+// save_users may answer a successful save with `notices` (xras_submit_nairr
+// does, for resources whose account changes need staff action); they're
+// shown inside the saved alert.
+describe("Users saved alert", () => {
+  const SAVED = /Your changes have been saved\./;
+
+  it("lists notices from the save inside the saved alert", () => {
+    renderUsers([makeUser()], {
+      project: {
+        usersStatus: "success",
+        usersNotices: ["Changes on Example Resource require staff action."],
+      },
+    });
+    const alert = screen.getByText(SAVED);
+    expect(alert).toHaveTextContent("Changes on Example Resource require staff action.");
+    expect(alert.querySelectorAll("li")).toHaveLength(1);
+  });
+
+  it("renders just the saved message when there are no notices", () => {
+    renderUsers([makeUser()], { project: { usersStatus: "success" } });
+    expect(screen.getByText(SAVED).querySelector("ul")).toBeNull();
+  });
+});
+
+describe("Users username column", () => {
+  it("is labelled for ACCESS by default", () => {
+    renderUsers([makeUser()]);
+    expect(screen.getByText("ACCESS Username")).toBeInTheDocument();
+  });
+
+  it("is labelled for the host's allocations process", () => {
+    renderUsers([makeUser()], { allocationsProcessName: "NAIRR" });
+    expect(screen.getByText("NAIRR Username")).toBeInTheDocument();
+    expect(screen.queryByText("ACCESS Username")).toBeNull();
   });
 });

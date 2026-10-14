@@ -8,6 +8,7 @@ import Alert from "../shared/Alert";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import { mergeRoutes, routesAtom, type RouteOverrides } from "../shared/routes";
 import Project from "./Project";
+import { allocationsProcessNameAtom } from "./atoms";
 import { useProjectsList } from "./helpers/hooks";
 
 /*
@@ -108,17 +109,25 @@ export default function Projects({
   username,
   openFirst = 1,
   routes,
+  allocationsProcessName = "ACCESS",
 }: {
   username: string;
   openFirst?: number;
   routes?: RouteOverrides;
+  /** The allocations program's name, for copy that would otherwise say "ACCESS". */
+  allocationsProcessName?: string;
 }) {
   const store = useMemo(() => createStore(), []);
 
   return (
     <Provider store={store}>
       <HydrateAtoms
-        values={new Map<WritableAtom<any, any[], any>, unknown>([[routesAtom, mergeRoutes(routes)]])}
+        values={
+          new Map<WritableAtom<any, any[], any>, unknown>([
+            [routesAtom, mergeRoutes(routes)],
+            [allocationsProcessNameAtom, allocationsProcessName],
+          ])
+        }
       >
         <ProjectsInner username={username} openFirst={openFirst} routes={routes} />
       </HydrateAtoms>

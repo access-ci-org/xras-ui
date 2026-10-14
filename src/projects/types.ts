@@ -56,7 +56,8 @@ export type Resource = {
   startDate?: string | null;
   type?: string;
   unit: string;
-  used: number;
+  /** Null for a resource that doesn't report usage (`reportsUsage: false`). */
+  used: number | null;
   userGuideUrl?: string | null;
 };
 
@@ -242,6 +243,8 @@ export type Project = {
   usersNewRowIndex: number;
   usersStatus: string | null;
   usersErrors?: string[];
+  /** Informational messages returned by a successful save_users. */
+  usersNotices?: string[];
   currentUser?: User;
   error?: string;
 };

@@ -111,6 +111,13 @@ The `projects` component is styled entirely with Tailwind, whose reset lives in 
 
 Pass `baseUrl` or `stylesheets` to override where those sheets are loaded from, or pass a `shadowTarget(...)` as `target` to build the shadow root yourself.
 
+`projects` also takes two options for hosts other than ACCESS's own allocations site:
+
+- `showSurvey` (default `true`) — set to `false` to omit the ACCESS user survey banner above the projects.
+- `allocationsProcessName` (default `"ACCESS"`) — the allocations program named in the widget's help text, such as the supporting grant explanation's "If the grant supports more than one ACCESS project...".
+
+Each resource in the host's `projects.json` payload may also carry `reportsUsage: false` for a resource that doesn't report usage; the widget then shows its allocation without a remaining balance and hides its usage details. Omitting it is the same as `true`. Likewise, a successful `projects_save_users_path` response may be JSON with a `notices` array of strings, which are listed in the "changes have been saved" message.
+
 Every mount function returns an `unmount` function. A host page that tears down
 the markup around a component — a modal, a turbo-style page swap — should call
 it, so the component's effects, timers and in-flight requests stop instead of

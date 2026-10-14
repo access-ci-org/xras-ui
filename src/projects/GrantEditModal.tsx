@@ -26,6 +26,7 @@ import Alert from "../shared/Alert";
 import { formatDate } from "../shared/helpers/utils";
 import {
   ALL_GRANT_FIELDS,
+  allocationsProcessNameAtom,
   copyGrantField,
   editableGrantFields,
   grantFosTypesAtom,
@@ -117,6 +118,7 @@ function GrantEditForm({
   // of the modal.
   const store = useMemo(() => createStore(), []);
   const [confirmingNotAwarded, setConfirmingNotAwarded] = useState(false);
+  const allocationsProcessName = useAtomValue(allocationsProcessNameAtom);
 
   // Locked fields are derived from the grant's *persisted* isPending, not the
   // form's in-progress one - a user who flips the "Is this grant pending?"
@@ -186,7 +188,12 @@ function GrantEditForm({
           >
             {/* applyNsfLock is left at its default, which is on: My Projects
                 always applies the NSF lock. */}
-            <GrantFields form={form} index={0} disabledFields={disabledFields} />
+            <GrantFields
+              form={form}
+              index={0}
+              disabledFields={disabledFields}
+              allocationsProcessName={allocationsProcessName}
+            />
           </HydrateAtoms>
         </Provider>
 

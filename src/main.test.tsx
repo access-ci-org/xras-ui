@@ -186,6 +186,22 @@ describe("projects", () => {
     );
   });
 
+  // The survey is ACCESS's; another host (xras_submit_nairr) opts out of it.
+  it("omits the survey banner when mounted with showSurvey: false", async () => {
+    const target = makeTarget();
+    server.use(
+      http.get(`${defaultRoutes.projects_path()}.json`, () => HttpResponse.json({ result: [] })),
+    );
+
+    track(projects({ target, username: "alice", showSurvey: false } as any));
+
+    // Same atomic waitFor as the test above, for the same reason.
+    await waitFor(() => {
+      expect(shadowOf(target).getByText(/don't have any projects yet/i)).toBeInTheDocument();
+    });
+    expect(shadowOf(target).queryByText(/short voluntary survey/i)).not.toBeInTheDocument();
+  });
+
   // Regression test for the bug src/shared/routes.ts documents at length:
   // `config.routes` used to be a single module-level object every mount
   // function overwrote via `addRoutes()`. Mounting a second `projects`

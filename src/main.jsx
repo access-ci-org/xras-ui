@@ -183,12 +183,24 @@ export function editResource({
   );
 }
 
-export function projects({ target, username, routes, baseUrl = null, stylesheets = null }) {
-  return renderShadow(<MyProjectsPage username={username} routes={routes} />, {
-    target,
-    baseUrl,
-    stylesheets,
-  });
+export function projects({
+  target,
+  username,
+  routes,
+  showSurvey = true,
+  allocationsProcessName = "ACCESS",
+  baseUrl = null,
+  stylesheets = null,
+}) {
+  return renderShadow(
+    <MyProjectsPage
+      username={username}
+      routes={routes}
+      showSurvey={showSurvey}
+      allocationsProcessName={allocationsProcessName}
+    />,
+    { target, baseUrl, stylesheets },
+  );
 }
 
 export function projectsBrowser({ target, apiUrl, baseUrl = null, stylesheets = null }) {

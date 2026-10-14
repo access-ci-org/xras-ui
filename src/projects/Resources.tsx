@@ -77,8 +77,11 @@ export default function Resources({
   const resourcesMap: Record<number, Resource> = {};
   for (const res of resources) resourcesMap[res.resourceId] = res;
 
+  // The confirm step nudges a low-usage project toward an exchange instead,
+  // which is only advice worth giving when an exchange is allowed (never, on
+  // NAIRR).
   const requestMore = () => {
-    if (getResourceUsagePercent(request) >= 0.75) toggleActionsModal();
+    if (!canExchange || getResourceUsagePercent(request) >= 0.75) toggleActionsModal();
     else toggleConfirmModal();
   };
 
@@ -159,7 +162,7 @@ export default function Resources({
     alert = (
       <Alert color="danger">
         Sorry, something went wrong: {errorMessages.join(", ")}. For assistance, please{" "}
-        <a href="https://support.access-ci.org/open-a-ticket">open a help ticket</a> and include this
+        <a href={routes.help_ticket_path()}>open a help ticket</a> and include this
         message.
       </Alert>
     );
@@ -246,8 +249,11 @@ export default function Resources({
       format: (_name, row) => (
         <>
           <ResourceName resource={row as Resource} />
-          {(project.currentUser?.resourceIds.includes((row as Resource).resourceId) ||
-            project.currentUser?.resourceAccountInactiveIds.includes((row as Resource).resourceId)) && (
+          {/* No usage details for a resource that doesn't report usage - the
+              modal would only say there is none. */}
+          {(row as Resource).used !== null &&
+            (project.currentUser?.resourceIds.includes((row as Resource).resourceId) ||
+              project.currentUser?.resourceAccountInactiveIds.includes((row as Resource).resourceId)) && (
             <InlineButton
               icon={Table}
               onClick={() => openUsageDetailModal((row as Resource).resourceRepositoryKey ?? "")}
@@ -305,7 +311,7 @@ export default function Resources({
                   format={(value) => formatNumber(Number(value))}
                   label={`Balance for ${typedRow.name}`}
                   setValue={(cleaned) => {
-                    setResourceRequest(typedRow.resourceId, Number(cleaned) + typedRow.used);
+                    setResourceRequest(typedRow.resourceId, Number(cleaned) + (typedRow.used ?? 0));
                   }}
                   style={{ padding: "0.1rem 0.5rem" }}
                   value={getBalance(typedRow).toString()}
@@ -363,9 +369,13 @@ export default function Resources({
       {credit && (canExchange || canRenew || canSupplement) ? (
         <h2 className="mb-1 mt-2 flex items-center justify-between text-2xl font-bold">
           <span>
-            {icon(config.resourceTypeIcons.credit)}{" "}
-            {formatNumber(credit.requested, { decimalPlaces: credit.decimalPlaces })} {credit.unit} available
-            to exchange
+            {canExchange ? (
+              <>
+                {icon(config.resourceTypeIcons.credit)}{" "}
+                {formatNumber(credit.requested, { decimalPlaces: credit.decimalPlaces })} {credit.unit}{" "}
+                available to exchange
+              </>
+            ) : null}
           </span>
           {canRenew || canSupplement ? (
             <Button type="button" size="sm" className="ml-2" onClick={requestMore}>

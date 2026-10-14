@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider, createStore } from "jotai";
 import { http, HttpResponse } from "msw";
@@ -7,7 +7,7 @@ import { server } from "@/test/msw";
 import { defaultRoutes, routesAtom } from "@/shared/routes";
 import { ShadowRootProvider } from "@/lib/shadow-root";
 import AddGrantModal from "./AddGrantModal";
-import { apiStateAtom } from "./atoms";
+import { allocationsProcessNameAtom, apiStateAtom } from "./atoms";
 import type { Request as RequestType } from "./types";
 
 const GRANT_NUMBER = "TEST000001";
@@ -151,6 +151,18 @@ describe("AddGrantModal", () => {
     renderAddGrantModal({ requestOverrides: { showAddGrantModal: false } });
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  // Projects hydrates allocationsProcessNameAtom from the mount's
+  // `allocationsProcessName`; the modal hands it to GrantFields' help text.
+  it("names the host's allocations program in the explanation help text", async () => {
+    const { store } = renderAddGrantModal();
+    expect(
+      await screen.findByText(/more than one ACCESS project/),
+    ).toBeInTheDocument();
+
+    act(() => store.set(allocationsProcessNameAtom, "NAIRR Pilot"));
+    expect(screen.getByText(/more than one NAIRR Pilot project/)).toBeInTheDocument();
   });
 
   it("opens a blank form with every field enabled", async () => {

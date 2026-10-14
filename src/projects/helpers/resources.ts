@@ -5,7 +5,10 @@ import type { Resource } from "../types";
 // view. None of it touches React, so it lives here where it can be tested
 // directly; `Resources.tsx` keeps the JSX and the atom wiring.
 
-export const getBalance = (row: Resource) => row.requested - row.used;
+// `used` is null only for a resource that doesn't report usage; the exchange
+// arithmetic here only runs on credit-funded requests, where every resource
+// does, so it's treated as nothing used.
+export const getBalance = (row: Resource) => row.requested - (row.used ?? 0);
 
 // A newly added resource has to clear its own minimum on the first request.
 // Zero is always allowed - that is how a resource added by mistake is backed
@@ -24,7 +27,7 @@ export const cleanBalance = (
   row: Resource,
   credit: Resource | undefined,
 ) => {
-  const allocatedBalance = row.allocated - row.used;
+  const allocatedBalance = row.allocated - (row.used ?? 0);
   const desiredBalance = roundNumber(
     Number(balanceString.replace(/[^0-9-.]/g, "")),
     row.decimalPlaces,
@@ -51,7 +54,7 @@ export const cleanBalance = (
   const baseCost = Math.min(availableCredits, costToAllocated);
 
   availableCredits -= baseCost;
-  let maxBalance = row.requested - row.used + baseCost / row.exchangeRates.base.unitCost;
+  let maxBalance = row.requested - (row.used ?? 0) + baseCost / row.exchangeRates.base.unitCost;
   if (availableCredits > 0) maxBalance += availableCredits / row.exchangeRates.current.unitCost;
 
   if (desiredBalance > maxBalance) return roundNumber(maxBalance, row.decimalPlaces, "floor");

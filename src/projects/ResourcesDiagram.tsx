@@ -42,10 +42,13 @@ export default function ResourcesDiagram({
     const resNumber = i + 1;
     const cost = getCost(res);
     const pct = cost / totalCost;
-    const balance = res.requested - res.used;
+    // Null for a resource that doesn't report usage: its slice of the chart
+    // still shows, but its bar and label make no claim about what's left.
+    const reportsUsage = res.used !== null;
+    const balance = res.requested - (res.used ?? 0);
     const available = Math.max(0, balance);
     const total = res.isCredit ? totalCost / res.exchangeRates.base.unitCost : res.requested;
-    const remaining = total == 0 ? 0 : (100 * available) / total;
+    const remaining = !reportsUsage || total == 0 ? 0 : (100 * available) / total;
 
     const colorCss = res.isCredit ? creditColor : colors[i % colors.length];
 
@@ -101,7 +104,9 @@ export default function ResourcesDiagram({
           {resNumber}
         </span>
         <span
-          className="relative mx-2 inline-block h-6 w-[100px] shrink-0 border-2 align-middle"
+          className={`relative mx-2 inline-block h-6 w-[100px] shrink-0 border-2 align-middle${
+            reportsUsage ? "" : " border-dashed"
+          }`}
           style={{ borderColor: colorCss }}
         >
           <span
@@ -113,11 +118,18 @@ export default function ResourcesDiagram({
           <ResourceName resource={res} userGuide={false} />
           :&nbsp;
         </strong>
-        <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-          {formatNumber(balance, { abbreviate: true })}{" "}
-          {!res.isCredit ? <>of {formatNumber(total, { abbreviate: true })} </> : null}
-          {res.unit} {res.isCredit ? "available" : "remaining"} ({Math.round(remaining)}%)
-        </span>
+        {reportsUsage ? (
+          <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+            {formatNumber(balance, { abbreviate: true })}{" "}
+            {!res.isCredit ? <>of {formatNumber(total, { abbreviate: true })} </> : null}
+            {res.unit} {res.isCredit ? "available" : "remaining"} ({Math.round(remaining)}%)
+          </span>
+        ) : (
+          <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+            {formatNumber(total, { abbreviate: true })} {res.unit} allocated{" "}
+            <span className="text-muted-foreground">(usage not reported)</span>
+          </span>
+        )}
       </li>
     );
   });

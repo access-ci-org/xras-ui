@@ -117,6 +117,12 @@ interface GrantFieldsProps {
   applyNsfLock?: boolean;
   /** Omitted where grants can't be removed, which hides the Remove button. */
   onRemove?: () => void;
+  /**
+   * The allocations program named in the help text ("more than one ACCESS
+   * project"). My Projects passes its host's name through; the submission
+   * form leaves it at the default.
+   */
+  allocationsProcessName?: string;
 }
 
 export function GrantFields({
@@ -125,6 +131,7 @@ export function GrantFields({
   disabledFields = [],
   applyNsfLock = true,
   onRemove,
+  allocationsProcessName = "ACCESS",
 }: GrantFieldsProps) {
   const fundingAgencies = useAtomValue(fundingAgenciesAtom);
   const fosTypes = useAtomValue(fosTypesAtom);
@@ -522,7 +529,7 @@ export function GrantFields({
         {(field) => (
           <field.FieldTextarea
             label="Explanation"
-            description="Please explain how this supporting grant is related to your project. If the grant supports more than one ACCESS project, explain how your work is different from the existing projects."
+            description={`Please explain how this supporting grant is related to your project. If the grant supports more than one ${allocationsProcessName} project, explain how your work is different from the existing projects.`}
             required
             disabled={isDisabled("comments")}
             rows={4}

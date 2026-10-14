@@ -157,6 +157,11 @@ export const requestsAtom = atom((get) => get(apiStateAtom).requests);
 export const grantFundingAgenciesAtom = atom((get) => get(apiStateAtom).fundingAgencies);
 export const grantFosTypesAtom = atom((get) => get(apiStateAtom).fosTypes);
 
+// The allocations program's name, for copy that would otherwise say "ACCESS"
+// to another host's users. Hydrated by Projects from the mount's
+// `allocationsProcessName` option.
+export const allocationsProcessNameAtom = atom("ACCESS");
+
 function update(get: (a: typeof apiStateAtom) => ApiState, set: any, recipe: (draft: Draft<ApiState>) => void) {
   set(apiStateAtom, produce(get(apiStateAtom), recipe));
 }
@@ -196,6 +201,7 @@ const makeResource = ({
   organizationId,
   organizationFaviconUrl,
   organizationName,
+  reportsUsage,
   resourceRepositoryKey,
   resourceType,
   startDate,
@@ -257,7 +263,12 @@ const makeResource = ({
     startDate,
     type: resourceType,
     unit: unitType,
-    used: roundNumber(amountUsed || 0, 0, "ceil"),
+    // A host whose resources don't all report usage back to accounting marks
+    // the ones that don't with `reportsUsage: false`; their amountUsed is a
+    // meaningless zero, not "nothing used yet", so it becomes null rather than
+    // a balance the UI would present as fully available. Absent means true,
+    // which is every resource on ACCESS.
+    used: reportsUsage === false ? null : roundNumber(amountUsed || 0, 0, "ceil"),
     userGuideUrl,
   };
 };
@@ -1152,6 +1163,7 @@ export const saveUsersAtom = atom(null, async (get, set, { grantNumber }: { gran
 
   update(get, set, (draft) => {
     draft.projects[grantNumber].usersStatus = statuses.pending;
+    delete draft.projects[grantNumber].usersNotices;
   });
 
   // The xras API either expects nothing or the entire list of users and their
@@ -1184,7 +1196,19 @@ export const saveUsersAtom = atom(null, async (get, set, { grantNumber }: { gran
   });
 
   if (res.status == 200) {
+    // A successful save may carry `notices` - things the user should know
+    // about changes that did go through, e.g. resources whose account changes
+    // need staff action (xras_submit_nairr). ACCESS answers with an empty
+    // body, which isn't JSON, so a parse failure just means no notices.
+    let notices: string[] = [];
+    try {
+      const body = await res.json();
+      if (Array.isArray(body?.notices)) notices = body.notices.map(String);
+    } catch {
+      notices = [];
+    }
     update(get, set, (draft) => {
+      if (notices.length) draft.projects[grantNumber].usersNotices = notices;
       draft.projects[grantNumber].users = draft.projects[grantNumber].users.map((user) => ({
         ...user,
         initialResourceIds: [...user.resourceIds],

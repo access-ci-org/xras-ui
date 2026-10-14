@@ -4,6 +4,7 @@ export type Routes = {
   edit_request_action_path: (requestId: number | string, actionId: number | string) => string;
   edit_request_path: (requestId: number | string) => string;
   how_to_path: () => string;
+  help_ticket_path: () => string;
   get_your_first_project_path: () => string;
   profile_path: () => string;
   project_types_path: () => string;
@@ -73,6 +74,7 @@ export const defaultRoutes: Routes = {
     `/requests/${requestId}/actions/${actionId}/edit`,
   edit_request_path: (requestId) => `/requests/${requestId}/edit`,
   how_to_path: () => "/how-to",
+  help_ticket_path: () => "https://support.access-ci.org/open-a-ticket",
   get_your_first_project_path: () => `${baseUrl}/get-your-first-project`,
   profile_path: () => `${baseUrl}/profile`,
   project_types_path: () => `${baseUrl}/project-types`,

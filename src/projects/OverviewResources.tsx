@@ -70,6 +70,15 @@ export default function OverviewResources({
       name: "Balance",
       format: (used, row) => {
         if (row.isBoolean) return formatBoolean(row.allocated);
+        // A resource that doesn't report usage has no known balance - show
+        // what was allocated without claiming any of it is still available.
+        if (used === null)
+          return (
+            <>
+              {formatNumber(row.allocated, { abbreviate: true })} {row.unit} allocated{" "}
+              <span className="text-muted-foreground">(usage not reported)</span>
+            </>
+          );
         const balance = row.allocated - used;
         const pct = (Math.max(balance, 0) * 100) / row.allocated;
         return (

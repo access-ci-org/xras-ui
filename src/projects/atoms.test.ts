@@ -544,6 +544,32 @@ describe("fetchProjectsListAtom (raw API shape transform)", () => {
     expect(state.projects["ABC123"].users[0].canChangeRoles).toBeUndefined();
   });
 
+  // `reportsUsage` is host-supplied (xras_submit_nairr marks resources that
+  // don't report usage to accounting); ACCESS never sends it, so absent has to
+  // mean "reports usage" and keep amountUsed.
+  it("nulls used only for resources marked reportsUsage: false", async () => {
+    const project = rawProject();
+    project.requests[0].resources = [
+      rawResource({ reportsUsage: false }),
+      rawResource({ xrasResourceId: 102, reportsUsage: true }),
+      rawResource({ xrasResourceId: 103 }),
+      rawCreditResource(),
+    ];
+    server.use(
+      http.get(`${defaultRoutes.projects_path()}.json`, () => HttpResponse.json({ result: [project] })),
+    );
+
+    const store = createStore();
+    await store.set(fetchProjectsListAtom, "ghopper");
+
+    const resources = store.get(apiStateAtom).requests[555].resources;
+    const byId = (id: number) => resources.find((r) => r.resourceId === id)!;
+    expect(byId(101).used).toBeNull();
+    expect(byId(101).allocated).toBe(1000);
+    expect(byId(102).used).toBe(200);
+    expect(byId(103).used).toBe(200);
+  });
+
   it("carries negativeOnly, canChangeRoles and internationalUserRequests through the transform", async () => {
     const project = rawProject({
       grantNumber: "DEF456",
@@ -1071,7 +1097,7 @@ describe("saveResourcesAtom", () => {
 });
 
 describe("saveUsersAtom", () => {
-  function makeUsersProject() {
+  function makeUsersProject(overrides: Partial<Project> = {}) {
     const roleChangedUser = makeUserFixture({
       username: "promoted",
       role: "pi",
@@ -1087,7 +1113,7 @@ describe("saveUsersAtom", () => {
       initialResourceIds: [101],
       hasChanges: true,
     });
-    return makeProjectFixture({ users: [roleChangedUser, resourceChangedUser] });
+    return makeProjectFixture({ users: [roleChangedUser, resourceChangedUser], ...overrides });
   }
 
   it("commits users as the new baseline on success", async () => {
@@ -1120,6 +1146,54 @@ describe("saveUsersAtom", () => {
       expect(user.initialResourceIds).toEqual(user.resourceIds);
       expect(user.initialRole).toBe(user.role);
     }
+  });
+
+  it("stores notices returned with a successful save", async () => {
+    server.use(
+      http.post("https://example.test/save-users", () =>
+        HttpResponse.json({ notices: ["Changes on Example Resource require staff action."] }),
+      ),
+    );
+
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      projects_save_users_path: () => "https://example.test/save-users",
+    });
+    store.set(apiStateAtom, seedState({ projects: { ABC123: makeUsersProject() } }));
+
+    await store.set(saveUsersAtom, { grantNumber: "ABC123" });
+
+    const project = store.get(apiStateAtom).projects["ABC123"];
+    expect(project.usersStatus).toBe("success");
+    expect(project.usersNotices).toEqual(["Changes on Example Resource require staff action."]);
+  });
+
+  // ACCESS answers a successful save with an empty body, and a host may send
+  // JSON without `notices`; neither may fail the save, and a later save
+  // mustn't keep showing an earlier save's notices.
+  it("leaves no notices for an empty or notice-less success, clearing earlier ones", async () => {
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      projects_save_users_path: () => "https://example.test/save-users",
+    });
+    store.set(
+      apiStateAtom,
+      seedState({ projects: { ABC123: makeUsersProject({ usersNotices: ["stale"] }) } }),
+    );
+
+    server.use(http.post("https://example.test/save-users", () => new HttpResponse(null, { status: 200 })));
+    await store.set(saveUsersAtom, { grantNumber: "ABC123" });
+    let project = store.get(apiStateAtom).projects["ABC123"];
+    expect(project.usersStatus).toBe("success");
+    expect(project.usersNotices).toBeUndefined();
+
+    server.use(http.post("https://example.test/save-users", () => HttpResponse.json({ ok: true })));
+    await store.set(saveUsersAtom, { grantNumber: "ABC123" });
+    project = store.get(apiStateAtom).projects["ABC123"];
+    expect(project.usersStatus).toBe("success");
+    expect(project.usersNotices).toBeUndefined();
   });
 
   it("records server-provided errors on a rejected save", async () => {

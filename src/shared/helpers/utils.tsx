@@ -240,7 +240,7 @@ export const getResourceUsagePercent = (request: {
   resources: {
     isBoolean?: boolean;
     allocated: number;
-    used: number;
+    used: number | null;
     exchangeRates: { base: { unitCost: number } };
   }[];
 }) => {
@@ -248,7 +248,10 @@ export const getResourceUsagePercent = (request: {
   let used = 0;
 
   for (const res of request.resources) {
-    if (res.isBoolean) continue;
+    // A resource that doesn't report usage (used === null) can't say how much
+    // of it is unused, so it's left out of both sides rather than counted as
+    // untouched.
+    if (res.isBoolean || res.used === null) continue;
     const { unitCost } = res.exchangeRates.base;
     total += res.allocated * unitCost;
     used += Math.min(res.used, res.allocated) * unitCost;
