@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.39.0](https://github.com/access-ci-org/xras-ui/compare/v0.38.0...v0.39.0) (2026-10-14)
+
+
+### Features
+
+* **projects:** allow users to edit supporting grants ([fc3cdb4](https://github.com/access-ci-org/xras-ui/commit/fc3cdb4e24297de7fa786b62b7deedcbdc6483e7))
+
 ## [0.38.0](https://github.com/access-ci-org/xras-ui/compare/v0.37.0...v0.38.0) (2026-10-12)
 
 
