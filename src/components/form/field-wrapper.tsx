@@ -68,15 +68,22 @@ export function RadioGroupOptions({
   onValueChange,
   options,
   className,
+  disabled,
 }: {
   name: string;
   value: string;
   onValueChange: (value: string) => void;
   options: { value: string; label: string }[];
   className?: string;
+  disabled?: boolean;
 }) {
   return (
-    <RadioGroup value={value} onValueChange={onValueChange} className={className}>
+    <RadioGroup
+      value={value}
+      onValueChange={onValueChange}
+      className={className}
+      disabled={disabled}
+    >
       {options.map((option) => (
         <div key={option.value} className="flex items-center gap-2">
           <RadioGroupItem value={option.value} id={`${name}-${option.value}`} />

@@ -1,37 +1,16 @@
 import { useEffect, useMemo } from "react";
-import { Provider, createStore, type WritableAtom } from "jotai";
+import { Provider, createStore, useAtomValue, type WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 import { useStore } from "@tanstack/react-form";
 import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { GrantFields } from "./GrantFields";
 import { fosTypesAtom, fundingAgenciesAtom } from "./atoms";
-import { AWARDED_UNITS, formatAsCurrency } from "./currency";
+import { formatAsCurrency } from "./currency";
+import { emptyGrant } from "./empty-grant";
 import { parseInitialGrants } from "./parse-initial-grants";
-import { supportingGrantsFormSchema } from "./schema";
-import type {
-  SupportingGrant,
-  SupportingGrantsProps,
-  SupportingGrantsState,
-} from "./types";
-
-function emptyGrant(): SupportingGrant {
-  return {
-    fundingAgencyId: null,
-    grantNumber: "",
-    isPending: null,
-    title: "",
-    piName: "",
-    beginDate: "",
-    endDate: "",
-    primaryFosTypeId: null,
-    awardedAmount: "",
-    awardedUnits: AWARDED_UNITS,
-    programOfficerName: "",
-    programOfficerEmail: "",
-    comments: "",
-  };
-}
+import { createSupportingGrantsFormSchema } from "./schema";
+import type { SupportingGrantsProps, SupportingGrantsState } from "./types";
 
 function HydrateAtoms({
   values,
@@ -47,19 +26,28 @@ function HydrateAtoms({
 function SupportingGrantsForm({
   initialGrants,
   initialIncludeSupportingGrants,
+  applyNsfLock,
   onSubmit,
   onChange,
   onValidityChange,
   setExternalSubmit,
+  hasUnsupportedActiveAllocation,
 }: Pick<
   SupportingGrantsProps,
   | "initialGrants"
   | "initialIncludeSupportingGrants"
+  | "applyNsfLock"
   | "onSubmit"
   | "onChange"
   | "onValidityChange"
   | "setExternalSubmit"
+  | "hasUnsupportedActiveAllocation"
 >) {
+  const fundingAgencies = useAtomValue(fundingAgenciesAtom);
+  const formSchema = useMemo(
+    () => createSupportingGrantsFormSchema(fundingAgencies),
+    [fundingAgencies],
+  );
   const form = useAppForm({
     defaultValues: {
       includeSupportingGrants: initialIncludeSupportingGrants ?? null,
@@ -76,9 +64,9 @@ function SupportingGrantsForm({
       // nothing there ever calls handleSubmit(), so submit-only validation
       // would never run, and onChange alone wouldn't cover an initial
       // submit attempt before any field has changed.
-      onMount: supportingGrantsFormSchema,
-      onChange: supportingGrantsFormSchema,
-      onSubmit: supportingGrantsFormSchema,
+      onMount: formSchema,
+      onChange: formSchema,
+      onSubmit: formSchema,
     },
     onSubmit: ({ value }) => {
       onSubmit?.(value.grants);
@@ -130,9 +118,8 @@ function SupportingGrantsForm({
             // Answering "Yes" with nothing to fill in should open the first
             // grant's fields straight away.
             onChange: ({ value }) => {
-              if (value && form.getFieldValue("grants").length === 0) {
-                form.pushFieldValue("grants", emptyGrant());
-              }
+              const liveGrants = form.getFieldValue("grants").filter((g) => !g._destroy);
+              if (value && liveGrants.length === 0) form.pushFieldValue("grants", emptyGrant());
             },
           }}
         >
@@ -148,19 +135,58 @@ function SupportingGrantsForm({
           )}
         </form.AppField>
       </div>
+      
+      {includeSupportingGrants === false && hasUnsupportedActiveAllocation && (
+        <div
+          role="alert"
+          className="mb-4 space-y-2 rounded-md border border-amber-400 bg-amber-50 p-3 text-amber-900"
+        >
+          <p>
+            Researchers are only allowed one allocation without a supporting grant. 
+            Currently, you have another active allocation without a supporting grant. 
+            Submitting this allocation request without an associated supporting grant will likely
+            result in the request being denied.
+          </p>
+          <p>
+            For help, please contact:{" "}
+            <a
+              href="https://support.access-ci.org/help-ticket"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              https://support.access-ci.org/help-ticket
+            </a>
+            .
+          </p>
+        </div>
+      )}
 
       {includeSupportingGrants && (
         <form.Field name="grants" mode="array">
           {(grantsField) => (
             <div className="flex flex-col gap-4">
-              {grantsField.state.value.map((_, index) => (
-                <GrantFields
-                  key={index}
-                  form={form}
-                  index={index}
-                  onRemove={() => grantsField.removeValue(index)}
-                />
-              ))}
+              {grantsField.state.value.map((grant, index) =>
+                grant._destroy ? null : (
+                  <GrantFields
+                    key={index}
+                    form={form}
+                    index={index}
+                    applyNsfLock={applyNsfLock}
+                    onRemove={() => {
+                      const grant = form.getFieldValue(`grants[${index}]`);
+                      // A saved grant has to be posted back carrying _destroy so the Rails
+                      // side issues the API DELETE; simply dropping it from the array means
+                      // no delete is ever sent and the grant stays on the request.
+                      if (grant?.id != null) {
+                        form.setFieldValue(`grants[${index}]._destroy`, true);
+                      } else {
+                        grantsField.removeValue(index);
+                      }
+                    }}
+                  />
+                ),
+              )}
               <Button
                 type="button"
                 onClick={() => grantsField.pushValue(emptyGrant())}
@@ -193,10 +219,12 @@ export function SupportingGrantsSection(
         <SupportingGrantsForm
           initialGrants={props.initialGrants}
           initialIncludeSupportingGrants={props.initialIncludeSupportingGrants}
+          applyNsfLock={props.applyNsfLock}
           onSubmit={props.onSubmit}
           onChange={props.onChange}
           onValidityChange={props.onValidityChange}
           setExternalSubmit={props.setExternalSubmit}
+          hasUnsupportedActiveAllocation={props.hasUnsupportedActiveAllocation}
         />
       </HydrateAtoms>
     </Provider>

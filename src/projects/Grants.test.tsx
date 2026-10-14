@@ -1,0 +1,718 @@
+import { describe, expect, it } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { Provider, createStore } from "jotai";
+import { http, HttpResponse } from "msw";
+import { server } from "@/test/msw";
+import { defaultRoutes, routesAtom } from "@/shared/routes";
+import Grants from "./Grants";
+import { apiStateAtom } from "./atoms";
+import type { Grant, Project, Request as RequestType } from "./types";
+
+const GRANT_NUMBER = "TEST000001";
+const REQUEST_ID = 555;
+const SAVE_URL = "https://example.test/save-grants";
+
+function makeGrant(overrides: Partial<Grant> = {}): Grant {
+  return {
+    grantId: 1,
+    fundingAgencyId: 10,
+    fundingAgencyName: "National Science Foundation",
+    fundingAgencyAbbr: "NSF",
+    grantNumber: "NSF-12345",
+    piName: "Ada Lovelace",
+    title: "A Supporting Grant",
+    beginDate: "2024-01-01",
+    endDate: "2025-01-01",
+    awardedAmount: 100000,
+    awardedUnits: "Dollars",
+    percentageAward: 100,
+    programOfficerName: "Grace Hopper",
+    programOfficerEmail: "ghopper@example.test",
+    isPending: false,
+    subAwardNumber: null,
+    comments: "Supports the same research area.",
+    primaryFosTypeId: 5,
+    primaryFosType: "Computer Science",
+    ...overrides,
+  };
+}
+
+function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
+  return {
+    actions: [],
+    allocationType: "Explore",
+    allowedActions: {},
+    endDate: "2026-12-31",
+    entryDate: "2026-01-01",
+    exchangeActionId: null,
+    exchangeActionEditable: false,
+    exchangeErrors: [],
+    exchangeStatus: null,
+    grantNumber: GRANT_NUMBER,
+    grants: [],
+    editGrantId: null,
+    grantsStatus: null,
+    isMaximize: false,
+    requestId: REQUEST_ID,
+    resources: [],
+    resourcesReason: "",
+    returnedForCorrections: false,
+    returnedForCorrectionsNotes: "",
+    showActionsModal: false,
+    showAddGrantModal: false,
+    showConfirmModal: false,
+    showResourcesModal: false,
+    startDate: "2025-01-01",
+    status: "Active",
+    timeStatus: "current",
+    type: "New",
+    usageDetail: null,
+    usageDetailStatus: null,
+    usesCredits: true,
+    ...overrides,
+  };
+}
+
+function makeProject(overrides: Partial<Project> = {}): Project {
+  return {
+    currentRequestId: REQUEST_ID,
+    grantNumber: GRANT_NUMBER,
+    isManager: true,
+    requestsList: [],
+    selectedRequestId: REQUEST_ID,
+    status: "Active",
+    tab: "grants",
+    title: "Test Project",
+    users: [],
+    usersNewRowIndex: -1,
+    usersStatus: null,
+    ...overrides,
+  };
+}
+
+function renderGrants({
+  grants,
+  role = "pi",
+  requestId = REQUEST_ID,
+  currentRequestId = REQUEST_ID,
+  requestOverrides = {},
+  otherRequests = [],
+}: {
+  grants?: Grant[];
+  role?: string;
+  requestId?: number;
+  currentRequestId?: number | null;
+  requestOverrides?: Partial<RequestType>;
+  /** The project's other requests, alongside the one being rendered. */
+  otherRequests?: RequestType[];
+} = {}) {
+  const store = createStore();
+  store.set(routesAtom, { ...defaultRoutes, projects_save_grants_path: () => SAVE_URL });
+  const currentUser = {
+    eligibility: "yes",
+    firstName: "Test",
+    initialResourceIds: [],
+    initialRole: role,
+    lastName: "User",
+    resourceAccountPendingIds: [],
+    resourceAccountInactiveIds: [],
+    resourceIds: [],
+    resourceUsernames: {},
+    role,
+    username: "testuser",
+  };
+  store.set(apiStateAtom, {
+    error: null,
+    projectsList: [],
+    projectListLoading: false,
+    projects: {
+      [GRANT_NUMBER]: {
+        ...makeProject({
+          currentRequestId,
+          users: [currentUser],
+          // What the request menu lists - and so how the reminder names them.
+          requestsList: [{ requestId, status: "Active" }, ...otherRequests].map((r) => ({
+            allocationType: "Explore",
+            entryDate: "2026-01-01",
+            ...r,
+            requestId: r.requestId,
+          })),
+        }),
+        currentUser,
+      },
+    },
+    requests: {
+      [requestId]: makeRequest({ requestId, grants, ...requestOverrides }),
+      ...Object.fromEntries(otherRequests.map((r) => [r.requestId, r])),
+    },
+    username: "testuser",
+    fundingAgencies: [],
+    fosTypes: [],
+  });
+  return {
+    store,
+    ...render(
+      <Provider store={store}>
+        <Grants grantNumber={GRANT_NUMBER} requestId={requestId} />
+      </Provider>,
+    ),
+  };
+}
+
+const editButton = () => screen.getByRole("button", { name: "Edit supporting grant" });
+
+async function openEditModal(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(editButton());
+  await screen.findByRole("dialog");
+}
+
+describe("Grants (compact listing)", () => {
+  it("shows the empty state when there are no grants", () => {
+    renderGrants({ grants: [] });
+    expect(
+      screen.getByText("No supporting grants were submitted with this request."),
+    ).toBeInTheDocument();
+  });
+
+  it("renders nothing when the request's grants key is undefined (older host API)", () => {
+    const { container } = renderGrants({ grants: undefined });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it.each([
+    ["dollars, as the API's numeric string", "12561813.49", "Dollars", "$12,561,813"],
+    ["no units, which are dollars", "12561813.5", null, "$12,561,814"],
+    ["another unit", "1234567.0", "SUs", "1,234,567 SUs"],
+  ])("formats an awarded amount in %s", (_, awardedAmount, awardedUnits, expected) => {
+    renderGrants({ grants: [makeGrant({ awardedAmount, awardedUnits })], role: "user" });
+
+    expect(screen.getByText(expected)).toBeInTheDocument();
+  });
+
+  it("summarizes each grant for a non-manager", () => {
+    renderGrants({ grants: [makeGrant()], role: "user" });
+
+    expect(screen.getByText("A Supporting Grant")).toBeInTheDocument();
+    expect(screen.getByText(/NSF\s+NSF-12345/)).toBeInTheDocument();
+    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+    expect(screen.getByText("Jan 1, 2024 – Jan 1, 2025")).toBeInTheDocument();
+    expect(screen.getByText("$100,000")).toBeInTheDocument();
+    expect(screen.getByText("Computer Science")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Grace Hopper" })).toHaveAttribute(
+      "href",
+      "mailto:ghopper@example.test",
+    );
+  });
+
+  it("shows a pending grant as pending instead of showing its dates", () => {
+    renderGrants({ grants: [makeGrant({ isPending: true })], role: "user" });
+
+    expect(screen.getByText("Pending")).toBeInTheDocument();
+    expect(screen.queryByText("Jan 1, 2024 – Jan 1, 2025")).not.toBeInTheDocument();
+  });
+
+  it("does not offer an edit button to a non-manager", () => {
+    renderGrants({ grants: [makeGrant()], role: "user" });
+
+    expect(screen.queryByRole("button", { name: "Edit supporting grant" })).not.toBeInTheDocument();
+  });
+
+  it.each(["pi", "co_pi", "allocation_manager"])(
+    "offers an edit button to role %s on the current request",
+    (role) => {
+      renderGrants({ grants: [makeGrant()], role });
+
+      expect(editButton()).toBeInTheDocument();
+    },
+  );
+
+  // The server is the actual authority (save_grants checks the caller's role
+  // against the request directly); this only pins the UI affordance - see
+  // grantsEditableInProjects.
+  it("hides the edit button for a manager viewing a past request", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      role: "pi",
+      requestId: 554,
+      currentRequestId: 555,
+      requestOverrides: { timeStatus: "past" },
+    });
+
+    expect(screen.queryByRole("button", { name: "Edit supporting grant" })).not.toBeInTheDocument();
+  });
+
+  it("offers the edit button to a manager viewing an approved request that hasn't started yet", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      role: "pi",
+      requestId: 556,
+      currentRequestId: 555,
+      requestOverrides: { timeStatus: "future" },
+    });
+
+    expect(editButton()).toBeInTheDocument();
+  });
+
+  it("shows the saved confirmation after a successful save", () => {
+    renderGrants({ grants: [makeGrant()], requestOverrides: { grantsStatus: "success" } });
+
+    expect(screen.getByText("Your changes have been saved.")).toBeInTheDocument();
+  });
+});
+
+describe("Grants (reminder about the project's other requests)", () => {
+  const RENEWAL_ID = 556;
+
+  // A request whose grants are edited in the request form - the request
+  // action allows Edit, as for an Incomplete renewal. Not yet approved, so it
+  // has no dates and no timeStatus.
+  const editableRenewal = (overrides: Partial<RequestType> = {}) =>
+    makeRequest({
+      actions: [
+        {
+          actionId: 1,
+          allowedOperations: ["Edit", "Delete"],
+          date: "2026-10-01",
+          deleteStatus: null,
+          detailAvailable: true,
+          isRequest: true,
+          resources: [],
+          showDeleteModal: false,
+          status: "Incomplete",
+          type: "Renewal",
+        },
+      ],
+      endDate: null,
+      entryDate: "2026-10-07",
+      requestId: RENEWAL_ID,
+      startDate: null,
+      status: "Incomplete",
+      timeStatus: undefined,
+      type: "Renewal",
+      ...overrides,
+    });
+
+  // An approved renewal that starts when the current request ends. Its grants
+  // are edited here, after selecting it in the request menu.
+  const approvedRenewal = (overrides: Partial<RequestType> = {}) =>
+    makeRequest({
+      actions: [],
+      endDate: "2027-10-10",
+      requestId: RENEWAL_ID,
+      startDate: "2026-10-11",
+      status: "Approved",
+      timeStatus: "future",
+      type: "Renewal",
+      ...overrides,
+    });
+
+  const reminderText = /You may want to make the same change/;
+
+  it("reminds the user about an editable renewal after a save, with a link to edit it", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [editableRenewal()],
+    });
+
+    expect(screen.getByText(reminderText)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit Explore: Started Oct 7, 2026" })).toHaveAttribute(
+      "href",
+      defaultRoutes.edit_request_path(RENEWAL_ID),
+    );
+  });
+
+  it("tells the user to select an approved future request in the request menu", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [approvedRenewal()],
+    });
+
+    const alert = screen.getByText(reminderText);
+    expect(alert).toHaveTextContent(
+      "Select Explore: Oct 11, 2026 to Oct 10, 2027 in the request menu above.",
+    );
+    expect(screen.queryByRole("link", { name: /^Edit / })).not.toBeInTheDocument();
+  });
+
+  it("doesn't remind the user until a change has been saved", () => {
+    renderGrants({ grants: [makeGrant()], otherRequests: [editableRenewal()] });
+
+    expect(screen.queryByText(reminderText)).not.toBeInTheDocument();
+  });
+
+  it("doesn't remind the user about requests that can't be edited", () => {
+    const pastRequest = approvedRenewal({ requestId: 554, timeStatus: "past" });
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [pastRequest],
+    });
+
+    expect(screen.getByText("Your changes have been saved.")).toBeInTheDocument();
+    expect(screen.queryByText(reminderText)).not.toBeInTheDocument();
+  });
+
+  it("lists each editable request when there's more than one", () => {
+    renderGrants({
+      grants: [makeGrant()],
+      requestOverrides: { grantsStatus: "success" },
+      otherRequests: [
+        approvedRenewal(),
+        editableRenewal({ requestId: 557, status: "Submitted", entryDate: "2026-10-08" }),
+      ],
+    });
+
+    const items = within(screen.getByText(reminderText)).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Select Explore: Oct 11, 2026 to Oct 10, 2027 in the request menu above");
+    expect(screen.getByRole("link", { name: "Edit Explore: Submitted Oct 8, 2026" })).toHaveAttribute(
+      "href",
+      defaultRoutes.edit_request_path(557),
+    );
+  });
+});
+
+describe("Grants (edit modal)", () => {
+  // makeGrant() defaults isPending: false - already awarded - so only
+  // grantNumber and the pending radios stay locked (editableGrantFields in
+  // atoms.ts); everything else, including fields that used to be locked for
+  // every grant, is now editable.
+  it("opens the supporting grants form with only grantNumber and the pending answer locked, once the grant has been awarded", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [makeGrant()] });
+
+    await openEditModal(user);
+
+    for (const label of [
+      "Funding Agency",
+      "Grant Title",
+      "PI Name",
+      "Start Date",
+      "End Date",
+      "Field of Science",
+      "Awarded Amount",
+      "Program Officer Name",
+      "Program Officer Email",
+      "Explanation",
+    ]) {
+      expect(screen.getByLabelText(label, { exact: false })).toBeEnabled();
+    }
+    expect(screen.getByLabelText("Grant Number", { exact: false })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "Yes" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "No" })).toBeDisabled();
+  });
+
+  it("leaves the pending answer enabled, with grantNumber hidden, for a still-pending grant", async () => {
+    // Grant number, dates, amount, and program officer info aren't knowable
+    // until the grant is no longer pending - GrantFields doesn't mount those
+    // fields at all until isPending is answered No, in My Projects same as
+    // the submission form (see GrantFields.test.tsx).
+    const user = userEvent.setup();
+    renderGrants({ grants: [makeGrant({ isPending: true })] });
+
+    await openEditModal(user);
+
+    expect(screen.queryByLabelText("Grant Number", { exact: false })).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "No" })).toBeEnabled();
+  });
+
+  it("saves a changed title on an already-awarded grant", async () => {
+    const user = userEvent.setup();
+    let body: any = null;
+    server.use(
+      http.post(SAVE_URL, async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    const { store } = renderGrants({ grants: [makeGrant({ isPending: false })] });
+
+    await openEditModal(user);
+    const title = screen.getByLabelText("Grant Title", { exact: false });
+    await user.clear(title);
+    await user.type(title, "A New Title");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body.grants).toEqual([{ grantId: 1, title: "A New Title" }]);
+    expect(store.get(apiStateAtom).requests[REQUEST_ID].grants![0].title).toBe("A New Title");
+  });
+
+  it("saves a changed pending answer on a still-pending grant", async () => {
+    const user = userEvent.setup();
+    let body: any = null;
+    server.use(
+      http.post(SAVE_URL, async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    const { store } = renderGrants({ grants: [makeGrant({ isPending: true })] });
+
+    await openEditModal(user);
+    await user.click(screen.getByRole("radio", { name: "No" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body.grants).toEqual([{ grantId: 1, isPending: false }]);
+    expect(store.get(apiStateAtom).requests[REQUEST_ID].grants![0].isPending).toBe(false);
+  });
+
+  it("offers to mark a still-pending grant as not awarded, and removes it from state on confirmation", async () => {
+    const user = userEvent.setup();
+    let body: any = null;
+    server.use(
+      http.post(SAVE_URL, async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    const { store } = renderGrants({ grants: [makeGrant({ isPending: true })] });
+
+    await openEditModal(user);
+
+    expect(
+      screen.queryByRole("button", { name: "Yes, Grant Was Not Awarded" }),
+    ).not.toBeInTheDocument();
+    // A destructive action, so red, and first in the footer - on the left,
+    // away from Cancel and Save Changes.
+    const notAwarded = screen.getByRole("button", { name: "Grant Was Not Awarded" });
+    expect(notAwarded).toHaveClass("bg-destructive");
+    expect(notAwarded.parentElement!.firstElementChild).toBe(notAwarded);
+    expect(notAwarded.parentElement).toContainElement(
+      screen.getByRole("button", { name: "Save Changes" }),
+    );
+    await user.click(notAwarded);
+    expect(
+      screen.getByText(/Are you sure this grant was never awarded/),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Yes, Grant Was Not Awarded" }));
+
+    await waitFor(() =>
+      expect(store.get(apiStateAtom).requests[REQUEST_ID].grants).toEqual([]),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    // The same shape as an edit - save_grants finds the grant through the
+    // requestId and only permits grant fields inside grants[].
+    expect(body.requestId).toBe(REQUEST_ID);
+    expect(body.grants).toEqual([{ grantId: 1, notAwarded: true }]);
+  });
+
+  it("does not offer to mark an already-awarded grant as not awarded", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [makeGrant({ isPending: false })] });
+
+    await openEditModal(user);
+
+    expect(
+      screen.queryByRole("button", { name: "Grant Was Not Awarded" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("prefills the form from the grant and offers no add or remove controls", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [makeGrant()] });
+
+    await openEditModal(user);
+
+    expect(screen.getByLabelText("Grant Number", { exact: false })).toHaveValue("NSF-12345");
+    expect(screen.getByLabelText("Awarded Amount", { exact: false })).toHaveValue("$100,000.00");
+    expect(screen.getByLabelText("Program Officer Name", { exact: false })).toHaveValue("Grace Hopper");
+    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add another supporting grant" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // Dates aren't knowable until the grant is no longer pending, so they stay
+  // hidden here the same as everywhere else GrantFields renders - a manager
+  // answers No before there's anything to fill in.
+  it("hides the date fields for a pending grant", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [makeGrant({ isPending: true, beginDate: null, endDate: null })] });
+
+    await openEditModal(user);
+
+    expect(screen.queryByLabelText("Start Date", { exact: false })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("End Date", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("saves only the fields that changed", async () => {
+    const user = userEvent.setup();
+    let body: any = null;
+    server.use(
+      http.post(SAVE_URL, async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    const { store } = renderGrants({ grants: [makeGrant()] });
+
+    await openEditModal(user);
+    const poName = screen.getByLabelText("Program Officer Name", { exact: false });
+    await user.clear(poName);
+    await user.type(poName, "New PO");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body.requestId).toBe(REQUEST_ID);
+    expect(body.grants).toEqual([{ grantId: 1, programOfficerName: "New PO" }]);
+    // A successful save closes the modal and commits the new value.
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(store.get(apiStateAtom).requests[REQUEST_ID].grants![0].programOfficerName).toBe("New PO");
+  });
+
+  it("blocks the save and reports an end date that precedes the start date", async () => {
+    const user = userEvent.setup();
+    let called = false;
+    server.use(
+      http.post(SAVE_URL, () => {
+        called = true;
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    renderGrants({ grants: [makeGrant()] });
+
+    await openEditModal(user);
+    const endDate = screen.getByLabelText("End Date", { exact: false });
+    await user.clear(endDate);
+    await user.type(endDate, "2023-01-01");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    expect(
+      await screen.findByText("End date must be on or after the start date"),
+    ).toBeInTheDocument();
+    expect(called).toBe(false);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("warns (without blocking the save) when the grant's dates don't overlap the allocation period", async () => {
+    const user = userEvent.setup();
+    renderGrants({
+      grants: [makeGrant({ beginDate: "2024-01-01", endDate: "2024-06-01" })],
+      requestOverrides: { startDate: "2025-01-01", endDate: "2026-12-31" },
+    });
+
+    await openEditModal(user);
+
+    expect(screen.getByText(/do not overlap the project's allocation period/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save Changes" })).toBeEnabled();
+  });
+
+  it("reports a rejected save and keeps the modal open", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(SAVE_URL, () =>
+        HttpResponse.json({ errors: ["Grant dates must overlap the allocation period"] }, { status: 422 }),
+      ),
+    );
+    renderGrants({ grants: [makeGrant()] });
+
+    await openEditModal(user);
+    const endDate = screen.getByLabelText("End Date", { exact: false });
+    await user.clear(endDate);
+    await user.type(endDate, "2025-06-01");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    expect(
+      await screen.findByText("Grant dates must overlap the allocation period"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("Cancel closes the modal without saving", async () => {
+    const user = userEvent.setup();
+    let called = false;
+    server.use(
+      http.post(SAVE_URL, () => {
+        called = true;
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    renderGrants({ grants: [makeGrant()] });
+
+    await openEditModal(user);
+    const poName = screen.getByLabelText("Program Officer Name", { exact: false });
+    await user.clear(poName);
+    await user.type(poName, "New PO");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(called).toBe(false);
+  });
+});
+
+describe("Grants (add grant modal)", () => {
+  const addGrantButton = () => screen.getByRole("button", { name: "Add Supporting Grant" });
+
+  it("offers an Add Supporting Grant button to a manager on the current request", () => {
+    renderGrants({ grants: [] });
+
+    expect(addGrantButton()).toBeInTheDocument();
+    // The primary (teal) button, like the rest of My Projects' actions.
+    expect(addGrantButton()).toHaveClass("bg-primary");
+  });
+
+  it("does not offer an Add Supporting Grant button to a non-manager", () => {
+    renderGrants({ grants: [], role: "user" });
+
+    expect(screen.queryByRole("button", { name: "Add Supporting Grant" })).not.toBeInTheDocument();
+  });
+
+  it("hides the Add Supporting Grant button for a manager viewing a past request", () => {
+    renderGrants({
+      grants: [],
+      role: "pi",
+      requestId: 554,
+      currentRequestId: 555,
+      requestOverrides: { timeStatus: "past" },
+    });
+
+    expect(screen.queryByRole("button", { name: "Add Supporting Grant" })).not.toBeInTheDocument();
+  });
+
+  it("opens a blank Add Supporting Grant form", async () => {
+    const user = userEvent.setup();
+    renderGrants({ grants: [] });
+
+    await user.click(addGrantButton());
+    await screen.findByRole("dialog");
+
+    expect(screen.getByRole("heading", { name: "Add Supporting Grant" })).toBeInTheDocument();
+    // Grant Number only mounts once the pending question is answered No.
+    expect(screen.queryByLabelText("Grant Number", { exact: false })).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Yes" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Add Grant" })).toBeInTheDocument();
+  });
+
+  // The full happy-path submission - filling in every field, including the
+  // Funding Agency and Field of Science selects, and asserting the posted
+  // body - is covered end-to-end in AddGrantModal.test.tsx, where the fixture
+  // setup for the selects' option lists lives; this file only pins that
+  // Grants wires the button and modal up.
+  it("Cancel closes the Add Supporting Grant modal without saving", async () => {
+    const user = userEvent.setup();
+    let called = false;
+    server.use(
+      http.post(SAVE_URL, () => {
+        called = true;
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+    renderGrants({ grants: [] });
+
+    await user.click(addGrantButton());
+    await screen.findByRole("dialog");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(called).toBe(false);
+  });
+});

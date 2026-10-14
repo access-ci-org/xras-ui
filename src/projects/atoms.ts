@@ -2,10 +2,13 @@ import { atom } from "jotai";
 import { produce, type Draft } from "immer";
 import { coalesce, getCost, roundNumber, sortResources, xrasRolesMap } from "../shared/helpers/utils";
 import { routesAtom } from "../shared/routes";
+import { unformatCurrency } from "../supporting-grants/currency";
+import type { FosType, FundingAgency, GrantFormFieldName, SupportingGrant } from "../supporting-grants/types";
 import type {
   Action,
   AllowedAction,
   AllowedActionsMap,
+  Grant,
   Project,
   ProjectListEntry,
   Request,
@@ -13,6 +16,98 @@ import type {
   SearchedUser,
   User,
 } from "./types";
+
+// Every field GrantFields (supporting-grants) renders an input for, so
+// disabled-field lists elsewhere can be derived from editableGrantFields()
+// below rather than maintained as a second list that could drift from it.
+export const ALL_GRANT_FIELDS: readonly GrantFormFieldName[] = [
+  "fundingAgencyId",
+  "grantNumber",
+  "title",
+  "piName",
+  "isPending",
+  "beginDate",
+  "endDate",
+  "primaryFosTypeId",
+  "awardedAmount",
+  "programOfficerName",
+  "programOfficerEmail",
+  "comments",
+];
+
+// Locked once an existing grant has already been awarded - matches
+// GRANT_AWARDED_LOCKED_FIELDS in save_grants (xras_submit_access). A brand
+// new grant (no grantId yet, so `grant` is omitted) or one still pending
+// (`isPending` `null` or `true`) has every field editable; the number and the
+// pending answer itself stop being editable the moment a grant's *persisted*
+// `isPending` becomes `false`, so a manager can't un-award a grant or rewrite
+// the number that identifies it after the fact.
+const GRANT_AWARDED_LOCKED_FIELDS: readonly GrantFormFieldName[] = ["grantNumber", "isPending"];
+
+export type GrantEditableField = GrantFormFieldName;
+
+/**
+ * Which of ALL_GRANT_FIELDS are currently editable for `grant` - every field,
+ * unless `grant` is an already-awarded existing grant (persisted
+ * `isPending === false`), in which case `grantNumber` and `isPending` are
+ * locked. Called with no argument (a new, not-yet-created grant) returns
+ * every field.
+ */
+export function editableGrantFields(
+  grant?: Pick<Grant, "isPending"> | null,
+): readonly GrantFormFieldName[] {
+  if (grant?.isPending !== false) return ALL_GRANT_FIELDS;
+  return ALL_GRANT_FIELDS.filter((field) => !GRANT_AWARDED_LOCKED_FIELDS.includes(field));
+}
+
+/**
+ * A set of edits from the edit/add grant form, in the form's own (string-ish)
+ * shape - the same shape SupportingGrant/GrantFields work in. saveGrantAtom
+ * and createGrantAtom normalize each field via normalizeGrantValue() before
+ * diffing or sending it.
+ */
+export type GrantEdits = Partial<Pick<SupportingGrant, GrantFormFieldName>>;
+
+/**
+ * Copies one field from a submitted SupportingGrant onto a GrantEdits
+ * accumulator, for AddGrantModal/GrantEditModal's `for (const field of
+ * editableGrantFields(...)) ...` submit loops. A plain
+ * `values[field] = edited[field]` doesn't type-check there: `field`'s type
+ * (GrantFormFieldName) isn't tied to a single generic type parameter shared
+ * by both the read and the write, so TypeScript can't confirm the two
+ * generic index accesses resolve to the same key's type and collapses the
+ * assignment target to `undefined`. Pinning both sides to one `K` here is
+ * the standard workaround.
+ */
+export function copyGrantField<K extends GrantFormFieldName>(
+  values: GrantEdits,
+  edited: Pick<SupportingGrant, GrantFormFieldName>,
+  field: K,
+): void {
+  values[field] = edited[field];
+}
+
+/**
+ * Converts one form-shaped field value (a select's string id, the currency
+ * input's display string, ...) into the shape the API and Grant state use:
+ * a number or null for the two id fields and the awarded amount, a boolean or
+ * null for isPending, and `?? ""` otherwise so a `null` (the API's "no
+ * value") and an emptied input compare equal.
+ */
+function normalizeGrantValue(
+  field: GrantFormFieldName,
+  value: unknown,
+): string | number | boolean | null {
+  if (field === "isPending") return (value as boolean | null | undefined) ?? null;
+  if (field === "fundingAgencyId" || field === "primaryFosTypeId") {
+    return value == null || value === "" ? null : Number(value);
+  }
+  if (field === "awardedAmount") {
+    const unformatted = unformatCurrency(value as string | number | null | undefined);
+    return unformatted === "" ? null : Number(unformatted);
+  }
+  return (value as string | null | undefined) ?? "";
+}
 
 export const statuses = {
   error: "error",
@@ -27,6 +122,8 @@ type ApiState = {
   projects: Record<string, Project>;
   requests: Record<string, Request>;
   username: string | null;
+  fundingAgencies: FundingAgency[];
+  fosTypes: FosType[];
 };
 
 const initialApiState: ApiState = {
@@ -36,6 +133,8 @@ const initialApiState: ApiState = {
   projects: {},
   requests: {},
   username: null,
+  fundingAgencies: [],
+  fosTypes: [],
 };
 
 export const apiStateAtom = atom<ApiState>(initialApiState);
@@ -44,6 +143,19 @@ export const errorAtom = atom((get) => get(apiStateAtom).error);
 export const projectsListAtom = atom((get) => get(apiStateAtom).projectsList);
 export const projectListLoadingAtom = atom((get) => get(apiStateAtom).projectListLoading);
 export const usernameAtom = atom((get) => get(apiStateAtom).username);
+export const requestsAtom = atom((get) => get(apiStateAtom).requests);
+
+// The select-list contents for editing a supporting grant, served alongside
+// the projects themselves by projects.json (ProjectsController#list_projects
+// in xras_submit_access) and stored in apiState like everything else that
+// endpoint answers with.
+//
+// GrantEditModal and AddGrantModal read these rather than the
+// supporting-grants module's own fundingAgenciesAtom/fosTypesAtom - those are
+// scoped to whatever local store GrantFields is rendered under, so the modals
+// re-hydrate that store from these.
+export const grantFundingAgenciesAtom = atom((get) => get(apiStateAtom).fundingAgencies);
+export const grantFosTypesAtom = atom((get) => get(apiStateAtom).fosTypes);
 
 function update(get: (a: typeof apiStateAtom) => ApiState, set: any, recipe: (draft: Draft<ApiState>) => void) {
   set(apiStateAtom, produce(get(apiStateAtom), recipe));
@@ -150,6 +262,53 @@ const makeResource = ({
   };
 };
 
+// The API's grant hash (V1::Utils::Grant.to_hash in xras_api) already uses
+// these exact key names, so this is mostly a typed pass-through - but it's
+// still spelled out field-by-field, like makeResource above, rather than a
+// blind spread, so a payload that adds a new key doesn't silently leak into
+// state untyped.
+const makeGrant = ({
+  grantId,
+  fundingAgencyId,
+  fundingAgencyName,
+  fundingAgencyAbbr,
+  grantNumber,
+  piName,
+  title,
+  beginDate,
+  endDate,
+  awardedAmount,
+  awardedUnits,
+  percentageAward,
+  programOfficerName,
+  programOfficerEmail,
+  isPending,
+  subAwardNumber,
+  comments,
+  primaryFosTypeId,
+  primaryFosType,
+}: any): Grant => ({
+  grantId,
+  fundingAgencyId,
+  fundingAgencyName,
+  fundingAgencyAbbr,
+  grantNumber,
+  piName,
+  title,
+  beginDate,
+  endDate,
+  awardedAmount,
+  awardedUnits,
+  percentageAward,
+  programOfficerName,
+  programOfficerEmail,
+  isPending,
+  subAwardNumber,
+  comments,
+  primaryFosTypeId,
+  primaryFosType,
+});
+
 const makeAllowedActionsMap = (allowedActions: any[]): AllowedActionsMap => {
   const result: AllowedActionsMap = {};
   for (const { actionType, allowedResources, opportunityId, opportunityName } of allowedActions) {
@@ -181,6 +340,7 @@ const addRequest = (
     allocationType,
     allowedActions,
     endDate,
+    grants,
     requestId,
     requestType,
     resources,
@@ -226,6 +386,13 @@ const addRequest = (
     exchangeErrors: [],
     exchangeStatus: null,
     grantNumber,
+    // `grants` stays `undefined` (not `[]`) when the host API omits the key
+    // entirely, so Request.tsx can tell "no grants" from "grants not
+    // supported yet" and gate the tab on that - see the Grant type comment.
+    grants: grants ? grants.map(makeGrant) : undefined,
+    editGrantId: null,
+    grantsErrors: undefined,
+    grantsStatus: null,
     isMaximize: allocationType == "Maximize",
     requestId,
     resources: resources
@@ -236,6 +403,7 @@ const addRequest = (
     returnedForCorrections: actions.find((action: any) => action.returnedForCorrections) ? true : false,
     returnedForCorrectionsNotes: actions.map((action: any) => action.adminComments).join(","),
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     startDate,
@@ -341,6 +509,13 @@ const addProject = (
   requests.sort((a: any, b: any) => (getSortDate(a) > getSortDate(b) ? -1 : 1));
   const currentRequest = requests.find((request: any) => request.timeStatus == "current");
   const currentRequestId = currentRequest ? currentRequest.requestId : null;
+  // A refresh of a project that's already on screen (see createGrantAtom)
+  // leaves the user on the request and tab they were looking at, as long as
+  // that request is still there.
+  const previous = draft.projects[grantNumber];
+  const keepSelection =
+    previous?.selectedRequestId != null &&
+    requests.some((request: any) => request.requestId == previous.selectedRequestId);
   draft.projects[grantNumber] = {
     currentRequestId,
     grantNumber,
@@ -355,9 +530,9 @@ const addProject = (
       addRequest(draft, request, { entryDate, grantNumber });
       return { allocationType, endDate, entryDate, requestId, startDate, status };
     }),
-    selectedRequestId: currentRequestId || requests[0].requestId,
+    selectedRequestId: keepSelection ? previous.selectedRequestId : currentRequestId || requests[0].requestId,
     status: projectStatus,
-    tab: "overview",
+    tab: keepSelection ? previous.tab : "overview",
     title,
     users: users
       .map(
@@ -491,45 +666,62 @@ export const searchUsersAtom = atom(null, async (get, _set, searchText: string):
 // Async actions (ported from createAsyncThunk usages)
 // ---------------------------------------------------------------------------
 
-export const fetchProjectsListAtom = atom(null, async (get, set, username: string) => {
-  set(apiStateAtom, produce(get(apiStateAtom), (draft) => {
-    draft.projectListLoading = true;
-  }));
+// `background` refreshes the list without the loading spinner. The spinner
+// replaces every project (see Projects.tsx), unmounting them, so each one
+// would lose its expanded/collapsed state and the page would appear to reload.
+export const fetchProjectsListAtom = atom(
+  null,
+  async (get, set, username: string, { background = false }: { background?: boolean } = {}) => {
+    if (!background)
+      set(apiStateAtom, produce(get(apiStateAtom), (draft) => {
+        draft.projectListLoading = true;
+      }));
 
-  const res = await fetch(`${get(routesAtom).projects_path()}.json`);
-  if (res.status != 200) {
+    const res = await fetch(`${get(routesAtom).projects_path()}.json`);
+    // A failed background refresh leaves the projects already on screen alone
+    // rather than replacing them all with an error.
+    if (res.status != 200 && background) return;
+    if (res.status != 200) {
+      update(get, set, (draft) => {
+        draft.error = "Failed to load project list.";
+        draft.projectListLoading = false;
+      });
+      return;
+    }
+
+    const body = await res.json();
+    const projectsList = body.result;
+    projectsList.sort((a: any, b: any) => (getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1));
+
     update(get, set, (draft) => {
-      draft.error = "Failed to load project list.";
+      draft.username = username;
+      // Alongside the projects: the select lists for editing a supporting grant
+      // (see grantFundingAgenciesAtom). Defaulted rather than required so a
+      // client serving only `result` still loads its projects - the grants tab
+      // just can't offer a choice of funding agency or field of science.
+      draft.fundingAgencies = body.fundingAgencies ?? [];
+      draft.fosTypes = body.fosTypes ?? [];
+      draft.projectsList = projectsList.map((project: any) => {
+        const { grantNumber, requestMasterId, requests, status, title } = project;
+        const returnedForCorrections =
+          project.requests.filter((r: any) => r.actions.filter((a: any) => a.returnedForCorrections).length > 0)
+            .length > 0;
+        const projectStatus = returnedForCorrections
+          ? "Returned for Corrections"
+          : status ||
+            (requests &&
+              (requests.find(({ timeStatus }: any) => timeStatus == "current")
+                ? "Active"
+                : requests[0].timeStatus == "past"
+                  ? "Inactive"
+                  : requests[0].status));
+        if (requests) addProject(draft, project, projectStatus);
+        return { grantNumber: grantNumber || requestMasterId, status: projectStatus, title };
+      });
       draft.projectListLoading = false;
     });
-    return;
-  }
-
-  const projectsList = (await res.json()).result;
-  projectsList.sort((a: any, b: any) => (getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1));
-
-  update(get, set, (draft) => {
-    draft.username = username;
-    draft.projectsList = projectsList.map((project: any) => {
-      const { grantNumber, requestMasterId, requests, status, title } = project;
-      const returnedForCorrections =
-        project.requests.filter((r: any) => r.actions.filter((a: any) => a.returnedForCorrections).length > 0)
-          .length > 0;
-      const projectStatus = returnedForCorrections
-        ? "Returned for Corrections"
-        : status ||
-          (requests &&
-            (requests.find(({ timeStatus }: any) => timeStatus == "current")
-              ? "Active"
-              : requests[0].timeStatus == "past"
-                ? "Inactive"
-                : requests[0].status));
-      if (requests) addProject(draft, project, projectStatus);
-      return { grantNumber: grantNumber || requestMasterId, status: projectStatus, title };
-    });
-    draft.projectListLoading = false;
-  });
-});
+  },
+);
 
 export const fetchProjectDetailAtom = atom(null, (get, set, grantNumber: string) => {
   update(get, set, (draft) => {
@@ -616,6 +808,240 @@ export const deleteActionAtom = atom(
       } else {
         requestAction.deleteStatus = statuses.error;
       }
+    });
+  },
+);
+
+// Saves one grant - the one the edit modal has open. `values` comes from the
+// modal's own form state, so this is where it first meets the copy in
+// `grants`: only the fields that are currently editable (editableGrantFields)
+// AND actually differ from the stored grant are sent (the server enforces the
+// same allowlist, but there's no reason to send fields the user never
+// touched or can't reach), and on success the new values are written into
+// `grants`, which is the baseline for the next edit.
+export const saveGrantAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    {
+      requestId,
+      grantId,
+      values,
+    }: {
+      requestId: number;
+      grantId: number;
+      values: GrantEdits;
+    },
+  ) => {
+    const request = get(apiStateAtom).requests[requestId];
+    const grant = (request.grants || []).find((g) => g.grantId == grantId);
+    if (!grant) return;
+
+    // Both sides go through the same normalization, so a stored `null` (the
+    // API's "no value") and a same-valued but differently-typed form input
+    // (an id as a string, an amount still in its currency formatting) don't
+    // register as a change against each other.
+    const changes: Record<string, string | number | boolean | null> = {};
+    for (const field of editableGrantFields(grant)) {
+      if (!(field in values)) continue;
+      const next = normalizeGrantValue(field, values[field]);
+      const current = normalizeGrantValue(field, (grant as Record<string, unknown>)[field]);
+      if (next !== current) changes[field] = next;
+    }
+
+    if (Object.keys(changes).length === 0) {
+      update(get, set, (draft) => {
+        draft.requests[requestId].editGrantId = null;
+      });
+      return;
+    }
+
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsStatus = statuses.pending;
+      draft.requests[requestId].grantsErrors = undefined;
+    });
+
+    const data = {
+      requestId,
+      grants: [{ grantId, ...changes }],
+      authenticity_token: getAuthToken(),
+    };
+
+    const res = await fetch(get(routesAtom).projects_save_grants_path(), {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (res.status == 200) {
+      update(get, set, (draft) => {
+        const draftRequest = draft.requests[requestId];
+        const draftGrant = (draftRequest.grants || []).find((g) => g.grantId == grantId);
+        if (draftGrant) Object.assign(draftGrant, changes);
+        draftRequest.editGrantId = null;
+        draftRequest.grantsErrors = undefined;
+        draftRequest.grantsStatus = statuses.success;
+      });
+      return;
+    }
+
+    // 403 (not a grant manager) and 422 (validation failure, e.g. xras_api's
+    // date-overlap check) both carry an `errors` array - see save_grants in
+    // xras_submit_access. The modal stays open so the errors land next to the
+    // fields that caused them.
+    let errors: string[] = [];
+    try {
+      const body = await res.json();
+      errors = body.errors;
+    } catch {
+      errors = ["Unable to save changes"];
+    }
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsErrors = errors;
+      draft.requests[requestId].grantsStatus = statuses.error;
+    });
+  },
+);
+
+// Marks a grant as never having been awarded after all, per the "Grant Was
+// Not Awarded" button in the edit modal (GrantEditModal.tsx) - only ever
+// offered for a grant whose `isPending` is still `true`, so there's no
+// awarded state to reconcile server-side. save_grants (xras_submit_access)
+// treats a `grants[]` entry of `{ grantId, notAwarded: true }` as a request to
+// drop the grant entirely, with no other fields in it. It's the same payload
+// shape saveGrantAtom sends - save_grants needs the requestId to find the
+// grant at all, and only permits grant fields inside `grants[]`.
+export const notAwardedAtom = atom(
+  null,
+  async (get, set, { requestId, grantId }: { requestId: number; grantId: number }) => {
+    const request = get(apiStateAtom).requests[requestId];
+    const grant = (request.grants || []).find((g) => g.grantId == grantId);
+    if (!grant) return;
+
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsStatus = statuses.pending;
+      draft.requests[requestId].grantsErrors = undefined;
+    });
+
+    const data = {
+      requestId,
+      grants: [{ grantId, notAwarded: true }],
+      authenticity_token: getAuthToken(),
+    };
+
+    const res = await fetch(get(routesAtom).projects_save_grants_path(), {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (res.status == 200) {
+      update(get, set, (draft) => {
+        const draftRequest = draft.requests[requestId];
+        draftRequest.grants = (draftRequest.grants || []).filter((g) => g.grantId != grantId);
+        draftRequest.editGrantId = null;
+        draftRequest.grantsErrors = undefined;
+        draftRequest.grantsStatus = statuses.success;
+      });
+      return;
+    }
+
+    let errors: string[] = [];
+    try {
+      const body = await res.json();
+      errors = body.errors;
+    } catch {
+      errors = ["Unable to save changes"];
+    }
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsErrors = errors;
+      draft.requests[requestId].grantsStatus = statuses.error;
+    });
+  },
+);
+
+// Creates a new supporting grant on a request, from the Add Supporting Grant
+// modal (AddGrantModal.tsx). Sent as a `grants[]` entry with no `grantId` -
+// save_grants (xras_submit_access) treats that as a creation - and every
+// currently-editable field (which, for a not-yet-created grant, is all of
+// them - see editableGrantFields()) is sent, since there is no prior stored
+// value to diff against.
+//
+// save_grants returns no body on success, for a create exactly as for an
+// edit (an ordinary `head :ok`), so there is no id or denormalized display
+// fields (fundingAgencyName, primaryFosType, ...) to read the new grant back
+// from directly. Re-fetching the whole projects list is the only mechanism
+// this module already has for turning the API's raw shape into a fully
+// formed Grant, so that's what a successful create falls back on, as a
+// background refresh of all of the user's projects rather than just this
+// one. fetchProjectsListAtom also rebuilds every Request from
+// scratch (see addRequest()), which is what resets showAddGrantModal back to
+// false and closes this modal on success.
+export const createGrantAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    {
+      requestId,
+      username,
+      values,
+    }: {
+      requestId: number;
+      username: string;
+      values: GrantEdits;
+    },
+  ) => {
+    const request = get(apiStateAtom).requests[requestId];
+    if (!request) return;
+
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsStatus = statuses.pending;
+      draft.requests[requestId].grantsErrors = undefined;
+    });
+
+    const grant: Record<string, string | number | boolean | null> = {};
+    for (const field of editableGrantFields()) {
+      if (!(field in values)) continue;
+      grant[field] = normalizeGrantValue(field, values[field]);
+    }
+
+    const data = {
+      requestId,
+      grants: [grant],
+      authenticity_token: getAuthToken(),
+    };
+
+    const res = await fetch(get(routesAtom).projects_save_grants_path(), {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (res.status == 200) {
+      // In the background, so the user stays where they are (addProject()
+      // keeps the project's tab and request) and sees the saved message - and
+      // any reminder about the project's other requests, see Grants.tsx -
+      // under the grant they just added.
+      await set(fetchProjectsListAtom, username, { background: true });
+      update(get, set, (draft) => {
+        const draftRequest = draft.requests[requestId];
+        if (draftRequest) draftRequest.grantsStatus = statuses.success;
+      });
+      return;
+    }
+
+    let errors: string[] = [];
+    try {
+      const body = await res.json();
+      errors = body.errors;
+    } catch {
+      errors = ["Unable to save changes"];
+    }
+    update(get, set, (draft) => {
+      draft.requests[requestId].grantsErrors = errors;
+      draft.requests[requestId].grantsStatus = statuses.error;
     });
   },
 );
@@ -842,6 +1268,26 @@ export const closeUsageDetailModalAtom = atom(null, (get, set, { requestId }: { 
   });
 });
 
+// Opening the modal clears any status left over from a previous edit, so a
+// stale "saved"/"could not be saved" banner doesn't greet the next one.
+export const editGrantAtom = atom(
+  null,
+  (get, set, { requestId, grantId }: { requestId: number; grantId: number }) => {
+    update(get, set, (draft) => {
+      const request = draft.requests[requestId];
+      request.editGrantId = grantId;
+      request.grantsErrors = undefined;
+      request.grantsStatus = null;
+    });
+  },
+);
+
+export const closeGrantModalAtom = atom(null, (get, set, { requestId }: { requestId: number }) => {
+  update(get, set, (draft) => {
+    draft.requests[requestId].editGrantId = null;
+  });
+});
+
 export const resetResourcesAtom = atom(null, (get, set, { requestId }: { requestId: number }) => {
   update(get, set, (draft) => {
     const request = draft.requests[requestId];
@@ -989,6 +1435,12 @@ export const setUserRoleAtom = atom(
 export const toggleActionsModalAtom = atom(null, (get, set, { requestId }: { requestId: number }) => {
   update(get, set, (draft) => {
     draft.requests[requestId].showActionsModal = !draft.requests[requestId].showActionsModal;
+  });
+});
+
+export const toggleAddGrantModalAtom = atom(null, (get, set, { requestId }: { requestId: number }) => {
+  update(get, set, (draft) => {
+    draft.requests[requestId].showAddGrantModal = !draft.requests[requestId].showAddGrantModal;
   });
 });
 

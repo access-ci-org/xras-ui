@@ -62,6 +62,7 @@ const request: RequestType = {
   returnedForCorrections: false,
   returnedForCorrectionsNotes: "",
   showActionsModal: false,
+  showAddGrantModal: false,
   showConfirmModal: false,
   showResourcesModal: true,
   startDate: null,
@@ -97,6 +98,8 @@ function renderModal() {
     },
     requests: { [REQUEST_ID]: request },
     username: "ada",
+    fundingAgencies: [],
+    fosTypes: [],
   });
   return {
     store,

@@ -68,6 +68,7 @@ function makeRequest(overrides: Partial<Request> = {}): Request {
     returnedForCorrections: false,
     returnedForCorrectionsNotes: "",
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     startDate: null,

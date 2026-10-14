@@ -48,6 +48,7 @@ function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
     returnedForCorrections: false,
     returnedForCorrectionsNotes: "",
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     startDate: null,
@@ -85,6 +86,8 @@ function renderUsers(users: User[], { isManager = true }: { isManager?: boolean 
     },
     requests: { [REQUEST_ID]: makeRequest() },
     username: "ada",
+    fundingAgencies: [],
+    fosTypes: [],
   });
   return {
     store,

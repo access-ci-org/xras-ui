@@ -42,6 +42,7 @@ function makeRequest(overrides: Partial<Request> = {}): Request {
     returnedForCorrections: false,
     returnedForCorrectionsNotes: "",
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     status: "Approved",
@@ -64,7 +65,7 @@ function makeRequest(overrides: Partial<Request> = {}): Request {
 // props directly.
 function renderButtons(request: Request, requestId = request.requestId) {
   const store = createStore();
-  store.set(apiStateAtom, { error: null, projectsList: [], projectListLoading: false, projects: {}, requests: { [requestId]: request }, username: null });
+  store.set(apiStateAtom, { error: null, projectsList: [], projectListLoading: false, projects: {}, requests: { [requestId]: request }, username: null, fundingAgencies: [], fosTypes: [] });
 
   function Wrapper() {
     useHydrateAtoms([[routesAtom, mergeRoutes()]], { store });
@@ -93,6 +94,8 @@ describe("RequestActionButtons", () => {
       projects: {},
       requests: { [request.requestId]: request },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
 
     function Wrapper() {
@@ -138,6 +141,8 @@ describe("RequestActionButtons", () => {
       projects: {},
       requests: { [request.requestId]: request },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
 
     function Wrapper() {
