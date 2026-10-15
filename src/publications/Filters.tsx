@@ -34,6 +34,7 @@ const emptyFilters = {
   authorName: "",
   doi: "",
   publicationType: "__all__",
+  resource: "__all__",
 };
 
 const Filters = () => {
@@ -50,12 +51,13 @@ const Filters = () => {
       authorName: filterSelections.authorName,
       doi: filterSelections.doi,
       publicationType: filterSelections.publicationType || "__all__",
+      resource: filterSelections.resource || "__all__",
     },
     onSubmit: ({ value }) => {
       (Object.keys(value) as (keyof typeof value)[]).forEach((name) =>
         updateFilterSelection({
           name,
-          value: name === "publicationType" && value[name] === "__all__" ? "" : value[name],
+          value: (name === "publicationType" || name === "resource") && value[name] === "__all__" ? "" : value[name],
         }),
       );
       resetPublications();
@@ -163,6 +165,32 @@ const Filters = () => {
                 ))}
               </SelectContent>
             </Select>
+          )}
+        </form.Field>
+      </div>
+
+      <div className="mb-4">
+        <Label htmlFor="resource_select" className={LABEL}>
+          Resources
+        </Label>
+        <form.Field name="resource">
+          {(field) => (
+              <Select
+                  value={field.state.value}
+                  onValueChange={(value) => field.handleChange(value)}
+              >
+                <SelectTrigger id="resource_select">
+                  <SelectValue placeholder="-- All --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">-- All --</SelectItem>
+                  {filterOptions.resources.map((a) => (
+                      <SelectItem value={a} key={a}>
+                        {a}
+                      </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
           )}
         </form.Field>
       </div>

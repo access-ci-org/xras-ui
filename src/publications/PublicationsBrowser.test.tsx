@@ -29,7 +29,7 @@ describe("PublicationsBrowser", () => {
         HttpResponse.json({ publications: [], pagination: { current_page: 1, last_page: 1 } }),
       ),
       http.get(defaultRoutes.search_publications_filters_path(), () =>
-        HttpResponse.json({ filters: { journals: [], publication_types: [] } }),
+        HttpResponse.json({ filters: { journals: [], publication_types: [], resources: [] } }),
       ),
     );
 
