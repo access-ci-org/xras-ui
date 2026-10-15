@@ -69,7 +69,7 @@ describe("Filters", () => {
 
     const user = userEvent.setup();
     const store = createStore();
-    store.set(filterOptionsAtom, { journals: ["Nature"], publication_types: ["Journal Paper"] });
+    store.set(filterOptionsAtom, { journals: ["Nature"], publication_types: ["Journal Paper"], resources: [] });
     render(<Wrapper store={store} />);
 
     await user.type(screen.getByLabelText("Author Name"), "Lovelace, A");
@@ -91,7 +91,7 @@ describe("Filters", () => {
 
     const user = userEvent.setup();
     const store = createStore();
-    store.set(filterOptionsAtom, { journals: [], publication_types: ["Journal Paper"] });
+    store.set(filterOptionsAtom, { journals: [], publication_types: ["Journal Paper"], resources: [] });
     render(<Wrapper store={store} />);
 
     await user.click(screen.getByRole("button", { name: "Submit" }));
@@ -107,7 +107,7 @@ describe("Filters", () => {
 
     const user = userEvent.setup();
     const store = createStore();
-    store.set(filterOptionsAtom, { journals: [], publication_types: [] });
+    store.set(filterOptionsAtom, { journals: [], publication_types: [], resources: [] });
     store.set(filterSelectionsAtom, {
       createdBy: ["someone"],
       doi: "10.1/x",
@@ -115,6 +115,7 @@ describe("Filters", () => {
       journal: "Nature",
       authorName: "Someone",
       publicationType: "Journal Paper",
+      resource: "",
     });
     render(<Wrapper store={store} />);
 

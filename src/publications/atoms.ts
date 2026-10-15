@@ -158,11 +158,13 @@ export const filterSelectionsAtom = atom<FilterSelections>({
   journal: "",
   authorName: "",
   publicationType: "",
+  resource: ""
 });
 
 export const filterOptionsAtom = atom<FilterOptions>({
   journals: [],
   publication_types: [],
+  resources: []
 });
 
 export const addCreatedByUsernameAtom = atom(null, (get, set, username: string) => {
@@ -204,6 +206,7 @@ export const resetFiltersAtom = atom(null, (get, set) => {
     journal: "",
     authorName: "",
     publicationType: "",
+    resource: "",
   });
 });
 
@@ -224,6 +227,7 @@ export const getPublicationsAtom = atom(null, async (get, set) => {
   if (filters.publicationType) params.publication_type = filters.publicationType;
   if (filters.createdBy.length) params.created_by = filters.createdBy;
   if (filters.grantNumber) params.grant_number = filters.grantNumber;
+  if (filters.resource) params.resource = filters.resource;
 
   if (usePagination) params.page = page.current + 1;
   else params.per_page = 9999;
