@@ -89,9 +89,11 @@ export type FilterSelections = {
   journal: string;
   authorName: string;
   publicationType: string;
+  resource: string;
 };
 
 export type FilterOptions = {
+  resources: string[];
   journals: string[];
   publication_types: string[];
 };
