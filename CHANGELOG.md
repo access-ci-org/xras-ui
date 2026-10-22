@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.40.0](https://github.com/access-ci-org/xras-ui/compare/v0.39.0...v0.40.0) (2026-10-22)
+
+
+### Features
+
+* Add a submission confirmation page ([db33da1](https://github.com/access-ci-org/xras-ui/commit/db33da106314d1616a43e75c128f5011a09f16bc))
+
+
+### Bug Fixes
+
+* clearer instructional text on resource auto-exchange field ([2a1779c](https://github.com/access-ci-org/xras-ui/commit/2a1779c84c0306eb1333422225c0aae60a17a2c6))
+
 ## [0.39.0](https://github.com/access-ci-org/xras-ui/compare/v0.38.0...v0.39.0) (2026-10-14)
 
 
