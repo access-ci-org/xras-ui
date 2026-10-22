@@ -80,6 +80,12 @@ export default function Request({
         <Alert color="warning">
           You are viewing {"aeiou".includes(displayStatus[0]) ? "an" : "a"} {displayStatus} request.{" "}
           {disabledTabs.length ? `You cannot manage ${disabledTabs.join(" or ")} for this request.` : ""}{" "}
+          {displayStatus !== "approved" && displayStatus !== "incomplete" ? (
+            <>
+              To view the details of submission, visit the{" "}
+              <a href={routesValue.confirmation_path(requestId)}>submission confirmation page</a>.{" "}
+            </>
+          ) : null}
           {project.currentRequestId ? (
             <a
               href={routesValue.request_path(project.currentRequestId)}

@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 
 export type Routes = {
+  confirmation_path: (requestId: number | string) => string;
   edit_request_action_path: (requestId: number | string, actionId: number | string) => string;
   edit_request_path: (requestId: number | string) => string;
   how_to_path: () => string;
@@ -69,6 +70,7 @@ function query(params?: QueryParams): string {
 }
 
 export const defaultRoutes: Routes = {
+  confirmation_path: (requestId) => `${baseUrl}/requests/${requestId}/confirmation`,
   edit_request_action_path: (requestId, actionId) =>
     `/requests/${requestId}/actions/${actionId}/edit`,
   edit_request_path: (requestId) => `/requests/${requestId}/edit`,
