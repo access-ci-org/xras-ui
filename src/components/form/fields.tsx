@@ -25,7 +25,7 @@ import {
 
 interface FieldWrapperProps {
   label?: string;
-  description?: string;
+  description?: React.ReactNode;
   required?: boolean;
 }
 
@@ -44,12 +44,19 @@ export function FieldInput({
   description,
   required,
   onBlur,
+  transformValue,
+  adornment,
   ...props
 }: FieldWrapperProps &
-  Omit<
-    React.ComponentProps<typeof Input>,
-    "id" | "value" | "onChange"
-  >) {
+  Omit<React.ComponentProps<typeof Input>, "id" | "value" | "onChange"> & {
+    /** Sanitizes each keystroke before it reaches form state, e.g. to
+     * constrain a grant number to digits. */
+    transformValue?: (raw: string) => string;
+    /** Rendered on the right-hand side of the input itself, e.g. a lookup
+     * spinner. Positioned against the input rather than the field, so a
+     * description line above doesn't shift it. */
+    adornment?: React.ReactNode;
+  }) {
   const field = useFieldContext<string>();
   const errors = useDisplayErrors(field);
 
@@ -61,16 +68,27 @@ export function FieldInput({
         </FormLabel>
       ) : null}
       <FormDescription>{description}</FormDescription>
-      <Input
-        id={field.name}
-        value={field.state.value ?? ""}
-        onChange={(e) => field.handleChange(e.target.value)}
-        onBlur={(e) => {
-          field.handleBlur();
-          onBlur?.(e);
-        }}
-        {...props}
-      />
+      <div className="relative">
+        <Input
+          id={field.name}
+          value={field.state.value ?? ""}
+          onChange={(e) =>
+            field.handleChange(
+              transformValue ? transformValue(e.target.value) : e.target.value,
+            )
+          }
+          onBlur={(e) => {
+            field.handleBlur();
+            onBlur?.(e);
+          }}
+          {...props}
+        />
+        {adornment ? (
+          <div className="absolute inset-y-0 right-2 flex items-center">
+            {adornment}
+          </div>
+        ) : null}
+      </div>
       <FormError errors={errors} />
     </FormItem>
   );
@@ -113,8 +131,9 @@ export function FieldDatePicker({
   label,
   description,
   required,
+  disabled,
   placeholder = "YYYY-MM-DD",
-}: FieldWrapperProps & { placeholder?: string }) {
+}: FieldWrapperProps & { disabled?: boolean; placeholder?: string }) {
   const field = useFieldContext<string>();
   const errors = useDisplayErrors(field);
 
@@ -132,6 +151,7 @@ export function FieldDatePicker({
         value={field.state.value ?? ""}
         onValueChange={(value) => field.handleChange(value)}
         onBlur={field.handleBlur}
+        disabled={disabled}
       />
       <FormError errors={errors} />
     </FormItem>
@@ -147,9 +167,14 @@ export function FieldSelect({
   label,
   description,
   required,
+  disabled,
   placeholder,
   options,
-}: FieldWrapperProps & { placeholder?: string; options: SelectOption[] }) {
+}: FieldWrapperProps & {
+  disabled?: boolean;
+  placeholder?: string;
+  options: SelectOption[];
+}) {
   const field = useFieldContext<string | number | null>();
   const errors = useDisplayErrors(field);
 
@@ -164,6 +189,7 @@ export function FieldSelect({
       <Select
         value={field.state.value != null ? String(field.state.value) : ""}
         onValueChange={(value) => field.handleChange(value)}
+        disabled={disabled}
       >
         <SelectTrigger id={field.name} onBlur={field.handleBlur}>
           <SelectValue placeholder={placeholder} />
@@ -273,11 +299,13 @@ export function FieldRadio<TValue>({
   label,
   description,
   required,
+  disabled,
   options,
 }: {
   label: string;
   description?: string;
   required?: boolean;
+  disabled?: boolean;
   options: RadioOption<TValue>[];
 }) {
   const field = useFieldContext<TValue>();
@@ -305,6 +333,7 @@ export function FieldRadio<TValue>({
           value: radioKey(option.value),
           label: option.label,
         }))}
+        disabled={disabled}
       />
       <FormError errors={errors} />
     </FormItem>

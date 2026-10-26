@@ -2,6 +2,89 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.40.0](https://github.com/access-ci-org/xras-ui/compare/v0.39.0...v0.40.0) (2026-10-22)
+
+
+### Features
+
+* Add a submission confirmation page ([db33da1](https://github.com/access-ci-org/xras-ui/commit/db33da106314d1616a43e75c128f5011a09f16bc))
+
+
+### Bug Fixes
+
+* clearer instructional text on resource auto-exchange field ([2a1779c](https://github.com/access-ci-org/xras-ui/commit/2a1779c84c0306eb1333422225c0aae60a17a2c6))
+
+## [0.39.0](https://github.com/access-ci-org/xras-ui/compare/v0.38.0...v0.39.0) (2026-10-14)
+
+
+### Features
+
+* **projects:** allow users to edit supporting grants ([fc3cdb4](https://github.com/access-ci-org/xras-ui/commit/fc3cdb4e24297de7fa786b62b7deedcbdc6483e7))
+
+## [0.38.0](https://github.com/access-ci-org/xras-ui/compare/v0.37.0...v0.38.0) (2026-10-12)
+
+
+### Features
+
+* Added the ability to load a publication directly by supplying the DOI in the URL ([192da27](https://github.com/access-ci-org/xras-ui/commit/192da27eb3a6f6891d3edc5d90de40e238b30ca5))
+
+
+### Bug Fixes
+
+* Removed unused code to fix failing test ([b0c85d3](https://github.com/access-ci-org/xras-ui/commit/b0c85d350da51203fc611ff41bc5ea28241590f2))
+
+## [0.37.0](https://github.com/access-ci-org/xras-ui/compare/v0.36.3...v0.37.0) (2026-10-08)
+
+
+### Features
+
+* adding RP instructions field for resource login ([58e8f98](https://github.com/access-ci-org/xras-ui/commit/58e8f98ed9d63ca60c556e7105bd1a33a572e809))
+
+## [0.36.3](https://github.com/access-ci-org/xras-ui/compare/v0.36.2...v0.36.3) (2026-10-02)
+
+
+### Bug Fixes
+
+* **projects:** disable exchange submit button during save ([2010160](https://github.com/access-ci-org/xras-ui/commit/20101607ca8c3ed80c892fe16464b762550bb23e))
+
+## [0.36.2](https://github.com/access-ci-org/xras-ui/compare/v0.36.1...v0.36.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **dropdown-menu:** make menu at least as wide as the trigger ([d63c872](https://github.com/access-ci-org/xras-ui/commit/d63c872bf2e93e875cad2a6a983f64c8ba37a123))
+* **projects:** use a POST request for renewals ([c30095a](https://github.com/access-ci-org/xras-ui/commit/c30095aeab79679354c5e9ad86ce40e2f4bf7b41))
+
+## [0.36.1](https://github.com/access-ci-org/xras-ui/compare/v0.36.0...v0.36.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* prevent QA bot from covering modals and other floating elements ([0edf11c](https://github.com/access-ci-org/xras-ui/commit/0edf11c93f3ddb30f006e432336c92bfdb57cb70))
+
+## [0.36.0](https://github.com/access-ci-org/xras-ui/compare/v0.35.3...v0.36.0) (2026-09-25)
+
+
+### Features
+
+* **onramps-resource-catalog:** make API base URL configurable ([456cdad](https://github.com/access-ci-org/xras-ui/commit/456cdad311f9aea0f401cea6b90a1cb88bca367a))
+* **resources:** Add support for resource auto_approve_exchange rules ([7d56cbe](https://github.com/access-ci-org/xras-ui/commit/7d56cbeba9f3dafff39e4a1884a74929334bc3fb))
+* return unmount handler from renderShadow ([d7542a5](https://github.com/access-ci-org/xras-ui/commit/d7542a51a5532bd2dcf7f69071a7abe04da131f2))
+
+
+### Bug Fixes
+
+* **button:** update border and cursor styles ([4875ce5](https://github.com/access-ci-org/xras-ui/commit/4875ce55591de92c88125a05dc9bc4631f1883b4))
+* handle empty arrays in formatArray helper ([bbe0553](https://github.com/access-ci-org/xras-ui/commit/bbe0553d66fae1246d7c80716a0a1c90b4810e20))
+* **onramps-resource-catalog:** filter undefined info resource IDs ([8a00a7c](https://github.com/access-ci-org/xras-ui/commit/8a00a7cbe49413717d7e61cbce2bb1edda1f0b2f))
+* **onramps-resource-catalog:** guard against missing props in API ([859d82f](https://github.com/access-ci-org/xras-ui/commit/859d82fc1100ca95ad1c0cb0598aac6efa0903cc))
+* **projects:** do not overwrite an existing exchange action ID on failed ([a00a60f](https://github.com/access-ci-org/xras-ui/commit/a00a60f08b4e691a0af60edd0d1ea9e3b278e4f2))
+* **projects:** fix title attribute of delete button ([af66aab](https://github.com/access-ci-org/xras-ui/commit/af66aab05e293da9d451b21a6d47f8f4334bdc71))
+* **publications:** fix publication saving and improve tests ([0f741b8](https://github.com/access-ci-org/xras-ui/commit/0f741b87df953e76616682ad89031383e5a5d9c9))
+* **publications:** show user-facing alerts when requests fail ([2fb3ec8](https://github.com/access-ci-org/xras-ui/commit/2fb3ec81b9a65193eb6288d8d5dd98e7c5ac9a9f))
+* **utils:** correct and consolidate formatNumber helpers ([bdb972b](https://github.com/access-ci-org/xras-ui/commit/bdb972b14d483bb5d8cd0c128561ca46c4f6d86a))
+* **utils:** improve matching behavior of parseResourceName helper ([25d24c7](https://github.com/access-ci-org/xras-ui/commit/25d24c72f2b47c546d5052f8955e339f3e627277))
+
 ## [0.35.3](https://github.com/access-ci-org/xras-ui/compare/v0.35.2...v0.35.3) (2026-08-25)
 
 

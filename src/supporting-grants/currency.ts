@@ -3,6 +3,14 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
+// For read-only displays of an amount, where cents are noise. The form's own
+// field keeps them, since they're what the user typed.
+const wholeDollarFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
 // Awarded amounts are always dollars; there's no control for this in the
 // form, so it's a constant rather than something the user picks.
 export const AWARDED_UNITS = "Dollars";
@@ -21,7 +29,10 @@ export function parseCurrencyAmount(
   return Number(digits);
 }
 
-export function formatAsCurrency(value: string | number | null | undefined): string {
+function format(
+  formatter: Intl.NumberFormat,
+  value: string | number | null | undefined,
+): string {
   // initialGrants is assigned as a plain JS property (see element.tsx) from
   // JSON that may represent awarded_amount as a number (or omit it) rather
   // than a string, even though SupportingGrant's type says string.
@@ -30,7 +41,16 @@ export function formatAsCurrency(value: string | number | null | undefined): str
   // Leave unparseable input as the user typed it so the schema can flag it,
   // rather than silently rewriting it to $0.00.
   if (!Number.isFinite(amount)) return String(value);
-  return currencyFormatter.format(amount);
+  return formatter.format(amount);
+}
+
+export function formatAsCurrency(value: string | number | null | undefined): string {
+  return format(currencyFormatter, value);
+}
+
+/** As formatAsCurrency, but rounded to the nearest whole dollar. */
+export function formatAsDollars(value: string | number | null | undefined): string {
+  return format(wholeDollarFormatter, value);
 }
 
 /**

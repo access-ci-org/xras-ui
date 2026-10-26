@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { routesAtom } from "../shared/routes";
+import { submitPostAtom } from "./atoms";
 import { getUpgrade } from "./helpers/upgrades";
 import { useProject, useRequest } from "./helpers/hooks";
 import type { AllowedAction } from "./types";
@@ -42,6 +43,7 @@ export default function ActionsModal({
   const { request, toggleActionsModal } = useRequest(requestId, grantNumber);
   const { project } = useProject(grantNumber || request?.grantNumber);
   const routes = useAtomValue(routesAtom);
+  const submitPost = useSetAtom(submitPostAtom);
 
   if (!request || !project || request.error || project.error) return null;
 
@@ -228,7 +230,17 @@ export default function ActionsModal({
             <DropdownMenuContent>
               {action.map(([name, href, itemMethod]) => (
                 <DropdownMenuItem key={href} asChild>
-                  <a href={href} data-method={itemMethod}>
+                  <a
+                    href={href}
+                    onClick={
+                      itemMethod === "post"
+                        ? (e) => {
+                            e.preventDefault();
+                            submitPost(href);
+                          }
+                        : undefined
+                    }
+                  >
                     {name}
                   </a>
                 </DropdownMenuItem>
@@ -239,7 +251,14 @@ export default function ActionsModal({
           <a
             className={cn(actionButton, !isEnabled && "pointer-events-none opacity-65")}
             href={isEnabled ? (action as string) : ""}
-            data-method={method}
+            onClick={
+              isEnabled && method === "post"
+                ? (e) => {
+                    e.preventDefault();
+                    submitPost(action as string);
+                  }
+                : undefined
+            }
           >
             <span>{button}</span>
           </a>

@@ -7,9 +7,11 @@
 // gap is a jsdom artefact rather than a production one.
 import "element-internals-polyfill";
 
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
+import { server } from "@/test/msw";
 import {
   SupportingGrantsElement,
   defineSupportingGrantsElement,
@@ -48,6 +50,19 @@ function attributes(
 const TAG = "supporting-grants-field";
 
 beforeAll(() => defineSupportingGrantsElement());
+
+// attributes() is an NSF grant with a grant number, so mounting one has
+// GrantFields check it against NSF's award database to decide the NSF lock,
+// which the element leaves on (see its applyNsfLock property). Answer "no such
+// award": the lock itself is GrantFields.test.tsx's subject, and here the
+// lookup would only be unmocked-request noise.
+beforeEach(() => {
+  server.use(
+    http.get(/research\.gov\/awardapi-service/, () =>
+      HttpResponse.json({ response: { award: [] } }),
+    ),
+  );
+});
 
 const forms: HTMLFormElement[] = [];
 

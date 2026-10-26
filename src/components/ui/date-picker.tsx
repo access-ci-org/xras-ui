@@ -17,7 +17,7 @@ export interface DatePickerInputProps
 }
 
 export const DatePickerInput = React.forwardRef<HTMLInputElement, DatePickerInputProps>(
-  ({ value, onValueChange, className, onBlur, ...props }, ref) => {
+  ({ value, onValueChange, className, onBlur, disabled, ...props }, ref) => {
     const [open, setOpen] = React.useState(false);
     const parsedDate = parse(value, DATE_FORMAT, new Date());
     const selected = value && isValid(parsedDate) ? parsedDate : undefined;
@@ -30,14 +30,18 @@ export const DatePickerInput = React.forwardRef<HTMLInputElement, DatePickerInpu
           onChange={(e) => onValueChange(e.target.value)}
           onBlur={onBlur}
           className={cn("pr-9", className)}
+          disabled={disabled}
           {...props}
         />
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
+            {/* Disabling the input alone would leave the calendar as a live
+                back door to changing the value. */}
             <Button
               type="button"
               variant="ghost"
               size="icon"
+              disabled={disabled}
               className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-accent-foreground"
             >
               <CalendarIcon className="size-4" />

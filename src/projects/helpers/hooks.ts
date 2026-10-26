@@ -5,17 +5,22 @@ import {
   addResourceAtom,
   addUserAtom,
   apiStateAtom,
+  closeGrantModalAtom,
   closeUsageDetailModalAtom,
+  createGrantAtom,
   deleteActionAtom,
+  editGrantAtom,
   errorAtom,
   fetchProjectDetailAtom,
   fetchProjectsListAtom,
   fetchRequestDetailAtom,
   fetchUsageDetailAtom,
+  notAwardedAtom,
   projectListLoadingAtom,
   projectsListAtom,
   resetResourcesAtom,
   resetUsersAtom,
+  saveGrantAtom,
   saveResourcesAtom,
   saveUsersAtom,
   setRequestAtom,
@@ -26,11 +31,13 @@ import {
   setUserRoleAtom,
   statuses,
   toggleActionsModalAtom,
+  toggleAddGrantModalAtom,
   toggleConfirmModalAtom,
   toggleDeleteModalAtom,
   toggleResourcesModalAtom,
   toggleUsersResourcesAtom,
   usernameAtom,
+  type GrantEdits,
 } from "../atoms";
 import type { SearchedUser } from "../types";
 
@@ -90,17 +97,24 @@ export const useRequest = (requestId: number | string | null | undefined, grantN
     [requestId],
   );
   const request = useAtomValue(requestSelector);
+  const username = useAtomValue(usernameAtom);
   const fetchRequestDetail = useSetAtom(fetchRequestDetailAtom);
   const addResource = useSetAtom(addResourceAtom);
+  const closeGrantModal = useSetAtom(closeGrantModalAtom);
   const closeUsageDetailModal = useSetAtom(closeUsageDetailModalAtom);
+  const createGrant = useSetAtom(createGrantAtom);
   const deleteAction = useSetAtom(deleteActionAtom);
+  const editGrant = useSetAtom(editGrantAtom);
   const fetchUsageDetail = useSetAtom(fetchUsageDetailAtom);
+  const notAwarded = useSetAtom(notAwardedAtom);
   const resetResources = useSetAtom(resetResourcesAtom);
+  const saveGrant = useSetAtom(saveGrantAtom);
   const saveResources = useSetAtom(saveResourcesAtom);
   const setResourceQuestionValues = useSetAtom(setResourceQuestionValuesAtom);
   const setResourceRequest = useSetAtom(setResourceRequestAtom);
   const setResourcesReason = useSetAtom(setResourcesReasonAtom);
   const toggleActionsModal = useSetAtom(toggleActionsModalAtom);
+  const toggleAddGrantModal = useSetAtom(toggleAddGrantModalAtom);
   const toggleConfirmModal = useSetAtom(toggleConfirmModalAtom);
   const toggleDeleteModal = useSetAtom(toggleDeleteModalAtom);
   const toggleResourcesModal = useSetAtom(toggleResourcesModalAtom);
@@ -114,9 +128,18 @@ export const useRequest = (requestId: number | string | null | undefined, grantN
     request,
     addResource: (resourceId: number) =>
       requestId != null && addResource({ requestId: requestId as number, resourceId }),
+    closeGrantModal: () => requestId != null && closeGrantModal({ requestId: requestId as number }),
     closeUsageDetailModal: () => requestId != null && closeUsageDetailModal({ requestId: requestId as number }),
+    createGrant: (values: GrantEdits) =>
+      requestId != null &&
+      username != null &&
+      createGrant({ requestId: requestId as number, username, values }),
     deleteAction: (actionId: number) =>
       requestId != null && deleteAction({ actionId, requestId: requestId as number }),
+    editGrant: (grantId: number) =>
+      requestId != null && editGrant({ requestId: requestId as number, grantId }),
+    notAwarded: (grantId: number) =>
+      requestId != null && notAwarded({ requestId: requestId as number, grantId }),
     openUsageDetailModal: (resourceRepositoryKey: string) =>
       request &&
       fetchUsageDetail({
@@ -125,6 +148,8 @@ export const useRequest = (requestId: number | string | null | undefined, grantN
         resourceRepositoryKey,
       }),
     resetResources: () => requestId != null && resetResources({ requestId: requestId as number }),
+    saveGrant: (grantId: number, values: GrantEdits) =>
+      requestId != null && saveGrant({ requestId: requestId as number, grantId, values }),
     saveResources: () => requestId != null && saveResources({ requestId: requestId as number }),
     setResourceQuestionValues: (resourceId: number, attributeSetId: number, values: (number | string)[]) =>
       requestId != null &&
@@ -135,6 +160,7 @@ export const useRequest = (requestId: number | string | null | undefined, grantN
       requestId != null && setResourcesReason({ requestId: requestId as number, reason }),
     statuses,
     toggleActionsModal: () => requestId != null && toggleActionsModal({ requestId: requestId as number }),
+    toggleAddGrantModal: () => requestId != null && toggleAddGrantModal({ requestId: requestId as number }),
     toggleConfirmModal: () => requestId != null && toggleConfirmModal({ requestId: requestId as number }),
     toggleDeleteModal: (actionId: number) =>
       requestId != null && toggleDeleteModal({ requestId: requestId as number, actionId }),

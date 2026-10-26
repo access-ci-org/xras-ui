@@ -22,6 +22,12 @@ export type GrantFieldName =
   | "programOfficerEmail"
   | "comments";
 
+/**
+ * Every field GrantFields renders an input for. A superset of GrantFieldName,
+ * which covers only the text-ish fields the NSF lookup can fill in.
+ */
+export type GrantFormFieldName = GrantFieldName | "isPending";
+
 export interface SupportingGrant {
   id?: number | string;
   fundingAgencyId: number | string | null;
@@ -80,6 +86,18 @@ export interface SupportingGrantsProps {
   fosTypes: FosType[];
   initialGrants?: SupportingGrantAttributes[];
   initialIncludeSupportingGrants?: boolean | null;
+  /**
+   * Whether to apply the NSF lock - see GrantFields' own `applyNsfLock`. On by
+   * default; here only so a client rendering these components itself can opt
+   * out, since nothing on the server enforces it.
+   */
+  applyNsfLock?: boolean;
+  /**
+   * True when this request's PI already has another active request with no
+   * supporting grants. Renders an advisory warning when the user answers "No";
+   * never affects validity — the user is still permitted to submit.
+   */
+  hasUnsupportedActiveAllocation?: boolean;
   onSubmit?: (grants: SupportingGrant[]) => void;
   /**
    * Called with the current grants and include-supporting-grants state on

@@ -93,6 +93,29 @@ export type RequestListItem = {
   status: string;
 };
 
+export type Grant = {
+  grantId: number;
+  fundingAgencyId?: number | null;
+  fundingAgencyName?: string | null;
+  fundingAgencyAbbr?: string | null;
+  grantNumber?: string | null;
+  piName?: string | null;
+  title?: string | null;
+  beginDate?: string | null;
+  endDate?: string | null;
+  // A string in practice: the API serializes the numeric column as one.
+  awardedAmount?: number | string | null;
+  awardedUnits?: string | null;
+  percentageAward?: number | null;
+  programOfficerName?: string | null;
+  programOfficerEmail?: string | null;
+  isPending?: boolean | null;
+  subAwardNumber?: string | null;
+  comments?: string | null;
+  primaryFosTypeId?: number | null;
+  primaryFosType?: string | null;
+};
+
 export type Request = {
   actions: Action[];
   allocationType: string;
@@ -104,6 +127,22 @@ export type Request = {
   exchangeErrors: string[];
   exchangeStatus: string | null;
   grantNumber: string;
+  /**
+   * Supporting grants attached to this request. `undefined` means the host
+   * API predates the projects-payload grants attachment (an older
+   * `V1::ProjectsController#get_projects` never sent the key at all) - Request.tsx
+   * gates the Grants tab on this being present, not merely non-empty, the same
+   * way it gates the Intl. Users tab on `internationalUserRequests`.
+   */
+  grants?: Grant[];
+  /**
+   * `grantId` of the grant whose edit modal is open, or null when it's closed.
+   * The modal holds the in-progress values in its own form state, so `grants`
+   * only ever contains saved values.
+   */
+  editGrantId?: number | null;
+  grantsStatus?: string | null;
+  grantsErrors?: string[];
   isMaximize: boolean;
   requestId: number;
   resources: Resource[];
@@ -111,6 +150,8 @@ export type Request = {
   returnedForCorrections: boolean;
   returnedForCorrectionsNotes: string;
   showActionsModal: boolean;
+  /** Whether AddGrantModal is open for this request - see Grants.tsx. */
+  showAddGrantModal: boolean;
   showConfirmModal: boolean;
   showResourcesModal: boolean;
   startDate?: string | null;

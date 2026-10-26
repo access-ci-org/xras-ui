@@ -101,6 +101,7 @@ function makeRequest(overrides: Partial<Request> = {}): Request {
     returnedForCorrections: false,
     returnedForCorrectionsNotes: "",
     showActionsModal: false,
+    showAddGrantModal: false,
     showConfirmModal: false,
     showResourcesModal: false,
     startDate: null,
@@ -140,6 +141,8 @@ describe("useProjectsList", () => {
       projects: {},
       requests: {},
       username: "alice",
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useProjectsList("alice"), { wrapper: wrapperFor(store) });
     expect(result.current.error).toBe("Something broke");
@@ -199,6 +202,8 @@ describe("useProject", () => {
       projects: { TEST000001: project },
       requests: { 1: makeRequest() },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useProject("TEST000001"), { wrapper: wrapperFor(store) });
     expect(result.current.project).toEqual(project);
@@ -213,6 +218,8 @@ describe("useProject", () => {
       projects: { TEST000001: makeProject() },
       requests: { 1: makeRequest() },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useProject("TEST000001"), { wrapper: wrapperFor(store) });
     act(() => result.current.setTab("users"));
@@ -228,6 +235,8 @@ describe("useProject", () => {
       projects: { TEST000001: makeProject() },
       requests: { 1: makeRequest() },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useProject("TEST000001"), { wrapper: wrapperFor(store) });
     act(() =>
@@ -252,6 +261,8 @@ describe("useProject", () => {
       projects: { TEST000001: makeProject() },
       requests: { 1: makeRequest() },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useProject("TEST000001"), { wrapper: wrapperFor(store) });
     act(() => result.current.saveUsers());
@@ -311,6 +322,8 @@ describe("useRequest", () => {
       projects: {},
       requests: { 1: request },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useRequest(1), { wrapper: wrapperFor(store) });
     expect(result.current.request).toEqual(request);
@@ -337,6 +350,8 @@ describe("useRequest", () => {
       projects: {},
       requests: { 1: request },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useRequest(1), { wrapper: wrapperFor(store) });
     act(() => result.current.openUsageDetailModal("compute.hours"));
@@ -356,6 +371,8 @@ describe("useRequest", () => {
       projects: {},
       requests: { 1: makeRequest() },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useRequest(1), { wrapper: wrapperFor(store) });
     act(() => {
@@ -392,6 +409,8 @@ describe("useRequest", () => {
         }),
       },
       username: null,
+      fundingAgencies: [],
+      fosTypes: [],
     });
     const { result } = renderHook(() => useRequest(1), { wrapper: wrapperFor(store) });
     act(() => result.current.toggleDeleteModal(9));

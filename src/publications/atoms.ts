@@ -185,6 +185,17 @@ export const updateFilterSelectionAtom = atom(
   },
 );
 
+export const initializeFiltersAtom = atom(
+  null,
+  (get, set) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const filters = urlParams.entries();
+    for(const [key, value] of filters) {
+      set(filterSelectionsAtom, { ...get(filterSelectionsAtom), [key]: value });
+    }
+  }
+)
+
 export const resetFiltersAtom = atom(null, (get, set) => {
   set(filterSelectionsAtom, {
     ...get(filterSelectionsAtom),

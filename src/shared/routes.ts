@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 
 export type Routes = {
+  confirmation_path: (requestId: number | string) => string;
   edit_request_action_path: (requestId: number | string, actionId: number | string) => string;
   edit_request_path: (requestId: number | string) => string;
   how_to_path: () => string;
@@ -8,6 +9,7 @@ export type Routes = {
   profile_path: () => string;
   project_types_path: () => string;
   projects_path: () => string;
+  projects_save_grants_path: () => string;
   projects_save_users_path: () => string;
   renew_request_path: (requestId: number | string) => string;
   request_action_path: (requestId: number | string, actionId: number | string) => string;
@@ -68,6 +70,7 @@ function query(params?: QueryParams): string {
 }
 
 export const defaultRoutes: Routes = {
+  confirmation_path: (requestId) => `${baseUrl}/requests/${requestId}/confirmation`,
   edit_request_action_path: (requestId, actionId) =>
     `/requests/${requestId}/actions/${actionId}/edit`,
   edit_request_path: (requestId) => `/requests/${requestId}/edit`,
@@ -76,6 +79,7 @@ export const defaultRoutes: Routes = {
   profile_path: () => `${baseUrl}/profile`,
   project_types_path: () => `${baseUrl}/project-types`,
   projects_path: () => `${baseUrl}/projects`,
+  projects_save_grants_path: () => "/projects/save_grants",
   projects_save_users_path: () => "/projects/save_users",
   renew_request_path: (requestId) => `${baseUrl}/requests/${requestId}/renew`,
   request_action_path: (requestId, actionId) =>

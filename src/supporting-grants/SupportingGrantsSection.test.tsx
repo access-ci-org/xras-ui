@@ -1,8 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
+import { server } from "@/test/msw";
 import { SupportingGrantsSection } from "./SupportingGrantsSection";
-import type { SupportingGrant, SupportingGrantAttributes, SupportingGrantsProps } from "./types";
+import type {
+  SupportingGrant,
+  SupportingGrantAttributes,
+  SupportingGrantsProps,
+} from "./types";
+
+const AWARD_API = /research\.gov\/awardapi-service/;
 
 const AGENCIES = [
   { id: 1, name: "National Science Foundation", abbr: "NSF" },
@@ -34,7 +42,9 @@ function attributes(
   };
 }
 
-function renderSection(props: Partial<Omit<SupportingGrantsProps, "target">> = {}) {
+function renderSection(
+  props: Partial<Omit<SupportingGrantsProps, "target">> = {},
+) {
   render(
     <SupportingGrantsSection
       fundingAgencies={AGENCIES}
@@ -52,11 +62,36 @@ function includeRadio(answer: "true" | "false") {
 }
 
 function field(index: number, name: string) {
-  return document.getElementById(`grants[${index}].${name}`) as HTMLInputElement | null;
+  return document.getElementById(
+    `grants[${index}].${name}`,
+  ) as HTMLInputElement | null;
 }
 
 function grantCount() {
   return document.querySelectorAll(".supporting-grant").length;
+}
+
+// attributes() is an NSF grant with a grant number, so every mount of one has
+// GrantFields ask NSF's award database whether to lock it (applyNsfLock in
+// GrantFields.tsx). Answer "no such award" by default - the answer that
+// changes nothing about these fields - and let the lock's own block below
+// prepend a real award where that is the point of the test.
+beforeEach(() => {
+  server.use(
+    http.get(AWARD_API, () => HttpResponse.json({ response: { award: [] } })),
+  );
+});
+
+function serveNsfAward() {
+  server.use(
+    http.get(AWARD_API, () =>
+      HttpResponse.json({
+        response: {
+          award: [{ title: "A Study of Studies", pdPIName: "Ada Lovelace" }],
+        },
+      }),
+    ),
+  );
 }
 
 describe("SupportingGrantsSection", () => {
@@ -79,7 +114,9 @@ describe("SupportingGrantsSection", () => {
     await user.click(includeRadio("true"));
 
     await waitFor(() => expect(grantCount()).toBe(1));
-    expect(field(0, "grantNumber")).toHaveValue("");
+    // grantNumber itself is hidden until isPending is answered (see
+    // GrantFields.test.tsx) - title is one of the fields that's always there.
+    expect(field(0, "title")).toHaveValue("");
   });
 
   it("adds and removes grants", async () => {
@@ -89,7 +126,9 @@ describe("SupportingGrantsSection", () => {
     await user.click(includeRadio("true"));
     await waitFor(() => expect(grantCount()).toBe(1));
 
-    await user.click(screen.getByRole("button", { name: "Add another supporting grant" }));
+    await user.click(
+      screen.getByRole("button", { name: "Add another supporting grant" }),
+    );
     await waitFor(() => expect(grantCount()).toBe(2));
 
     await user.click(screen.getAllByRole("button", { name: "Remove" })[0]);
@@ -141,7 +180,9 @@ describe("SupportingGrantsSection", () => {
       // section, not as props, so a selected id resolving to its label is
       // what shows the wiring works end to end.
       renderSection({
-        initialGrants: [attributes({ funding_agency_id: 2, primary_fos_type_id: 12 })],
+        initialGrants: [
+          attributes({ funding_agency_id: 2, primary_fos_type_id: 12 }),
+        ],
         initialIncludeSupportingGrants: true,
       });
 
@@ -184,7 +225,11 @@ describe("SupportingGrantsSection", () => {
       const onChange = vi.fn();
       renderSection({
         onChange,
-        initialGrants: [attributes()],
+        // Not NSF, which keeps the NSF lock (on by default) out of a test
+        // about editing fields altogether, rather than leaving it resting on
+        // what the award endpoint happens to answer. See the applyNsfLock
+        // block below for the lock itself.
+        initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
 
@@ -192,7 +237,9 @@ describe("SupportingGrantsSection", () => {
       await user.type(field(0, "piName")!, "Grace Hopper");
 
       await waitFor(() => {
-        const state = onChange.mock.lastCall![0] as { grants: SupportingGrant[] };
+        const state = onChange.mock.lastCall![0] as {
+          grants: SupportingGrant[];
+        };
         expect(state.grants[0].piName).toBe("Grace Hopper");
       });
     });
@@ -205,7 +252,9 @@ describe("SupportingGrantsSection", () => {
       const onValidityChange = vi.fn();
       renderSection({ onValidityChange });
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(false),
+      );
     });
 
     it("reports valid once a complete grant is present", async () => {
@@ -216,7 +265,9 @@ describe("SupportingGrantsSection", () => {
         initialIncludeSupportingGrants: true,
       });
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(true),
+      );
     });
 
     it("reports invalid again when a required field is emptied", async () => {
@@ -224,14 +275,19 @@ describe("SupportingGrantsSection", () => {
       const onValidityChange = vi.fn();
       renderSection({
         onValidityChange,
-        initialGrants: [attributes()],
+        // Not NSF, so the lock leaves the fields editable - see above.
+        initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(true),
+      );
 
       await user.clear(field(0, "title")!);
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(false),
+      );
     });
 
     it("reports valid for a No answer even with an incomplete grant behind it", async () => {
@@ -242,7 +298,9 @@ describe("SupportingGrantsSection", () => {
         initialIncludeSupportingGrants: false,
       });
 
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
+      await waitFor(() =>
+        expect(onValidityChange).toHaveBeenLastCalledWith(true),
+      );
     });
   });
 
@@ -265,7 +323,9 @@ describe("SupportingGrantsSection", () => {
         initialIncludeSupportingGrants: true,
       });
 
-      await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function));
+      await waitFor(() =>
+        expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function),
+      );
 
       const submit = setExternalSubmit.mock.lastCall![0] as () => Promise<void>;
       await act(async () => {
@@ -273,7 +333,9 @@ describe("SupportingGrantsSection", () => {
       });
 
       expect(onSubmit).toHaveBeenCalledOnce();
-      expect((onSubmit.mock.lastCall![0] as SupportingGrant[])[0]).toMatchObject({
+      expect(
+        (onSubmit.mock.lastCall![0] as SupportingGrant[])[0],
+      ).toMatchObject({
         id: 7,
         grantNumber: "1234567",
         piName: "Ada Lovelace",
@@ -285,14 +347,51 @@ describe("SupportingGrantsSection", () => {
       const setExternalSubmit = vi.fn();
       renderSection({
         setExternalSubmit,
-        initialGrants: [attributes()],
+        // Not NSF, so the lock leaves the fields editable - see above.
+        initialGrants: [attributes({ funding_agency_id: 2 })],
         initialIncludeSupportingGrants: true,
       });
-      await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function));
+      await waitFor(() =>
+        expect(setExternalSubmit.mock.lastCall![0]).toBeInstanceOf(Function),
+      );
 
       await user.clear(field(0, "programOfficerEmail")!);
 
-      await waitFor(() => expect(setExternalSubmit.mock.lastCall![0]).toBeNull());
+      await waitFor(() =>
+        expect(setExternalSubmit.mock.lastCall![0]).toBeNull(),
+      );
+    });
+  });
+
+  // The lock itself is GrantFields' (see GrantFields.test.tsx); what matters
+  // here is that the prop reaches it, and that a client which says nothing
+  // gets the lock rather than not getting it.
+  describe("applyNsfLock", () => {
+    it("locks an NSF grant's fields by default, once NSF confirms the number", async () => {
+      serveNsfAward();
+      renderSection({
+        initialGrants: [attributes()],
+        initialIncludeSupportingGrants: true,
+      });
+
+      expect(
+        await screen.findByText(/populated from NSF's records/),
+      ).toBeInTheDocument();
+      expect(field(0, "title")).toBeDisabled();
+    });
+
+    it("leaves them editable for a client that opts out", async () => {
+      serveNsfAward();
+      renderSection({
+        applyNsfLock: false,
+        initialGrants: [attributes()],
+        initialIncludeSupportingGrants: true,
+      });
+
+      await waitFor(() => expect(field(0, "title")).toBeEnabled());
+      expect(
+        screen.queryByText(/populated from NSF's records/),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -305,7 +404,41 @@ describe("SupportingGrantsSection", () => {
       initialIncludeSupportingGrants: true,
     });
 
-    expect(screen.queryByRole("button", { name: /^Submit$/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Submit$/i }),
+    ).not.toBeInTheDocument();
     expect(document.querySelector('button[type="submit"]')).toBeNull();
+  });
+  describe("unsupported active allocation warning", () => {
+    it("shows when the PI has one and the user answers No", async () => {
+      const user = userEvent.setup();
+      renderSection({ hasUnsupportedActiveAllocation: true });
+
+      await user.click(includeRadio("false"));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        /only allowed one allocation without a supporting grant/,
+      );
+    });
+
+    it("stays hidden before the question is answered, and on Yes", async () => {
+      const user = userEvent.setup();
+      renderSection({ hasUnsupportedActiveAllocation: true });
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+      await user.click(includeRadio("true"));
+
+      await waitFor(() => expect(grantCount()).toBe(1));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("stays hidden when the PI has no unsupported allocation", async () => {
+      const user = userEvent.setup();
+      renderSection();
+
+      await user.click(includeRadio("false"));
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
   });
 });
