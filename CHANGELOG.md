@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.40.1](https://github.com/access-ci-org/xras-ui/compare/v0.40.0...v0.40.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* Publications now default to "Other" if the DOI import fails. This prevents an empty string being sent ([5ce3985](https://github.com/access-ci-org/xras-ui/commit/5ce3985e09750b80b1355190680ca15866c308d5))
+
 ## [0.40.0](https://github.com/access-ci-org/xras-ui/compare/v0.39.0...v0.40.0) (2026-10-22)
 
 
