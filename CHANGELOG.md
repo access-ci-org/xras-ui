@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.41.0](https://github.com/access-ci-org/xras-ui/compare/v0.40.1...v0.41.0) (2026-10-28)
+
+
+### Features
+
+* Add Resources filter to publications ([b2b01d8](https://github.com/access-ci-org/xras-ui/commit/b2b01d84c26c9072153801a55463b1f14e32948b))
+
 ## [0.40.1](https://github.com/access-ci-org/xras-ui/compare/v0.40.0...v0.40.1) (2026-10-27)
 
 
