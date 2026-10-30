@@ -162,6 +162,12 @@ export const grantFosTypesAtom = atom((get) => get(apiStateAtom).fosTypes);
 // `allocationsProcessName` option.
 export const allocationsProcessNameAtom = atom("ACCESS");
 
+// Whether the host has credits and exchanges at all. Hydrated by Projects from
+// the mount's `useCredits` option. Project-wide rather than `request.usesCredits`
+// because an ACCESS Maximize request has `usesCredits: false` and still
+// exchanges, through the Transfer alias.
+export const useCreditsAtom = atom(true);
+
 function update(get: (a: typeof apiStateAtom) => ApiState, set: any, recipe: (draft: Draft<ApiState>) => void) {
   set(apiStateAtom, produce(get(apiStateAtom), recipe));
 }
@@ -320,7 +326,7 @@ const makeGrant = ({
   primaryFosType,
 });
 
-const makeAllowedActionsMap = (allowedActions: any[]): AllowedActionsMap => {
+const makeAllowedActionsMap = (allowedActions: any[], useCredits: boolean): AllowedActionsMap => {
   const result: AllowedActionsMap = {};
   for (const { actionType, allowedResources, opportunityId, opportunityName } of allowedActions) {
     const action: AllowedAction = {
@@ -339,8 +345,9 @@ const makeAllowedActionsMap = (allowedActions: any[]): AllowedActionsMap => {
 
   // Alias transfer to exchange to make component logic simpler.
   // FIXME: Remove this when exchanges are enabled for Maximize requests in the
-  // rules engine.
-  if ("Transfer" in result && !("Exchange" in result)) result.Exchange = result.Transfer;
+  // rules engine. Without credits a Transfer is its own action, not an
+  // exchange, so the exchange UI stays off.
+  if (useCredits && "Transfer" in result && !("Exchange" in result)) result.Exchange = result.Transfer;
   return result;
 };
 
@@ -360,6 +367,7 @@ const addRequest = (
     timeStatus,
   }: any,
   { entryDate, grantNumber }: { entryDate: string; grantNumber: string },
+  useCredits: boolean,
 ) => {
   resources = resources || [];
   const request: Request = {
@@ -389,7 +397,7 @@ const addRequest = (
       }),
     ),
     allocationType,
-    allowedActions: makeAllowedActionsMap(allowedActions),
+    allowedActions: makeAllowedActionsMap(allowedActions, useCredits),
     endDate,
     entryDate,
     exchangeActionId: null,
@@ -411,6 +419,7 @@ const addRequest = (
       .filter((res: Resource) => res.isCredit || res.allocated > 0)
       .sort(sortResources),
     resourcesReason: "",
+    pendingTransfer: null,
     returnedForCorrections: actions.find((action: any) => action.returnedForCorrections) ? true : false,
     returnedForCorrectionsNotes: actions.map((action: any) => action.adminComments).join(","),
     showActionsModal: false,
@@ -433,6 +442,12 @@ const addRequest = (
       ["Exchange", "Transfer"].includes(action.type) &&
       ["Submitted", "Under Review", "Incomplete"].includes(action.status)
     ) {
+      if (!useCredits) {
+        // The table keeps showing the current allocation; the pending
+        // transfer is only mentioned in a notice.
+        request.pendingTransfer = { actionId: action.actionId, status: action.status };
+        break;
+      }
       request.exchangeActionId = action.actionId;
       request.exchangeActionEditable = action.status === "Incomplete";
       for (const res of action.resources) exchangeResources[res.resourceId] = res;
@@ -471,8 +486,9 @@ const addRequest = (
       }
   }
 
-  // Ensure all requests have a credit-like resource.
-  if (request.resources.length && !request.resources.find((res) => res.isCredit))
+  // Ensure all requests have a credit-like resource (unless the host has no
+  // credits).
+  if (useCredits && request.resources.length && !request.resources.find((res) => res.isCredit))
     request.resources.push(
       (exchangeActionSingle && exchangeActionSingle.resources.find((res: Resource) => res.isCredit)) || {
         allocated: 0,
@@ -515,6 +531,7 @@ const addProject = (
     users,
   }: any,
   projectStatus: string,
+  useCredits: boolean,
 ) => {
   grantNumber = grantNumber || requestMasterId;
   requests.sort((a: any, b: any) => (getSortDate(a) > getSortDate(b) ? -1 : 1));
@@ -538,7 +555,7 @@ const addProject = (
         .map(({ entryDate }: any) => entryDate)
         .sort()[0]
         .split("T")[0];
-      addRequest(draft, request, { entryDate, grantNumber });
+      addRequest(draft, request, { entryDate, grantNumber }, useCredits);
       return { allocationType, endDate, entryDate, requestId, startDate, status };
     }),
     selectedRequestId: keepSelection ? previous.selectedRequestId : currentRequestId || requests[0].requestId,
@@ -702,6 +719,7 @@ export const fetchProjectsListAtom = atom(
 
     const body = await res.json();
     const projectsList = body.result;
+    const useCredits = get(useCreditsAtom);
     projectsList.sort((a: any, b: any) => (getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1));
 
     update(get, set, (draft) => {
@@ -726,7 +744,7 @@ export const fetchProjectsListAtom = atom(
                 : requests[0].timeStatus == "past"
                   ? "Inactive"
                   : requests[0].status));
-        if (requests) addProject(draft, project, projectStatus);
+        if (requests) addProject(draft, project, projectStatus, useCredits);
         return { grantNumber: grantNumber || requestMasterId, status: projectStatus, title };
       });
       draft.projectListLoading = false;

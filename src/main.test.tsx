@@ -202,6 +202,113 @@ describe("projects", () => {
     expect(shadowOf(target).queryByText(/short voluntary survey/i)).not.toBeInTheDocument();
   });
 
+  // `useCredits` ends up in the mount's own store, out of reach of the test, so
+  // this goes by what it changes: a request that only allows a Transfer is
+  // aliased to an Exchange, which makes the overview offer to exchange its
+  // credits - unless the host (NAIRR) has none.
+  describe("useCredits", () => {
+    const resource = (overrides: Record<string, unknown>) => ({
+      allocationState: "active",
+      amountAllocated: 5000,
+      amountApproved: 5000,
+      amountRequested: 5000,
+      amountUsed: 0,
+      attributeSets: [],
+      baseExchangeRate: 1,
+      currentExchangeRate: 1,
+      dependentResourceXrasIds: [],
+      displayResourceName: "Compute Resource",
+      endDate: "2026-12-31",
+      exchangeRate: 1,
+      minimumExchange: 1,
+      organizationId: 1,
+      organizationName: "Example Org",
+      resourceRepositoryKey: "compute.example",
+      resourceType: "Compute",
+      startDate: "2025-01-01",
+      unitType: "Core Hours",
+      xrasResourceId: 101,
+      ...overrides,
+    });
+    const project = () => {
+      const resources = [
+        resource({}),
+        resource({
+          displayResourceName: "Credit Equivalents",
+          resourceRepositoryKey: undefined,
+          unitType: "ACCESS Credits",
+          xrasResourceId: 999,
+        }),
+      ];
+      return {
+        grantNumber: "ABC123",
+        projectManager: true,
+        requestMasterId: "RM-1",
+        title: "Test Project",
+        requests: [
+          {
+            actions: [
+              {
+                actionId: 1,
+                actionStatusType: "Approved",
+                actionType: "Maximize",
+                allowedOperations: [],
+                detailAvailable: true,
+                entryDate: "2025-01-02T00:00:00Z",
+                isRequest: true,
+                resources,
+              },
+            ],
+            allocationType: "Maximize",
+            allowedActions: [{ actionType: "Transfer", allowedResources: resources }],
+            endDate: "2026-12-31",
+            requestId: 555,
+            requestType: "Maximize",
+            resources,
+            startDate: "2025-01-01",
+            status: "Active",
+            timeStatus: "current",
+          },
+        ],
+        users: [
+          {
+            email: "alice@example.test",
+            firstName: "Alice",
+            isEligible: true,
+            lastName: "Liddell",
+            organization: "Example Org",
+            resources: [],
+            role: "pi",
+            username: "alice",
+          },
+        ],
+      };
+    };
+
+    const mount = (options: Record<string, unknown>) => {
+      const target = makeTarget();
+      server.use(
+        http.get(`${defaultRoutes.projects_path()}.json`, () =>
+          HttpResponse.json({ result: [project()] }),
+        ),
+      );
+      track(projects({ target, username: "alice", showSurvey: false, ...options } as any));
+      return target;
+    };
+
+    it("offers to exchange credits by default", async () => {
+      const target = mount({});
+      expect(await shadowOf(target).findByText(/Exchange credits for resources!/)).toBeInTheDocument();
+    });
+
+    it("drops the exchange offer when mounted with useCredits: false", async () => {
+      const target = mount({ useCredits: false });
+      // The overview's own resource row, so the banner had its chance to render.
+      expect(await shadowOf(target).findByText("Compute Resource")).toBeInTheDocument();
+      expect(shadowOf(target).queryByText(/Exchange credits for resources!/)).not.toBeInTheDocument();
+    });
+  });
+
   // Regression test for the bug src/shared/routes.ts documents at length:
   // `config.routes` used to be a single module-level object every mount
   // function overwrote via `addRoutes()`. Mounting a second `projects`

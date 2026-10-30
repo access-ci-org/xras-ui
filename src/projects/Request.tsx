@@ -14,6 +14,7 @@ import Resources from "./Resources";
 import ResourcesModal from "./ResourcesModal";
 import UsageDetailModal from "./UsageDetailModal";
 import Users from "./Users";
+import { useCreditsAtom } from "./atoms";
 import { useProject, useRequest } from "./helpers/hooks";
 
 export default function Request({
@@ -27,6 +28,7 @@ export default function Request({
 }) {
   const { request } = useRequest(requestId, grantNumber);
   const routesValue = useAtomValue(routesAtom);
+  const useCredits = useAtomValue(useCreditsAtom);
   const { project, setRequest, setTab } = useProject(grantNumber || request?.grantNumber);
 
   if (!request) return null;
@@ -95,8 +97,8 @@ export default function Request({
       ) : null}
       {project.isManager && ineligibleUsers.length > 0 && (
         <Alert color="danger">
-          Some project personnel need to update their profiles. You will be unable to submit exchanges,
-          renewals, and other actions until these issues are resolved:
+          Some project personnel need to update their profiles. You will be unable to submit{" "}
+          {useCredits ? "exchanges" : "transfers"}, renewals, and other actions until these issues are resolved:
           <br />
           <ul className="mb-0 text-sm">
             {ineligibleUsers.map((user) => (

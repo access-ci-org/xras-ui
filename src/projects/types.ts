@@ -129,6 +129,12 @@ export type Request = {
   exchangeStatus: string | null;
   grantNumber: string;
   /**
+   * A Transfer action still awaiting a decision, on a host without credits
+   * (where it isn't folded into `resources` the way a pending exchange is).
+   * `status` is the action's own status, e.g. "Under Review".
+   */
+  pendingTransfer?: { actionId: number; status: string } | null;
+  /**
    * Supporting grants attached to this request. `undefined` means the host
    * API predates the projects-payload grants attachment (an older
    * `V1::ProjectsController#get_projects` never sent the key at all) - Request.tsx

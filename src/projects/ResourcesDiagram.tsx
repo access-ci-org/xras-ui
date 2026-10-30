@@ -126,8 +126,7 @@ export default function ResourcesDiagram({
           </span>
         ) : (
           <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-            {formatNumber(total, { abbreviate: true })} {res.unit} allocated{" "}
-            <span className="text-muted-foreground">(usage not reported)</span>
+            {formatNumber(total, { abbreviate: true })} {res.unit} allocated
           </span>
         )}
       </li>

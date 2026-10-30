@@ -75,8 +75,7 @@ export default function OverviewResources({
         if (used === null)
           return (
             <>
-              {formatNumber(row.allocated, { abbreviate: true })} {row.unit} allocated{" "}
-              <span className="text-muted-foreground">(usage not reported)</span>
+              {formatNumber(row.allocated, { abbreviate: true })} {row.unit} allocated
             </>
           );
         const balance = row.allocated - used;

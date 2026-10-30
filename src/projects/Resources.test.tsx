@@ -3,7 +3,7 @@ import { act, render, screen } from "@testing-library/react";
 import { Provider, createStore } from "jotai";
 import { mergeRoutes, routesAtom } from "@/shared/routes";
 import Resources from "./Resources";
-import { apiStateAtom, setResourceRequestAtom, statuses } from "./atoms";
+import { apiStateAtom, setResourceRequestAtom, statuses, useCreditsAtom } from "./atoms";
 import type { Project, Request as RequestType, Resource } from "./types";
 
 const GRANT = "TEST000001";
@@ -114,9 +114,11 @@ function makeRequest(overrides: Partial<RequestType> = {}): RequestType {
 function renderResources(
   requestOverrides: Partial<RequestType> = {},
   projectOverrides: Partial<Project> = {},
+  { useCredits = true }: { useCredits?: boolean } = {},
 ) {
   const store = createStore();
   store.set(routesAtom, mergeRoutes());
+  store.set(useCreditsAtom, useCredits);
   store.set(apiStateAtom, {
     error: null,
     projectsList: [],
@@ -279,7 +281,8 @@ describe("Resources with a resource that doesn't report usage", () => {
     expect(
       screen.queryByRole("button", { name: "Compute Resource Usage Details" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("listitem")).toHaveTextContent("1.00K Core Hours allocated (usage not reported)");
+    expect(screen.getByRole("listitem")).toHaveTextContent("1.00K Core Hours allocated");
+    expect(screen.getByRole("listitem")).not.toHaveTextContent("not reported");
     expect(screen.getByRole("listitem")).not.toHaveTextContent("remaining");
   });
 });
@@ -316,5 +319,81 @@ describe("Resources Request More without an Exchange action", () => {
     expect(request.showConfirmModal).toBe(true);
     expect(request.showActionsModal).toBe(false);
     expect(screen.getByText(/available to exchange/)).toBeInTheDocument();
+  });
+});
+
+// NAIRR has no credits and no exchanges: the table shows the current
+// allocation, how much of it has been used and what is left, and a Transfer is
+// a link to its own form rather than an in-page exchange.
+describe("Resources without credits", () => {
+  const supplement = { name: "Supplement", resources: [] };
+  const renderWithoutCredits = (
+    requestOverrides: Partial<RequestType> = {},
+    resource: Partial<Resource> = {},
+  ) =>
+    renderResources(
+      {
+        allocationType: "Pilot",
+        allowedActions: { Supplement: supplement },
+        resources: [makeResource({ allocated: 1000, requested: 1000, used: 250, ...resource })],
+        usesCredits: false,
+        ...requestOverrides,
+      },
+      {},
+      { useCredits: false },
+    );
+  const transferLink = () => screen.queryByRole("link", { name: "Request a Transfer" });
+
+  it("shows no credit wording, unit cost column or diagram", () => {
+    renderWithoutCredits();
+    expect(screen.queryByText(/credit/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/credit|exchange/i);
+    expect(screen.queryByRole("columnheader", { name: "Unit Cost" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Request More Units" })).toBeInTheDocument();
+  });
+
+  it("shows the allocated, used and remaining amounts", () => {
+    renderWithoutCredits();
+    expect(screen.getByRole("columnheader", { name: "Allocated" })).toBeInTheDocument();
+    expect(screen.getByText("1,000 Core Hours")).toBeInTheDocument();
+    expect(screen.getByText("250 Core Hours")).toBeInTheDocument();
+    expect(screen.getByText("750 Core Hours (75%)")).toBeInTheDocument();
+  });
+
+  it("shows dashes, and claims no remaining balance, when used is null", () => {
+    renderWithoutCredits({}, { used: null });
+    expect(screen.getAllByText("\u2014")).toHaveLength(2);
+    expect(screen.queryByText(/not reported/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/remaining|%/)).not.toBeInTheDocument();
+    expect(screen.getByText("1,000 Core Hours")).toBeInTheDocument();
+  });
+
+  it("doesn't gray out the resource rows", () => {
+    renderWithoutCredits();
+    const row = screen.getByText("1,000 Core Hours").closest("tr");
+    expect(row).not.toHaveClass("disabled");
+  });
+
+  it("links to a new Transfer action when one is allowed", () => {
+    renderWithoutCredits({
+      allowedActions: { Supplement: supplement, Transfer: { name: "Transfer", resources: [] } },
+    });
+    expect(transferLink()).toHaveAttribute(
+      "href",
+      `${mergeRoutes().request_action_path(REQUEST_ID, "new")}?action_type=Transfer`,
+    );
+  });
+
+  it("offers no Transfer link without a Transfer action", () => {
+    renderWithoutCredits();
+    expect(transferLink()).not.toBeInTheDocument();
+  });
+
+  it("mentions a pending transfer without changing the table", () => {
+    renderWithoutCredits({ pendingTransfer: { actionId: 7, status: "Under Review" } });
+    expect(screen.getByText("A transfer request is under review.")).toBeInTheDocument();
+    expect(screen.getByText("1,000 Core Hours")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/exchange/i);
   });
 });

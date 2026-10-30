@@ -10,7 +10,8 @@ import Projects from "./Projects";
  *
  * The survey is about ACCESS, so a host that isn't ACCESS mounts with
  * `showSurvey: false` and gets `Projects` alone. `allocationsProcessName` is
- * passed through to `Projects` for its copy that names the program.
+ * passed through to `Projects` for its copy that names the program, and
+ * `useCredits` for whether the host has credits and exchanges at all.
  *
  * The survey is time-limited - delete this component and mount `Projects`
  * directly again once it closes.
@@ -20,11 +21,13 @@ export default function MyProjectsPage({
   routes,
   showSurvey = true,
   allocationsProcessName,
+  useCredits,
 }: {
   username: string;
   routes?: RouteOverrides;
   showSurvey?: boolean;
   allocationsProcessName?: string;
+  useCredits?: boolean;
 }) {
   return (
     <>
@@ -50,6 +53,7 @@ export default function MyProjectsPage({
         username={username}
         routes={routes}
         allocationsProcessName={allocationsProcessName}
+        useCredits={useCredits}
       />
     </>
   );

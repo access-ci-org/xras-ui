@@ -111,10 +111,11 @@ The `projects` component is styled entirely with Tailwind, whose reset lives in 
 
 Pass `baseUrl` or `stylesheets` to override where those sheets are loaded from, or pass a `shadowTarget(...)` as `target` to build the shadow root yourself.
 
-`projects` also takes two options for hosts other than ACCESS's own allocations site:
+`projects` also takes three options for hosts other than ACCESS's own allocations site:
 
 - `showSurvey` (default `true`) — set to `false` to omit the ACCESS user survey banner above the projects.
 - `allocationsProcessName` (default `"ACCESS"`) — the allocations program named in the widget's help text, such as the supporting grant explanation's "If the grant supports more than one ACCESS project...".
+- `useCredits` (default `true`) — set to `false` for a host without credits or exchanges (NAIRR). The Resources tab then shows each resource's allocated, used and remaining amounts instead of unit costs and the credit diagram, and offers "Request a Transfer" (a link to `request_action_path(requestId, "new")` with `?action_type=Transfer`) when the request allows a `Transfer` action. A pending Transfer is shown as a notice rather than folded into the table. All wording speaks of transfers rather than exchanges.
 
 Each resource in the host's `projects.json` payload may also carry `reportsUsage: false` for a resource that doesn't report usage; the widget then shows its allocation without a remaining balance and hides its usage details. Omitting it is the same as `true`. Likewise, a successful `projects_save_users_path` response may be JSON with a `notices` array of strings, which are listed in the "changes have been saved" message.
 

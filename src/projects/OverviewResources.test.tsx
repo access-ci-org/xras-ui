@@ -123,7 +123,8 @@ describe("OverviewResources Balance column", () => {
     renderOverview(makeResource({ used: null }));
     expect(screen.queryByText(/remaining/)).not.toBeInTheDocument();
     expect(screen.getByRole("cell", { name: /allocated/ })).toHaveTextContent(
-      "1.00K Core Hours allocated (usage not reported)",
+      "1.00K Core Hours allocated",
     );
+    expect(screen.getByRole("cell", { name: /allocated/ })).not.toHaveTextContent("not reported");
   });
 });

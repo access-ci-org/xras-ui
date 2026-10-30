@@ -8,7 +8,7 @@ import Alert from "../shared/Alert";
 import LoadingSpinner from "../shared/LoadingSpinner";
 import { mergeRoutes, routesAtom, type RouteOverrides } from "../shared/routes";
 import Project from "./Project";
-import { allocationsProcessNameAtom } from "./atoms";
+import { allocationsProcessNameAtom, useCreditsAtom } from "./atoms";
 import { useProjectsList } from "./helpers/hooks";
 
 /*
@@ -110,12 +110,15 @@ export default function Projects({
   openFirst = 1,
   routes,
   allocationsProcessName = "ACCESS",
+  useCredits = true,
 }: {
   username: string;
   openFirst?: number;
   routes?: RouteOverrides;
   /** The allocations program's name, for copy that would otherwise say "ACCESS". */
   allocationsProcessName?: string;
+  /** Whether the host has credits and exchanges; false (NAIRR) drops both from the UI. */
+  useCredits?: boolean;
 }) {
   const store = useMemo(() => createStore(), []);
 
@@ -126,6 +129,7 @@ export default function Projects({
           new Map<WritableAtom<any, any[], any>, unknown>([
             [routesAtom, mergeRoutes(routes)],
             [allocationsProcessNameAtom, allocationsProcessName],
+            [useCreditsAtom, useCredits],
           ])
         }
       >

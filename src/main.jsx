@@ -189,6 +189,7 @@ export function projects({
   routes,
   showSurvey = true,
   allocationsProcessName = "ACCESS",
+  useCredits = true,
   baseUrl = null,
   stylesheets = null,
 }) {
@@ -198,6 +199,7 @@ export function projects({
       routes={routes}
       showSurvey={showSurvey}
       allocationsProcessName={allocationsProcessName}
+      useCredits={useCredits}
     />,
     { target, baseUrl, stylesheets },
   );

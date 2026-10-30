@@ -10,7 +10,7 @@ import UserName from "../shared/UserName";
 import gridStyle from "../shared/Grid.module.scss";
 import { routesAtom } from "../shared/routes";
 import { formatManagers } from "../shared/helpers/utils";
-import { allocationsProcessNameAtom, filterResource, searchUsersAtom } from "./atoms";
+import { allocationsProcessNameAtom, filterResource, searchUsersAtom, useCreditsAtom } from "./atoms";
 import { useProject, useRequest } from "./helpers/hooks";
 import { resourceTallies, selectableRoles } from "./helpers/users";
 import type { SearchedUser } from "./types";
@@ -29,6 +29,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
   const { request } = useRequest(requestId || project?.currentRequestId, grantNumber);
   const routes = useAtomValue(routesAtom);
   const allocationsProcessName = useAtomValue(allocationsProcessNameAtom);
+  const useCredits = useAtomValue(useCreditsAtom);
   const searchUsers = useSetAtom(searchUsersAtom);
 
   if (!project || !project.currentRequestId || !request || project.error || request.error) return null;
@@ -85,7 +86,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
     alert = (
       <Alert color="warning">
         This project does not have any resources.{" "}
-        {canExchange ? (
+        {useCredits && canExchange ? (
           <a
             href={routes.request_action_path(request.requestId, "new?action_type=Exchange")}
             onClick={(e) => {
@@ -96,7 +97,7 @@ export default function Users({ grantNumber, requestId }: { grantNumber: string;
             Exchange credits for resources.
           </a>
         ) : null}{" "}
-        Additional users can be added after an exchange is approved.
+        Additional users can be added after {useCredits ? "an exchange" : "a transfer"} is approved.
       </Alert>
     );
   } else if (allInactive) {

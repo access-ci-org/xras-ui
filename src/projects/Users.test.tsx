@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { Provider, createStore } from "jotai";
 import { mergeRoutes, routesAtom } from "@/shared/routes";
 import Users from "./Users";
-import { allocationsProcessNameAtom, apiStateAtom } from "./atoms";
+import { allocationsProcessNameAtom, apiStateAtom, useCreditsAtom } from "./atoms";
 import type { Project, Request as RequestType, User } from "./types";
 
 const GRANT = "TEST000001";
@@ -68,11 +68,20 @@ function renderUsers(
     allocationsProcessName,
     isManager = true,
     project = {},
-  }: { allocationsProcessName?: string; isManager?: boolean; project?: Partial<Project> } = {},
+    request = {},
+    useCredits = true,
+  }: {
+    allocationsProcessName?: string;
+    isManager?: boolean;
+    project?: Partial<Project>;
+    request?: Partial<RequestType>;
+    useCredits?: boolean;
+  } = {},
 ) {
   const store = createStore();
   store.set(routesAtom, mergeRoutes());
   if (allocationsProcessName) store.set(allocationsProcessNameAtom, allocationsProcessName);
+  store.set(useCreditsAtom, useCredits);
   store.set(apiStateAtom, {
     error: null,
     projectsList: [],
@@ -93,7 +102,7 @@ function renderUsers(
         ...project,
       } satisfies Project,
     },
-    requests: { [REQUEST_ID]: makeRequest() },
+    requests: { [REQUEST_ID]: makeRequest(request) },
     username: "ada",
     fundingAgencies: [],
     fosTypes: [],
@@ -215,5 +224,32 @@ describe("Users username column", () => {
     renderUsers([makeUser()], { allocationsProcessName: "NAIRR" });
     expect(screen.getByText("NAIRR Username")).toBeInTheDocument();
     expect(screen.queryByText("ACCESS Username")).toBeNull();
+  });
+});
+
+describe("Users exchange link", () => {
+  // The notice for a project with no resources only offers an exchange when one
+  // is allowed, and a host without credits has none to offer.
+  const exchange = { name: "Exchange", resources: [] };
+  const link = () => screen.queryByRole("link", { name: "Exchange credits for resources." });
+
+  it("is offered for a project with no resources that can exchange", () => {
+    renderUsers([makeUser()], { request: { allowedActions: { Exchange: exchange } } });
+    expect(link()).toBeInTheDocument();
+  });
+
+  it("is hidden when the host has no credits", () => {
+    renderUsers([makeUser()], {
+      request: { allowedActions: { Exchange: exchange } },
+      useCredits: false,
+    });
+    expect(screen.getByText(/This project does not have any resources/)).toBeInTheDocument();
+    expect(link()).not.toBeInTheDocument();
+  });
+
+  it("speaks of transfers, not exchanges, when the host has no credits", () => {
+    renderUsers([makeUser()], { useCredits: false });
+    expect(screen.getByText(/after a transfer is approved/)).toBeInTheDocument();
+    expect(screen.queryByText(/exchange/i)).not.toBeInTheDocument();
   });
 });
