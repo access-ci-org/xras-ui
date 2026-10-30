@@ -399,7 +399,7 @@ describe("publicationsBrowser", () => {
         HttpResponse.json({ publications: [], pagination: {} }),
       ),
       http.get(defaultRoutes.search_publications_filters_path(), () =>
-        HttpResponse.json({ filters: { journals: [], publication_types: [] } }),
+        HttpResponse.json({ filters: { journals: [], publication_types: [], resources: [] } }),
       ),
     );
 
@@ -455,7 +455,7 @@ describe("publicationsBrowser", () => {
         }),
       ),
       http.get("https://isolation-shared.test/filters", () =>
-        HttpResponse.json({ filters: { journals: [], publication_types: [] } }),
+        HttpResponse.json({ filters: { journals: [], publication_types: [], resources: [] } }),
       ),
     );
 
@@ -665,7 +665,7 @@ describe("myPublications", () => {
         HttpResponse.json({ publications: [], pagination: {} }),
       ),
       http.get(defaultRoutes.search_publications_filters_path(), () =>
-        HttpResponse.json({ filters: { journals: [], publication_types: [] } }),
+        HttpResponse.json({ filters: { journals: [], publication_types: [], resources: [] } }),
       ),
     );
 
@@ -715,7 +715,7 @@ describe("myPublications", () => {
         }),
       ),
       http.get("https://isolation-shared.test/my-filters", () =>
-        HttpResponse.json({ filters: { journals: [], publication_types: [] } }),
+        HttpResponse.json({ filters: { journals: [], publication_types: [], resources: [] } }),
       ),
     );
 

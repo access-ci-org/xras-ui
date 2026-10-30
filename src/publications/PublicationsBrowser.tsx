@@ -5,7 +5,7 @@ import { mergeRoutes, routesAtom, type RouteOverrides } from "../shared/routes";
 import Filters from "./Filters";
 import PublicationsAlerts from "./PublicationsAlerts";
 import PublicationsList from "./PublicationsList";
-import { getFiltersAtom, getPublicationsAtom } from "./atoms";
+import { getFiltersAtom, getPublicationsAtom, initializeFiltersAtom } from "./atoms";
 
 function HydrateAtoms({
   values,
@@ -21,8 +21,10 @@ function HydrateAtoms({
 function PublicationsBrowserInner() {
   const getPublications = useSetAtom(getPublicationsAtom);
   const getFilters = useSetAtom(getFiltersAtom);
+  const initializeFilters = useSetAtom(initializeFiltersAtom)
 
   useEffect(() => {
+    initializeFilters();
     getPublications();
     getFilters();
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -45,6 +45,7 @@ export default function DoiSearch({ form }: { form: AppForm<PublicationFormValue
       const data: Record<string, unknown> = await response.json();
 
       if (data.title === "") {
+        form.setFieldValue("publication_type", "Other");
         addError(lookupError);
         return;
       }

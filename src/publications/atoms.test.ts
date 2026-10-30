@@ -409,7 +409,7 @@ describe("getFiltersAtom", () => {
     expect(errors).toHaveLength(1);
     expect(errors[0].message).toBe("Unable to load the publication filters. Please try again.");
     // Left at its initial value rather than clobbered with a partial result.
-    expect(store.get(filterOptionsAtom)).toEqual({ journals: [], publication_types: [] });
+    expect(store.get(filterOptionsAtom)).toEqual({ journals: [], publication_types: [], resources: [] });
   });
 
   it("treats a JSON error response as a failure rather than an empty filter set", async () => {
@@ -425,7 +425,7 @@ describe("getFiltersAtom", () => {
     expect(store.get(errorsAtom)[0].message).toBe(
       "Unable to load the publication filters. Please try again.",
     );
-    expect(store.get(filterOptionsAtom)).toEqual({ journals: [], publication_types: [] });
+    expect(store.get(filterOptionsAtom)).toEqual({ journals: [], publication_types: [], resources: [] });
   });
 
   // Not decoration: a server with no JSON for this path answers an
@@ -545,6 +545,7 @@ describe("resetFiltersAtom", () => {
       journal: "Nature",
       authorName: "Ada",
       publicationType: "Journal Article",
+      resource: "",
     });
 
     store.set(resetFiltersAtom);
@@ -556,6 +557,7 @@ describe("resetFiltersAtom", () => {
       journal: "",
       authorName: "",
       publicationType: "",
+      resource: "",
     });
   });
 });
@@ -623,7 +625,7 @@ describe("getPublicationsAtom", () => {
     );
 
     const store = createStore();
-    store.set(filterOptionsAtom, { journals: ["Known Journal"], publication_types: [] });
+    store.set(filterOptionsAtom, { journals: ["Known Journal"], publication_types: [], resources: [] });
     store.set(filterSelectionsAtom, {
       createdBy: [],
       doi: "",
@@ -631,6 +633,7 @@ describe("getPublicationsAtom", () => {
       journal: "Unknown Journal",
       authorName: "",
       publicationType: "",
+      resource: "",
     });
 
     await store.set(getPublicationsAtom);
@@ -648,7 +651,7 @@ describe("getPublicationsAtom", () => {
     );
 
     const store = createStore();
-    store.set(filterOptionsAtom, { journals: ["Nature"], publication_types: [] });
+    store.set(filterOptionsAtom, { journals: ["Nature"], publication_types: [], resources: [] });
     store.set(filterSelectionsAtom, {
       createdBy: [],
       doi: "",
@@ -656,6 +659,7 @@ describe("getPublicationsAtom", () => {
       journal: "Nature",
       authorName: "",
       publicationType: "",
+      resource: "",
     });
 
     await store.set(getPublicationsAtom);
