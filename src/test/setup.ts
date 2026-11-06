@@ -18,6 +18,20 @@ if (!globalThis.WritableStream) globalThis.WritableStream = WritableStream as ne
 if (!globalThis.TransformStream) globalThis.TransformStream = TransformStream as never;
 if (!globalThis.BroadcastChannel) globalThis.BroadcastChannel = BroadcastChannel as never;
 
+// --- Web Storage ------------------------------------------------------------
+//
+// Node 25+ has its own `localStorage`/`sessionStorage` globals, which shadow
+// jsdom's and are unusable (undefined, with a warning) unless node runs with
+// `--localstorage-file`. Point them back at jsdom's, which Vitest's jsdom
+// environment exposes as the `jsdom` global.
+const { jsdom } = globalThis as unknown as { jsdom: { window: Window } };
+for (const key of ["localStorage", "sessionStorage"] as const) {
+  Object.defineProperty(globalThis, key, {
+    configurable: true,
+    value: jsdom.window[key],
+  });
+}
+
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { cleanup, configure, prettyDOM } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
