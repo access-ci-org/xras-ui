@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.42.0](https://github.com/access-ci-org/xras-ui/compare/v0.41.0...v0.42.0) (2026-11-06)
+
+
+### Features
+
+* RAMPS-1134-hide-resource-minimum-exchange-rate-for-non-ACCESS-allocation-processes ([8a66374](https://github.com/access-ci-org/xras-ui/commit/8a66374b46ccab3f46262953a270a285ef8c9649))
+
+
+### Bug Fixes
+
+* **supporting-grants:** update NSF grant data if grant number matches ([38124cc](https://github.com/access-ci-org/xras-ui/commit/38124cc35831c998fa73df68b14a40eb91fc0e5a))
+
 ## [0.41.0](https://github.com/access-ci-org/xras-ui/compare/v0.40.1...v0.41.0) (2026-10-28)
 
 
