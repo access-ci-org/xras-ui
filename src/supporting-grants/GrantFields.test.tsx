@@ -509,6 +509,88 @@ describe("applyNsfLock", () => {
     expect(field("comments")).toBeEnabled();
   });
 
+  // Grants recorded before the 7-digit mask existed carry NSF's directorate
+  // prefix. NSF recognises the digits, so the lock engages - and would trap
+  // the user behind a disabled grant number the schema rejects.
+  it("reduces a recognised initial grant number to its digits before locking it", async () => {
+    const requests = serveAward();
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "NSF IIS-1234567" }),
+      applyNsfLock: true,
+    });
+
+    expect(await screen.findByText(/populated from NSF's records/)).toBeInTheDocument();
+    expect(requests[0].pathname).toMatch(/\/1234567\.json$/);
+    expect(field("grantNumber")).toBeDisabled();
+    expect(field("grantNumber")).toHaveValue("1234567");
+  });
+
+  it("replaces a recognised initial grant's stored details with NSF's before locking them", async () => {
+    serveAward();
+    renderFields({
+      values: awardedGrant({
+        fundingAgencyId: 1,
+        grantNumber: "1234567",
+        title: "An Old Title",
+        piName: "",
+        beginDate: "2020-01-01",
+        endDate: "2021-01-01",
+        awardedAmount: "$0.00",
+        programOfficerName: "Someone Else",
+        programOfficerEmail: "",
+      }),
+      applyNsfLock: true,
+    });
+
+    expect(await screen.findByText(/populated from NSF's records/)).toBeInTheDocument();
+    expect(field("title")).toHaveValue("A Study of Studies");
+    expect(field("piName")).toHaveValue("Ada Lovelace");
+    expect(field("beginDate")).toHaveValue("2024-03-01");
+    expect(field("endDate")).toHaveValue("2027-02-28");
+    expect(field("awardedAmount")).toHaveValue("$500,000.00");
+    expect(field("programOfficerName")).toHaveValue("Grace Hopper");
+    expect(field("programOfficerEmail")).toHaveValue("ghopper@nsf.gov");
+  });
+
+  it("keeps a recognised initial grant's stored value where NSF's record has none", async () => {
+    serveAward({ response: { award: [award({ poEmail: "" })] } });
+    renderFields({
+      values: awardedGrant({
+        fundingAgencyId: 1,
+        grantNumber: "1234567",
+        programOfficerEmail: "stored@nsf.gov",
+      }),
+      applyNsfLock: true,
+    });
+
+    expect(await screen.findByText(/populated from NSF's records/)).toBeInTheDocument();
+    expect(field("programOfficerEmail")).toBeEnabled();
+    expect(field("programOfficerEmail")).toHaveValue("stored@nsf.gov");
+  });
+
+  it("leaves an unrecognised initial grant's details exactly as stored", async () => {
+    const requests = serveAward(NO_SUCH_AWARD);
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "0000000", title: "An Old Title" }),
+      applyNsfLock: true,
+    });
+
+    await waitFor(() => expect(requests).toHaveLength(1));
+    expect(field("title")).toHaveValue("An Old Title");
+  });
+
+  it("leaves an unrecognised initial grant number exactly as stored", async () => {
+    const requests = serveAward(NO_SUCH_AWARD);
+    renderFields({
+      values: awardedGrant({ fundingAgencyId: 1, grantNumber: "NSF IIS-0000000" }),
+      applyNsfLock: true,
+    });
+
+    await waitFor(() => expect(requests).toHaveLength(1));
+    expect(field("grantNumber")).toBeEnabled();
+    expect(field("grantNumber")).toHaveValue("NSF IIS-0000000");
+  });
+
   // The lock would otherwise be a trap: grantNumber is one of the fields it
   // takes away, so a mistyped number would disable the only field that could
   // fix it - and the funding agency select with it.

@@ -159,6 +159,26 @@ export function GrantFields({
   // lookup has just confirmed.
   const nsfLockCheck = useRef(0);
 
+  // With the lock on, NSF's record wins outright: the fields are about to
+  // become read-only, so anything already in them that disagrees with NSF
+  // could never be corrected. Without the lock the user keeps the last word,
+  // so only empty fields are filled in. Either way a field NSF has no value
+  // for is left alone - and, with the lock on, left editable.
+  const fillFromNsfAward = useCallback(
+    (award: NSFAwardDetails) => {
+      for (const field of Object.keys(NSF_FILLED_FIELDS) as GrantFieldName[]) {
+        const value = nsfValueFor(field, award);
+        if (!value) continue;
+        if (!applyNsfLock) {
+          const current = form.getFieldValue(`grants[${index}].${field}`);
+          if (typeof current === "string" && current.length > 0) continue;
+        }
+        form.setFieldValue(`grants[${index}].${field}`, value);
+      }
+    },
+    [applyNsfLock, form, index],
+  );
+
   // Deciding the lock takes a request to research.gov, so - unlike the
   // disabledFields the caller hands in - it can't be known at first render.
   // This is the silent form of the lookup: it deliberately leaves
@@ -169,9 +189,26 @@ export function GrantFields({
       if (!applyNsfLock) return;
       const check = ++nsfLockCheck.current;
       const award = await nsfLockingAward(fundingAgencyId, grantNumber, fundingAgencies);
-      if (nsfLockCheck.current === check) setNsfLockAward(award);
+      if (nsfLockCheck.current !== check) return;
+      if (award && typeof grantNumber === "string") {
+        // NSF answered for the number's digits alone, so a grant stored
+        // before the 7-digit mask existed ("NSF IIS-2433768") is recognised -
+        // but the stored text itself fails the schema, and the lock is about
+        // to disable the only field that could fix it. Keep the number NSF
+        // recognised.
+        const digits = grantNumber.replace(/[^0-9]+/g, "");
+        if (digits !== grantNumber) {
+          form.setFieldValue(`grants[${index}].grantNumber`, digits);
+        }
+        // A stored grant (a renewal's copy, or one being edited in My
+        // Projects) can be stale or incomplete next to NSF's record, and the
+        // lock is about to make the fields it covers read-only - so bring
+        // them up to date first, just as the blur lookup does.
+        fillFromNsfAward(award);
+      }
+      setNsfLockAward(award);
     },
-    [applyNsfLock, fundingAgencies],
+    [applyNsfLock, fundingAgencies, form, index, fillFromNsfAward],
   );
 
   useEffect(() => {
@@ -241,21 +278,7 @@ export function GrantFields({
       return settleLock(null);
     }
     setNsfLookupStatus("idle");
-
-    // With the lock on, NSF's record wins outright: the fields are about to
-    // become read-only, so anything already typed into them that disagrees
-    // with NSF could never be corrected. Without the lock the user keeps the
-    // last word, so only empty fields are filled in. Either way a field NSF
-    // has no value for is left alone - and, with the lock on, left editable.
-    for (const field of Object.keys(NSF_FILLED_FIELDS) as GrantFieldName[]) {
-      const value = nsfValueFor(field, details);
-      if (!value) continue;
-      if (!applyNsfLock) {
-        const current = form.getFieldValue(`grants[${index}].${field}`);
-        if (typeof current === "string" && current.length > 0) continue;
-      }
-      form.setFieldValue(`grants[${index}].${field}`, value);
-    }
+    fillFromNsfAward(details);
 
     // NSF answered for this number, which is the whole condition for the
     // lock. Engage it last, so the autofill above is what the user is left
