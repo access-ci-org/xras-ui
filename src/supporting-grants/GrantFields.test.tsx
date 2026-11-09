@@ -55,11 +55,13 @@ function renderFields({
   onRemove = vi.fn(),
   applyNsfLock,
   showRemoveButton = true,
+  allocationsProcessName,
 }: {
   values?: SupportingGrant;
   onRemove?: () => void;
   applyNsfLock?: boolean;
   showRemoveButton?: boolean;
+  allocationsProcessName?: string;
 } = {}) {
   const store = createStore();
   store.set(fundingAgenciesAtom, AGENCIES);
@@ -79,6 +81,7 @@ function renderFields({
         index={0}
         onRemove={showRemoveButton ? onRemove : undefined}
         applyNsfLock={applyNsfLock}
+        allocationsProcessName={allocationsProcessName}
       />
     );
   }
@@ -238,6 +241,23 @@ describe("GrantFields", () => {
     await user.click(screen.getByRole("radio", { name: "Yes" }));
 
     expect(screen.queryByText(/^Grant Number\*?$/)).not.toBeInTheDocument();
+  });
+
+  // The explanation's help text names the allocations program. The
+  // submission form leaves it at ACCESS; My Projects passes its host's name.
+  it("names ACCESS in the explanation help text by default", () => {
+    renderFields();
+    expect(
+      screen.getByText(/If the grant supports more than one ACCESS project,/),
+    ).toBeInTheDocument();
+  });
+
+  it("names the host's allocations program in the explanation help text when given one", () => {
+    renderFields({ allocationsProcessName: "NAIRR Pilot" });
+    expect(
+      screen.getByText(/If the grant supports more than one NAIRR Pilot project,/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/more than one ACCESS project/)).not.toBeInTheDocument();
   });
 
   it("calls onRemove when the remove button is clicked", async () => {

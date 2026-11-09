@@ -56,7 +56,8 @@ export type Resource = {
   startDate?: string | null;
   type?: string;
   unit: string;
-  used: number;
+  /** Null for a resource that doesn't report usage (`reportsUsage: false`). */
+  used: number | null;
   userGuideUrl?: string | null;
 };
 
@@ -127,6 +128,12 @@ export type Request = {
   exchangeErrors: string[];
   exchangeStatus: string | null;
   grantNumber: string;
+  /**
+   * A Transfer action still awaiting a decision, on a host without credits
+   * (where it isn't folded into `resources` the way a pending exchange is).
+   * `status` is the action's own status, e.g. "Under Review".
+   */
+  pendingTransfer?: { actionId: number; status: string } | null;
   /**
    * Supporting grants attached to this request. `undefined` means the host
    * API predates the projects-payload grants attachment (an older
@@ -242,6 +249,8 @@ export type Project = {
   usersNewRowIndex: number;
   usersStatus: string | null;
   usersErrors?: string[];
+  /** Informational messages returned by a successful save_users. */
+  usersNotices?: string[];
   currentUser?: User;
   error?: string;
 };

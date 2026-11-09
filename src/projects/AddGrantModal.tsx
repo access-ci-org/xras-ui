@@ -19,6 +19,7 @@ import { createGrantEditFormSchema } from "../supporting-grants/schema";
 import type { SupportingGrantsState } from "../supporting-grants/types";
 import Alert from "../shared/Alert";
 import {
+  allocationsProcessNameAtom,
   copyGrantField,
   editableGrantFields,
   grantFosTypesAtom,
@@ -54,6 +55,7 @@ function AddGrantForm({
   const store = useMemo(() => createStore(), []);
   const fundingAgencies = useAtomValue(grantFundingAgenciesAtom);
   const fosTypes = useAtomValue(grantFosTypesAtom);
+  const allocationsProcessName = useAtomValue(allocationsProcessNameAtom);
 
   const grantEditFormSchema = useMemo(
     () => createGrantEditFormSchema(fundingAgencies),
@@ -117,7 +119,7 @@ function AddGrantForm({
           >
             {/* applyNsfLock is left at its default, which is on: My Projects
                 always applies the NSF lock. */}
-            <GrantFields form={form} index={0} />
+            <GrantFields form={form} index={0} allocationsProcessName={allocationsProcessName} />
           </HydrateAtoms>
         </Provider>
       </DialogBody>

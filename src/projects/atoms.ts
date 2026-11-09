@@ -157,6 +157,17 @@ export const requestsAtom = atom((get) => get(apiStateAtom).requests);
 export const grantFundingAgenciesAtom = atom((get) => get(apiStateAtom).fundingAgencies);
 export const grantFosTypesAtom = atom((get) => get(apiStateAtom).fosTypes);
 
+// The allocations program's name, for copy that would otherwise say "ACCESS"
+// to another host's users. Hydrated by Projects from the mount's
+// `allocationsProcessName` option.
+export const allocationsProcessNameAtom = atom("ACCESS");
+
+// Whether the host has credits and exchanges at all. Hydrated by Projects from
+// the mount's `useCredits` option. Project-wide rather than `request.usesCredits`
+// because an ACCESS Maximize request has `usesCredits: false` and still
+// exchanges, through the Transfer alias.
+export const useCreditsAtom = atom(true);
+
 function update(get: (a: typeof apiStateAtom) => ApiState, set: any, recipe: (draft: Draft<ApiState>) => void) {
   set(apiStateAtom, produce(get(apiStateAtom), recipe));
 }
@@ -196,6 +207,7 @@ const makeResource = ({
   organizationId,
   organizationFaviconUrl,
   organizationName,
+  reportsUsage,
   resourceRepositoryKey,
   resourceType,
   startDate,
@@ -257,7 +269,12 @@ const makeResource = ({
     startDate,
     type: resourceType,
     unit: unitType,
-    used: roundNumber(amountUsed || 0, 0, "ceil"),
+    // A host whose resources don't all report usage back to accounting marks
+    // the ones that don't with `reportsUsage: false`; their amountUsed is a
+    // meaningless zero, not "nothing used yet", so it becomes null rather than
+    // a balance the UI would present as fully available. Absent means true,
+    // which is every resource on ACCESS.
+    used: reportsUsage === false ? null : roundNumber(amountUsed || 0, 0, "ceil"),
     userGuideUrl,
   };
 };
@@ -309,7 +326,7 @@ const makeGrant = ({
   primaryFosType,
 });
 
-const makeAllowedActionsMap = (allowedActions: any[]): AllowedActionsMap => {
+const makeAllowedActionsMap = (allowedActions: any[], useCredits: boolean): AllowedActionsMap => {
   const result: AllowedActionsMap = {};
   for (const { actionType, allowedResources, opportunityId, opportunityName } of allowedActions) {
     const action: AllowedAction = {
@@ -328,8 +345,9 @@ const makeAllowedActionsMap = (allowedActions: any[]): AllowedActionsMap => {
 
   // Alias transfer to exchange to make component logic simpler.
   // FIXME: Remove this when exchanges are enabled for Maximize requests in the
-  // rules engine.
-  if ("Transfer" in result && !("Exchange" in result)) result.Exchange = result.Transfer;
+  // rules engine. Without credits a Transfer is its own action, not an
+  // exchange, so the exchange UI stays off.
+  if (useCredits && "Transfer" in result && !("Exchange" in result)) result.Exchange = result.Transfer;
   return result;
 };
 
@@ -349,6 +367,7 @@ const addRequest = (
     timeStatus,
   }: any,
   { entryDate, grantNumber }: { entryDate: string; grantNumber: string },
+  useCredits: boolean,
 ) => {
   resources = resources || [];
   const request: Request = {
@@ -378,7 +397,7 @@ const addRequest = (
       }),
     ),
     allocationType,
-    allowedActions: makeAllowedActionsMap(allowedActions),
+    allowedActions: makeAllowedActionsMap(allowedActions, useCredits),
     endDate,
     entryDate,
     exchangeActionId: null,
@@ -400,6 +419,7 @@ const addRequest = (
       .filter((res: Resource) => res.isCredit || res.allocated > 0)
       .sort(sortResources),
     resourcesReason: "",
+    pendingTransfer: null,
     returnedForCorrections: actions.find((action: any) => action.returnedForCorrections) ? true : false,
     returnedForCorrectionsNotes: actions.map((action: any) => action.adminComments).join(","),
     showActionsModal: false,
@@ -422,6 +442,12 @@ const addRequest = (
       ["Exchange", "Transfer"].includes(action.type) &&
       ["Submitted", "Under Review", "Incomplete"].includes(action.status)
     ) {
+      if (!useCredits) {
+        // The table keeps showing the current allocation; the pending
+        // transfer is only mentioned in a notice.
+        request.pendingTransfer = { actionId: action.actionId, status: action.status };
+        break;
+      }
       request.exchangeActionId = action.actionId;
       request.exchangeActionEditable = action.status === "Incomplete";
       for (const res of action.resources) exchangeResources[res.resourceId] = res;
@@ -460,8 +486,9 @@ const addRequest = (
       }
   }
 
-  // Ensure all requests have a credit-like resource.
-  if (request.resources.length && !request.resources.find((res) => res.isCredit))
+  // Ensure all requests have a credit-like resource (unless the host has no
+  // credits).
+  if (useCredits && request.resources.length && !request.resources.find((res) => res.isCredit))
     request.resources.push(
       (exchangeActionSingle && exchangeActionSingle.resources.find((res: Resource) => res.isCredit)) || {
         allocated: 0,
@@ -504,6 +531,7 @@ const addProject = (
     users,
   }: any,
   projectStatus: string,
+  useCredits: boolean,
 ) => {
   grantNumber = grantNumber || requestMasterId;
   requests.sort((a: any, b: any) => (getSortDate(a) > getSortDate(b) ? -1 : 1));
@@ -527,7 +555,7 @@ const addProject = (
         .map(({ entryDate }: any) => entryDate)
         .sort()[0]
         .split("T")[0];
-      addRequest(draft, request, { entryDate, grantNumber });
+      addRequest(draft, request, { entryDate, grantNumber }, useCredits);
       return { allocationType, endDate, entryDate, requestId, startDate, status };
     }),
     selectedRequestId: keepSelection ? previous.selectedRequestId : currentRequestId || requests[0].requestId,
@@ -691,6 +719,7 @@ export const fetchProjectsListAtom = atom(
 
     const body = await res.json();
     const projectsList = body.result;
+    const useCredits = get(useCreditsAtom);
     projectsList.sort((a: any, b: any) => (getSortDate(a.requests[0]) > getSortDate(b.requests[0]) ? -1 : 1));
 
     update(get, set, (draft) => {
@@ -715,7 +744,7 @@ export const fetchProjectsListAtom = atom(
                 : requests[0].timeStatus == "past"
                   ? "Inactive"
                   : requests[0].status));
-        if (requests) addProject(draft, project, projectStatus);
+        if (requests) addProject(draft, project, projectStatus, useCredits);
         return { grantNumber: grantNumber || requestMasterId, status: projectStatus, title };
       });
       draft.projectListLoading = false;
@@ -1164,6 +1193,7 @@ export const saveUsersAtom = atom(null, async (get, set, { grantNumber }: { gran
 
   update(get, set, (draft) => {
     draft.projects[grantNumber].usersStatus = statuses.pending;
+    delete draft.projects[grantNumber].usersNotices;
   });
 
   // The xras API either expects nothing or the entire list of users and their
@@ -1196,7 +1226,19 @@ export const saveUsersAtom = atom(null, async (get, set, { grantNumber }: { gran
   });
 
   if (res.status == 200) {
+    // A successful save may carry `notices` - things the user should know
+    // about changes that did go through, e.g. resources whose account changes
+    // need staff action (xras_submit_nairr). ACCESS answers with an empty
+    // body, which isn't JSON, so a parse failure just means no notices.
+    let notices: string[] = [];
+    try {
+      const body = await res.json();
+      if (Array.isArray(body?.notices)) notices = body.notices.map(String);
+    } catch {
+      notices = [];
+    }
     update(get, set, (draft) => {
+      if (notices.length) draft.projects[grantNumber].usersNotices = notices;
       draft.projects[grantNumber].users = draft.projects[grantNumber].users.map((user) => ({
         ...user,
         initialResourceIds: [...user.resourceIds],

@@ -44,6 +44,7 @@ import {
   toggleUsersResourcesAtom,
   usernameAtom,
   type GrantEdits,
+  useCreditsAtom,
 } from "@/projects/atoms";
 import type { Action, Grant, Project, Request, Resource, User } from "@/projects/types";
 import type { FosType, FundingAgency } from "@/supporting-grants/types";
@@ -544,6 +545,32 @@ describe("fetchProjectsListAtom (raw API shape transform)", () => {
     expect(state.projects["ABC123"].users[0].canChangeRoles).toBeUndefined();
   });
 
+  // `reportsUsage` is host-supplied (xras_submit_nairr marks resources that
+  // don't report usage to accounting); ACCESS never sends it, so absent has to
+  // mean "reports usage" and keep amountUsed.
+  it("nulls used only for resources marked reportsUsage: false", async () => {
+    const project = rawProject();
+    project.requests[0].resources = [
+      rawResource({ reportsUsage: false }),
+      rawResource({ xrasResourceId: 102, reportsUsage: true }),
+      rawResource({ xrasResourceId: 103 }),
+      rawCreditResource(),
+    ];
+    server.use(
+      http.get(`${defaultRoutes.projects_path()}.json`, () => HttpResponse.json({ result: [project] })),
+    );
+
+    const store = createStore();
+    await store.set(fetchProjectsListAtom, "ghopper");
+
+    const resources = store.get(apiStateAtom).requests[555].resources;
+    const byId = (id: number) => resources.find((r) => r.resourceId === id)!;
+    expect(byId(101).used).toBeNull();
+    expect(byId(101).allocated).toBe(1000);
+    expect(byId(102).used).toBe(200);
+    expect(byId(103).used).toBe(200);
+  });
+
   it("carries negativeOnly, canChangeRoles and internationalUserRequests through the transform", async () => {
     const project = rawProject({
       grantNumber: "DEF456",
@@ -649,6 +676,63 @@ describe("fetchProjectsListAtom (raw API shape transform)", () => {
       expect(store.get(grantFundingAgenciesAtom)).toEqual([]);
       expect(store.get(grantFosTypesAtom)).toEqual([]);
       expect(store.get(projectsListAtom)).toHaveLength(1);
+    });
+  });
+
+  // NAIRR mounts with useCredits: false. A Transfer is then its own action: no
+  // Exchange alias (so no exchange UI), no fake credit row, and a pending
+  // Transfer is recorded for a notice instead of being folded into the amounts.
+  describe("without credits", () => {
+    const transferProject = () => {
+      const compute = rawResource({ amountAllocated: 1000, amountRequested: 1000 });
+      const project = rawProject();
+      const request = project.requests[0] as Record<string, any>;
+      request.resources = [compute];
+      request.allowedActions = [{ actionType: "Transfer", allowedResources: [compute] }];
+      request.actions.push({
+        actionId: 7,
+        actionStatusType: "Under Review",
+        actionType: "Transfer",
+        allowedOperations: [],
+        approvedStartDate: null,
+        detailAvailable: false,
+        entryDate: "2025-02-01T00:00:00Z",
+        isRequest: true,
+        requestedStartDate: null,
+        resources: [rawResource({ amountAllocated: 500, amountRequested: 500 })],
+      });
+      return project;
+    };
+
+    const load = async (useCredits: boolean) => {
+      server.use(
+        http.get(`${defaultRoutes.projects_path()}.json`, () =>
+          HttpResponse.json({ result: [transferProject()] }),
+        ),
+      );
+      const store = createStore();
+      store.set(useCreditsAtom, useCredits);
+      await store.set(fetchProjectsListAtom, "ghopper");
+      return store.get(apiStateAtom).requests[555];
+    };
+
+    it("keeps Transfer separate, adds no credit row and leaves a pending Transfer out of the amounts", async () => {
+      const request = await load(false);
+      expect("Transfer" in request.allowedActions).toBe(true);
+      expect("Exchange" in request.allowedActions).toBe(false);
+      expect(request.resources.map((r) => r.resourceId)).toEqual([101]);
+      expect(request.resources[0].requested).toBe(1000);
+      expect(request.exchangeActionId).toBeNull();
+      expect(request.pendingTransfer).toEqual({ actionId: 7, status: "Under Review" });
+    });
+
+    it("still aliases Transfer to Exchange, adds the credit row and merges the pending Transfer with credits", async () => {
+      const request = await load(true);
+      expect("Exchange" in request.allowedActions).toBe(true);
+      expect(request.resources.some((r) => r.isCredit)).toBe(true);
+      expect(request.resources.find((r) => r.resourceId === 101)!.requested).toBe(1500);
+      expect(request.exchangeActionId).toBe(7);
+      expect(request.pendingTransfer).toBeNull();
     });
   });
 
@@ -1109,7 +1193,7 @@ describe("saveResourcesAtom", () => {
 });
 
 describe("saveUsersAtom", () => {
-  function makeUsersProject() {
+  function makeUsersProject(overrides: Partial<Project> = {}) {
     const roleChangedUser = makeUserFixture({
       username: "promoted",
       role: "pi",
@@ -1125,7 +1209,7 @@ describe("saveUsersAtom", () => {
       initialResourceIds: [101],
       hasChanges: true,
     });
-    return makeProjectFixture({ users: [roleChangedUser, resourceChangedUser] });
+    return makeProjectFixture({ users: [roleChangedUser, resourceChangedUser], ...overrides });
   }
 
   it("commits users as the new baseline on success", async () => {
@@ -1158,6 +1242,54 @@ describe("saveUsersAtom", () => {
       expect(user.initialResourceIds).toEqual(user.resourceIds);
       expect(user.initialRole).toBe(user.role);
     }
+  });
+
+  it("stores notices returned with a successful save", async () => {
+    server.use(
+      http.post("https://example.test/save-users", () =>
+        HttpResponse.json({ notices: ["Changes on Example Resource require staff action."] }),
+      ),
+    );
+
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      projects_save_users_path: () => "https://example.test/save-users",
+    });
+    store.set(apiStateAtom, seedState({ projects: { ABC123: makeUsersProject() } }));
+
+    await store.set(saveUsersAtom, { grantNumber: "ABC123" });
+
+    const project = store.get(apiStateAtom).projects["ABC123"];
+    expect(project.usersStatus).toBe("success");
+    expect(project.usersNotices).toEqual(["Changes on Example Resource require staff action."]);
+  });
+
+  // ACCESS answers a successful save with an empty body, and a host may send
+  // JSON without `notices`; neither may fail the save, and a later save
+  // mustn't keep showing an earlier save's notices.
+  it("leaves no notices for an empty or notice-less success, clearing earlier ones", async () => {
+    const store = createStore();
+    store.set(routesAtom, {
+      ...defaultRoutes,
+      projects_save_users_path: () => "https://example.test/save-users",
+    });
+    store.set(
+      apiStateAtom,
+      seedState({ projects: { ABC123: makeUsersProject({ usersNotices: ["stale"] }) } }),
+    );
+
+    server.use(http.post("https://example.test/save-users", () => new HttpResponse(null, { status: 200 })));
+    await store.set(saveUsersAtom, { grantNumber: "ABC123" });
+    let project = store.get(apiStateAtom).projects["ABC123"];
+    expect(project.usersStatus).toBe("success");
+    expect(project.usersNotices).toBeUndefined();
+
+    server.use(http.post("https://example.test/save-users", () => HttpResponse.json({ ok: true })));
+    await store.set(saveUsersAtom, { grantNumber: "ABC123" });
+    project = store.get(apiStateAtom).projects["ABC123"];
+    expect(project.usersStatus).toBe("success");
+    expect(project.usersNotices).toBeUndefined();
   });
 
   it("records server-provided errors on a rejected save", async () => {

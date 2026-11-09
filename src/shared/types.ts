@@ -18,7 +18,7 @@ export type Resource = {
   isBoolean?: boolean;
   userGuideUrl?: string | null;
   allocated?: number;
-  used?: number;
+  used?: number | null;
   requested?: number;
   exchangeRates: {
     base: ExchangeRateSnapshot;

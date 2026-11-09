@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import { Provider, createStore } from "jotai";
 import { mergeRoutes, routesAtom } from "@/shared/routes";
 import Request from "./Request";
-import { apiStateAtom } from "./atoms";
-import type { InternationalUserRequestSummary, Project, Request as RequestType } from "./types";
+import { apiStateAtom, useCreditsAtom } from "./atoms";
+import type { InternationalUserRequestSummary, Project, Request as RequestType, User } from "./types";
 
 const GRANT = "TEST000001";
 const REQUEST_ID = 555;
@@ -73,17 +73,22 @@ function makeProject(overrides: Partial<Project> = {}): Project {
 function renderRequest({
   internationalUserRequests,
   tab,
+  users,
+  useCredits = true,
 }: {
   internationalUserRequests?: InternationalUserRequestSummary[] | null;
   tab?: string;
+  users?: User[];
+  useCredits?: boolean;
 } = {}) {
   const store = createStore();
   store.set(routesAtom, mergeRoutes());
+  store.set(useCreditsAtom, useCredits);
   store.set(apiStateAtom, {
     error: null,
     projectsList: [],
     projectListLoading: false,
-    projects: { [GRANT]: makeProject({ internationalUserRequests, tab: tab || "overview" }) },
+    projects: { [GRANT]: makeProject({ internationalUserRequests, tab: tab || "overview", ...(users ? { users } : {}) }) },
     requests: { [REQUEST_ID]: makeRequest() },
     username: "ada",
     fundingAgencies: [],
@@ -175,5 +180,33 @@ describe("Request (International User Justifications, ported from main)", () => 
   it("does not warn when there are no justifications at all", () => {
     renderRequest({ internationalUserRequests: [] });
     expect(incompleteAlert()).not.toBeInTheDocument();
+  });
+});
+
+describe("Request ineligible personnel alert", () => {
+  const ineligiblePi: User = {
+    eligibility: "no",
+    eligibilityReason: "Profile incomplete",
+    firstName: "Ada",
+    initialResourceIds: [],
+    initialRole: "pi",
+    lastName: "Lovelace",
+    resourceAccountPendingIds: [],
+    resourceAccountInactiveIds: [],
+    resourceIds: [],
+    resourceUsernames: {},
+    role: "pi",
+    username: "ada",
+  };
+
+  it("mentions exchanges on a host with credits", () => {
+    renderRequest({ users: [ineligiblePi] });
+    expect(screen.getByText(/unable to submit exchanges, renewals/)).toBeInTheDocument();
+  });
+
+  it("mentions transfers, not exchanges, on a host without credits", () => {
+    renderRequest({ users: [ineligiblePi], useCredits: false });
+    expect(screen.getByText(/unable to submit transfers, renewals/)).toBeInTheDocument();
+    expect(screen.queryByText(/exchange/i)).not.toBeInTheDocument();
   });
 });

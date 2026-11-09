@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useAtomValue } from "jotai";
 import { Table } from "lucide-react";
 import Select from "react-select";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import Alert from "../shared/Alert";
 import Grid, { type GridColumn } from "../shared/Grid";
 import InfoTip from "../shared/InfoTip";
@@ -30,6 +30,7 @@ import {
   groupAvailableResources,
   resourceAlertKind,
 } from "./helpers/resources";
+import { useCreditsAtom } from "./atoms";
 import type { Resource } from "./types";
 
 export default function Resources({
@@ -55,6 +56,9 @@ export default function Resources({
   const resourceSearch = useRef<HTMLDivElement>(null);
   const submitButton = useRef<HTMLButtonElement>(null);
   const routes = useAtomValue(routesAtom);
+  const useCredits = useAtomValue(useCreditsAtom);
+  // Without credits there are no exchanges, only transfers.
+  const exchangeWord = useCredits ? "exchange" : "transfer";
   if (!request || !project) return null;
 
   const exchangeAction = request.allowedActions.Exchange;
@@ -63,6 +67,7 @@ export default function Resources({
   const canExchange = "Exchange" in request.allowedActions;
   const canRenew = "Renewal" in request.allowedActions;
   const canSupplement = "Supplement" in request.allowedActions;
+  const canTransfer = "Transfer" in request.allowedActions;
   const saving = request.exchangeStatus == statuses.pending;
   const saved = request.exchangeStatus == statuses.success;
   const error = request.exchangeStatus == statuses.error;
@@ -77,8 +82,11 @@ export default function Resources({
   const resourcesMap: Record<number, Resource> = {};
   for (const res of resources) resourcesMap[res.resourceId] = res;
 
+  // The confirm step nudges a low-usage project toward an exchange instead,
+  // which is only advice worth giving when an exchange is allowed (never, on
+  // NAIRR).
   const requestMore = () => {
-    if (getResourceUsagePercent(request) >= 0.75) toggleActionsModal();
+    if (!canExchange || getResourceUsagePercent(request) >= 0.75) toggleActionsModal();
     else toggleConfirmModal();
   };
 
@@ -137,14 +145,17 @@ export default function Resources({
 
   let alert;
   if (alertKind == "submitted")
-    alert = <Alert color="info">Your exchange request has been submitted.</Alert>;
+    alert = <Alert color="info">Your {exchangeWord} request has been submitted.</Alert>;
   else if (alertKind == "pi-status-unknown")
     alert = (
       <Alert color="danger">
         {project.currentUser?.role === "pi" ? (
           <>
-            Please <a href={routes.profile_path()}>update your academic status</a> before making an
-            exchange request.
+            Please{" "}
+            <a href={routes.profile_path()} target="_blank" rel="noreferrer">
+              update your academic status
+            </a> before making an{" "}
+            {exchangeWord} request.
           </>
         ) : (
           <>
@@ -159,15 +170,15 @@ export default function Resources({
     alert = (
       <Alert color="danger">
         Sorry, something went wrong: {errorMessages.join(", ")}. For assistance, please{" "}
-        <a href="https://support.access-ci.org/open-a-ticket">open a help ticket</a> and include this
+        <a href={routes.help_ticket_path()}>open a help ticket</a> and include this
         message.
       </Alert>
     );
   else if (alertKind == "pending-exchange")
     alert = (
       <Alert color="warning">
-        You have an exchange request under review. The information below reflects the pending exchange
-        request.
+        You have {useCredits ? "an" : "a"} {exchangeWord} request under review. The information below reflects the pending{" "}
+        {exchangeWord} request.
       </Alert>
     );
   else if (alertKind == "not-manager")
@@ -214,12 +225,16 @@ export default function Resources({
       credit = res;
     } else {
       rows.push(res);
+      // Rows outside an exchange are grayed out as not exchangeable. Without
+      // credits there are no exchanges, so nothing is grayed out.
       rowClasses.push(
-        exchangeEditable && (res.isNew || res.allocated != res.requested)
-          ? gridStyle.edited
-          : exchangeActionResourceIds.includes(res.resourceId)
-            ? ""
-            : gridStyle.disabled,
+        !useCredits
+          ? ""
+          : exchangeEditable && (res.isNew || res.allocated != res.requested)
+            ? gridStyle.edited
+            : exchangeActionResourceIds.includes(res.resourceId)
+              ? ""
+              : gridStyle.disabled,
       );
     }
   }
@@ -246,8 +261,11 @@ export default function Resources({
       format: (_name, row) => (
         <>
           <ResourceName resource={row as Resource} />
-          {(project.currentUser?.resourceIds.includes((row as Resource).resourceId) ||
-            project.currentUser?.resourceAccountInactiveIds.includes((row as Resource).resourceId)) && (
+          {/* No usage details for a resource that doesn't report usage - the
+              modal would only say there is none. */}
+          {(row as Resource).used !== null &&
+            (project.currentUser?.resourceIds.includes((row as Resource).resourceId) ||
+              project.currentUser?.resourceAccountInactiveIds.includes((row as Resource).resourceId)) && (
             <InlineButton
               icon={Table}
               onClick={() => openUsageDetailModal((row as Resource).resourceRepositoryKey ?? "")}
@@ -262,13 +280,58 @@ export default function Resources({
       ),
       width: Math.min(350, window.innerWidth * 0.3),
     },
-    {
+  ];
+
+  if (useCredits)
+    columns.push({
       key: "unit",
       name: "Unit Cost",
       width: 300,
       format: (_value, row) => formatUnitCost(row as Resource),
-    },
-  ];
+    });
+  else
+    columns.push(
+      {
+        key: "allocated",
+        name: "Allocated",
+        class: "text-right",
+        format: (_value, row) => (
+          <>
+            {formatNumber((row as Resource).requested)} {(row as Resource).unit}
+          </>
+        ),
+      },
+      {
+        key: "used",
+        name: "Used",
+        class: "text-right",
+        format: (_value, row) => {
+          const { used, unit } = row as Resource;
+          return used === null ? (
+            <>&mdash;</>
+          ) : (
+            <>
+              {formatNumber(used)} {unit}
+            </>
+          );
+        },
+      },
+      {
+        key: "remaining",
+        name: "Remaining",
+        class: "text-right",
+        format: (_value, row) => {
+          const typedRow = row as Resource;
+          if (typedRow.used === null) return <>&mdash;</>;
+          const percent = typedRow.requested > 0 ? Math.round((getBalance(typedRow) / typedRow.requested) * 100) : 0;
+          return (
+            <>
+              {formatNumber(getBalance(typedRow))} {typedRow.unit} ({percent}%)
+            </>
+          );
+        },
+      },
+    );
 
   if (canExchange)
     columns.push(
@@ -305,7 +368,7 @@ export default function Resources({
                   format={(value) => formatNumber(Number(value))}
                   label={`Balance for ${typedRow.name}`}
                   setValue={(cleaned) => {
-                    setResourceRequest(typedRow.resourceId, Number(cleaned) + typedRow.used);
+                    setResourceRequest(typedRow.resourceId, Number(cleaned) + (typedRow.used ?? 0));
                   }}
                   style={{ padding: "0.1rem 0.5rem" }}
                   value={getBalance(typedRow).toString()}
@@ -359,13 +422,34 @@ export default function Resources({
 
   return (
     <div>
-      {resources.length ? <ResourcesDiagram requestId={requestId} /> : null}
-      {credit && (canExchange || canRenew || canSupplement) ? (
+      {useCredits && resources.length ? <ResourcesDiagram requestId={requestId} /> : null}
+      {!useCredits && (canRenew || canSupplement || canTransfer) ? (
+        <h2 className="mb-1 mt-2 flex items-center justify-end text-2xl font-bold">
+          {canRenew || canSupplement ? (
+            <Button type="button" size="sm" className="ml-2" onClick={requestMore}>
+              Request More Units
+            </Button>
+          ) : null}
+          {canTransfer ? (
+            <a
+              className={buttonVariants({ size: "sm", className: "ml-2 whitespace-nowrap" })}
+              href={`${routes.request_action_path(requestId, "new")}?action_type=Transfer`}
+            >
+              Request a Transfer
+            </a>
+          ) : null}
+        </h2>
+      ) : null}
+      {useCredits && credit && (canExchange || canRenew || canSupplement) ? (
         <h2 className="mb-1 mt-2 flex items-center justify-between text-2xl font-bold">
           <span>
-            {icon(config.resourceTypeIcons.credit)}{" "}
-            {formatNumber(credit.requested, { decimalPlaces: credit.decimalPlaces })} {credit.unit} available
-            to exchange
+            {canExchange ? (
+              <>
+                {icon(config.resourceTypeIcons.credit)}{" "}
+                {formatNumber(credit.requested, { decimalPlaces: credit.decimalPlaces })} {credit.unit}{" "}
+                available to exchange
+              </>
+            ) : null}
           </span>
           {canRenew || canSupplement ? (
             <Button type="button" size="sm" className="ml-2" onClick={requestMore}>
@@ -376,6 +460,11 @@ export default function Resources({
         </h2>
       ) : null}
       {alert}
+      {request.pendingTransfer ? (
+        <Alert color="info">
+          A transfer request is {request.pendingTransfer.status.toLowerCase()}.
+        </Alert>
+      ) : null}
 
       {rows.length ? (
         <Grid

@@ -185,7 +185,7 @@ export default function ActionsModal({
     id: "help",
     action: [
       ["Learn How to Manage Allocations", routes.how_to_path(), "get"],
-      ["Open a Help Ticket", "https://support.access-ci.org/open-a-ticket", "get"],
+      ["Open a Help Ticket", routes.help_ticket_path(), "get"],
     ],
     isEnabled: true,
     button: "Request Help",
