@@ -151,7 +151,10 @@ export default function Resources({
       <Alert color="danger">
         {project.currentUser?.role === "pi" ? (
           <>
-            Please <a href={routes.profile_path()}>update your academic status</a> before making an{" "}
+            Please{" "}
+            <a href={routes.profile_path()} target="_blank" rel="noreferrer">
+              update your academic status
+            </a> before making an{" "}
             {exchangeWord} request.
           </>
         ) : (
