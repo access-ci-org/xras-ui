@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.44.0](https://github.com/access-ci-org/xras-ui/compare/v0.43.0...v0.44.0) (2026-11-11)
+
+
+### Features
+
+* Apply minimum exchange amount check to all exchange requests not only the first ([9395bc2](https://github.com/access-ci-org/xras-ui/commit/9395bc2f3fbefeef5965b686201a412a46840d57))
+
 ## [0.43.0](https://github.com/access-ci-org/xras-ui/compare/v0.42.0...v0.43.0) (2026-11-09)
 
 
