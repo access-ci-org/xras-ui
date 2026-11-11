@@ -13,8 +13,9 @@ export const getBalance = (row: Resource) => row.requested - (row.used ?? 0);
 // A newly added resource has to clear its own minimum on the first request.
 // Zero is always allowed - that is how a resource added by mistake is backed
 // out before the exchange is submitted.
-export const belowMinimum = (row: Resource) =>
-  row.isNew && 0 < row.requested && row.requested < row.minimumExchange;
+export const belowMinimum = (row: Resource) => {
+  return 0 < row.requested && row.requested < row.minimumExchange;
+};
 
 // Clamps a balance the user typed into the range the project can actually
 // afford. `credit` is the request's credit resource, which is what pays for an
