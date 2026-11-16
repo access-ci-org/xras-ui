@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.44.1](https://github.com/access-ci-org/xras-ui/compare/v0.44.0...v0.44.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **projects:** enforce exchange minimums on change in balance and add ([b4f505d](https://github.com/access-ci-org/xras-ui/commit/b4f505d022424ada6e7ddaf66239cea76521db51))
+
 ## [0.44.0](https://github.com/access-ci-org/xras-ui/compare/v0.43.0...v0.44.0) (2026-11-11)
 
 
