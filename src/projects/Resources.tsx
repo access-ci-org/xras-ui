@@ -24,10 +24,11 @@ import {
 import ResourcesDiagram from "./ResourcesDiagram";
 import { useProject, useRequest } from "./helpers/hooks";
 import {
-  belowMinimum,
+  belowMinimumResources,
   cleanBalance,
   getBalance,
   groupAvailableResources,
+  mayExhaustCredits,
   resourceAlertKind,
 } from "./helpers/resources";
 import { useCreditsAtom } from "./atoms";
@@ -77,6 +78,7 @@ export default function Resources({
   const exchangeEditable = request.exchangeActionEditable;
 
   const resources = request.resources;
+  const credit = resources.find((res) => res.isCredit);
   const reason = request.resourcesReason;
 
   const resourcesMap: Record<number, Resource> = {};
@@ -119,17 +121,19 @@ export default function Resources({
   }
   const hasUnmetDeps = unmetDeps.length > 0;
 
-  const belowMinimums: React.ReactNode[] = [];
-  for (const res of resources) {
-    if (!res.isCredit && belowMinimum(res)) {
-      belowMinimums.push(
-        <span key={res.resourceId}>
-          The minimum initial request for <ResourceName resource={res} userGuide={false} /> is{" "}
-          {res.minimumExchange} {res.unit}. <br />
-        </span>,
-      );
-    }
-  }
+  const shortOfMinimum = belowMinimumResources(resources, credit);
+  const belowMinimums = shortOfMinimum.map((res) => (
+    <span key={res.resourceId}>
+      The minimum increase for <ResourceName resource={res} userGuide={false} /> is{" "}
+      {formatNumber(res.minimumExchange, { decimalPlaces: res.decimalPlaces })} {res.unit}.
+      {/* With several resources short, spending everything on one still
+          leaves the others blocked, so the way out is only offered alone. */}
+      {shortOfMinimum.length == 1 && credit && mayExhaustCredits(res, credit) && (
+        <> A smaller increase is allowed only if it uses all of your remaining {credit.name}.</>
+      )}
+      <br />
+    </span>
+  ));
   const anyBelowMinimum = belowMinimums.length > 0;
 
   const alertKind = resourceAlertKind({
@@ -190,7 +194,7 @@ export default function Resources({
     );
   else if (alertKind == "unmet-dependencies")
     alert = <Alert color="warning">{unmetDeps} Please adjust your balance values.</Alert>;
-  else if (alertKind == "below-minimum") alert = <Alert color="warning">{belowMinimums}</Alert>;
+  else if (alertKind == "below-minimum") alert = <Alert color="danger">{belowMinimums}</Alert>;
 
   const hasReason = reason.length > 0;
   let hasAddedResources = false;
@@ -215,26 +219,25 @@ export default function Resources({
     ? exchangeActionSingle.resources.map((res) => res.resourceId)
     : [];
 
-  let credit: Resource | undefined;
-
   // Grid rows
   const rows: Resource[] = [];
   const rowClasses: string[] = [];
   for (const res of resources) {
-    if (res.isCredit) {
-      credit = res;
-    } else {
+    if (!res.isCredit) {
       rows.push(res);
       // Rows outside an exchange are grayed out as not exchangeable. Without
-      // credits there are no exchanges, so nothing is grayed out.
+      // credits there are no exchanges, so nothing is grayed out. A row short
+      // of its minimum is red, like the alert that explains it.
       rowClasses.push(
         !useCredits
           ? ""
-          : exchangeEditable && (res.isNew || res.allocated != res.requested)
-            ? gridStyle.edited
-            : exchangeActionResourceIds.includes(res.resourceId)
-              ? ""
-              : gridStyle.disabled,
+          : shortOfMinimum.includes(res)
+            ? gridStyle.invalid
+            : exchangeEditable && (res.isNew || res.allocated != res.requested)
+              ? gridStyle.edited
+              : exchangeActionResourceIds.includes(res.resourceId)
+                ? ""
+                : gridStyle.disabled,
       );
     }
   }

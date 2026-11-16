@@ -10,12 +10,59 @@ import type { Resource } from "../types";
 // does, so it's treated as nothing used.
 export const getBalance = (row: Resource) => row.requested - (row.used ?? 0);
 
-// A newly added resource has to clear its own minimum on the first request.
-// Zero is always allowed - that is how a resource added by mistake is backed
-// out before the exchange is submitted.
-export const belowMinimum = (row: Resource) => {
-  return 0 < row.requested && row.requested < row.minimumExchange;
+// How much the exchange raises a resource's balance (negative for a decrease).
+// This is the amount the exchange actually requests - see the payload built in
+// atoms.ts - and the amount a resource's minimum applies to.
+export const getIncrease = (row: Resource) => row.requested - row.allocated;
+
+// Already approved on this request, as opposed to added by this exchange.
+const isApproved = (row: Resource) => !row.isNew && row.allocated > 0;
+
+// Whether the exchange as entered leaves no credits to spend on `row`. The
+// credit row's `requested` is the balance left after every change in the
+// exchange (setResourceRequestAtom keeps it so), and `cleanBalance` caps an
+// increase at what that balance buys, rounded down to the resource's decimal
+// places - so a user who puts everything into `row` is left with less than the
+// price of one more step of it, and never exactly zero.
+const spendsAllCredits = (row: Resource, credit: Resource) => {
+  const remaining = credit.requested * credit.exchangeRates.base.unitCost;
+  const step = 10 ** -row.decimalPlaces;
+  return remaining < step * row.exchangeRates.current.unitCost;
 };
+
+/**
+ * The resources whose increase on this exchange is smaller than their minimum,
+ * which block submission.
+ *
+ * The minimum applies to the increase, not the resulting balance, so a
+ * resource the exchange leaves alone or reduces - including to zero, which is
+ * how a resource added by mistake is backed out - is never below it, however
+ * small its balance.
+ *
+ * The one exception is for a user who can't afford the minimum: a smaller
+ * increase is allowed if the resource is already approved on the request and
+ * the exchange spends all the remaining credits. Only one resource can make
+ * that claim, so when several fall short none of them is excused - otherwise
+ * splitting the last credits across resources would sidestep every minimum.
+ * Requests without credits have no remaining balance to exhaust, and no
+ * exception.
+ */
+export function belowMinimumResources(resources: Resource[], credit: Resource | undefined): Resource[] {
+  const short = resources.filter((row) => {
+    const increase = getIncrease(row);
+    return !row.isCredit && 0 < increase && increase < row.minimumExchange;
+  });
+  if (short.length == 1 && canUseRemainingCredits(short[0], credit)) return [];
+  return short;
+}
+
+const canUseRemainingCredits = (row: Resource, credit: Resource | undefined) =>
+  credit !== undefined && isApproved(row) && spendsAllCredits(row, credit);
+
+// Whether `row` could be excused from its minimum by spending every remaining
+// credit on it - the banner offers that way out only where it would work.
+export const mayExhaustCredits = (row: Resource, credit: Resource | undefined) =>
+  credit !== undefined && isApproved(row);
 
 // Clamps a balance the user typed into the range the project can actually
 // afford. `credit` is the request's credit resource, which is what pays for an

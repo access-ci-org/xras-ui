@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  belowMinimum,
+  belowMinimumResources,
   cleanBalance,
   getBalance,
   groupAvailableResources,
+  mayExhaustCredits,
   resourceAlertKind,
 } from "./resources";
 import type { Resource } from "../types";
@@ -57,17 +58,91 @@ describe("getBalance", () => {
   });
 });
 
-describe("belowMinimum", () => {
-  it("applies to all exchange requests asking for a non-zero amount", () => {
-    const args = { minimumExchange: 1000, requested: 500 };
-    // expect(belowMinimum(makeResource({ ...args, isNew: true }))).toBe(true);
-    // // An existing resource is grandfathered - the minimum is an *initial*
-    // // request rule.
-    // expect(belowMinimum(makeResource({ ...args, isNew: false }))).toBe(false);
-    // // Zero is how a resource added by mistake gets backed out again, so it can
-    // // never be below the minimum.
-    expect(belowMinimum(makeResource({ ...args, isNew: true, requested: 0 }))).toBe(false);
-    expect(belowMinimum(makeResource({ ...args, isNew: true, requested: 1000 }))).toBe(false);
+describe("belowMinimumResources", () => {
+  // Delta CPU in the original report: an approved 372 Core-hours against a
+  // 1000 Core-hour minimum. Unit cost 2, so the minimum costs 2000 credits.
+  const approved = (requested: number, overrides: Partial<Resource> = {}) =>
+    makeResource({
+      allocated: 372,
+      requested,
+      minimumExchange: 1000,
+      exchangeRates: {
+        base: { type: "base", unitCost: 2 },
+        current: { type: "current", unitCost: 2 },
+      },
+      ...overrides,
+    });
+  const added = (requested: number) =>
+    makeResource({ resourceId: 2, isNew: true, minimumExchange: 1000, requested });
+  const ids = (resources: Resource[], credit: Resource | undefined) =>
+    belowMinimumResources(resources, credit).map((res) => res.resourceId);
+
+  it("checks the increase, not the resulting balance", () => {
+    const credit = makeCredit(100_000);
+    // Up to 1000 is only a 628 increase.
+    expect(ids([approved(1000)], credit)).toEqual([1]);
+    expect(ids([approved(1372)], credit)).toEqual([]);
+    // A large balance doesn't excuse a small increase.
+    expect(ids([approved(5100, { allocated: 5000 })], credit)).toEqual([1]);
+  });
+
+  it("ignores a resource the exchange leaves alone or reduces", () => {
+    const credit = makeCredit(100_000);
+    expect(ids([approved(372)], credit)).toEqual([]);
+    expect(ids([approved(100)], credit)).toEqual([]);
+    expect(ids([approved(0)], credit)).toEqual([]);
+  });
+
+  it("applies the minimum to a newly added resource", () => {
+    const credit = makeCredit(100_000);
+    expect(ids([added(500)], credit)).toEqual([2]);
+    expect(ids([added(1000)], credit)).toEqual([]);
+    // Backing a resource added by mistake out again.
+    expect(ids([added(0)], credit)).toEqual([]);
+  });
+
+  it("never checks the credit row", () => {
+    const credit = makeCredit(10, 1);
+    expect(ids([{ ...credit, allocated: 0, minimumExchange: 1000 }], credit)).toEqual([]);
+  });
+
+  it("excuses an approved resource's short increase that spends all remaining credits", () => {
+    // 1001 credits buy 500 more units with 1 left over - less than one unit.
+    expect(ids([approved(872)], makeCredit(1))).toEqual([]);
+    // Holding back 2 credits - the price of a unit - is not spending them all.
+    expect(ids([approved(871)], makeCredit(3))).toEqual([1]);
+  });
+
+  it("measures the leftover in steps of the resource's decimal places", () => {
+    const fractional = (requested: number) => approved(requested, { decimalPlaces: 2 });
+    expect(ids([fractional(872.5)], makeCredit(0.01))).toEqual([]);
+    expect(ids([fractional(872.5)], makeCredit(0.02))).toEqual([1]);
+  });
+
+  it("doesn't excuse a resource that isn't already approved", () => {
+    expect(ids([added(500)], makeCredit(0))).toEqual([2]);
+  });
+
+  it("doesn't excuse anything when several resources fall short", () => {
+    // Spending the last credits across two resources leaves both short.
+    expect(ids([approved(500), added(500)], makeCredit(0))).toEqual([1, 2]);
+  });
+
+  it("still excuses one short resource beside another that meets its minimum", () => {
+    expect(ids([approved(500), added(1000)], makeCredit(0))).toEqual([]);
+  });
+
+  it("has no exception without credits", () => {
+    expect(ids([approved(500)], undefined)).toEqual([1]);
+  });
+});
+
+describe("mayExhaustCredits", () => {
+  it("is offered only on an approved resource of a request with credits", () => {
+    const credit = makeCredit(0);
+    expect(mayExhaustCredits(makeResource({ allocated: 100 }), credit)).toBe(true);
+    expect(mayExhaustCredits(makeResource({ allocated: 100 }), undefined)).toBe(false);
+    expect(mayExhaustCredits(makeResource({ isNew: true }), credit)).toBe(false);
   });
 });
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { Provider, createStore } from "jotai";
 import { mergeRoutes, routesAtom } from "@/shared/routes";
+import gridStyle from "../shared/Grid.module.scss";
 import Resources from "./Resources";
 import { apiStateAtom, setResourceRequestAtom, statuses, useCreditsAtom } from "./atoms";
 import type { Project, Request as RequestType, Resource } from "./types";
@@ -26,8 +27,8 @@ function makeResource(overrides: Partial<Resource> = {}): Resource {
     isCredit: false,
     isFake: false,
     isUnderReview: false,
-    // `belowMinimum` only fires on new resources, so an existing one keeps the
-    // below-minimum alert (and its own disable clause) out of these tests.
+    // `minimumExchange: 0` below keeps the below-minimum alert (and its own
+    // disable clause) out of these tests unless one opts in.
     isNew: false,
     minimumExchange: 0,
     name: "Compute Resource",
@@ -236,6 +237,76 @@ describe("Resources submit guard (exchangeErrors, ported from main)", () => {
       store.set(setResourceRequestAtom, { requestId: REQUEST_ID, resourceId: COMPUTE_ID, requested: 50 });
     });
     expect(store.get(apiStateAtom).requests[REQUEST_ID].exchangeErrors).toEqual([]);
+    expect(submitButton()).toBeEnabled();
+  });
+});
+
+// The minimum applies to how much an exchange increases a resource, and is
+// waived for an approved resource when the exchange spends every remaining
+// credit. The details are unit-tested with belowMinimumResources; these pin the
+// banner and the Submit button to it.
+describe("Resources minimum increase", () => {
+  const OTHER_ID = 102;
+  const other = (overrides: Partial<Resource> = {}) =>
+    makeResource({ resourceId: OTHER_ID, name: "Other Resource", resourceRepositoryKey: "other.example", ...overrides });
+  const banner = () => screen.queryByText(/The minimum increase for/)?.closest("span");
+  const rowOf = (name: string) => screen.getByLabelText(`Balance for ${name}`).closest("tr");
+
+  // The original report: an exchange for one resource was blocked because
+  // another, untouched, allocation was smaller than that resource's minimum.
+  it("ignores an approved balance below the minimum that the exchange leaves alone", () => {
+    renderResources({
+      resources: [
+        makeCredit(),
+        makeResource({ minimumExchange: 1000 }),
+        other({ allocated: 0, isNew: true, requested: 50 }),
+      ],
+    });
+    expect(banner()).toBeUndefined();
+    expect(rowOf("Compute Resource")).not.toHaveClass(gridStyle.invalid);
+    expect(submitButton()).toBeEnabled();
+  });
+
+  it("blocks an increase below the minimum and offers the remaining-credits way out", () => {
+    renderResources({ resources: [makeCredit(), makeResource({ minimumExchange: 1000, requested: 150 })] });
+    expect(banner()).toHaveTextContent(
+      "The minimum increase for Compute Resource is 1,000 Core Hours. " +
+        "A smaller increase is allowed only if it uses all of your remaining ACCESS Credits.",
+    );
+    expect(screen.getByRole("alert")).toHaveClass("bg-[#edcccc]"); // Alert's "danger"
+    expect(rowOf("Compute Resource")).toHaveClass(gridStyle.invalid);
+    expect(submitButton()).toBeDisabled();
+  });
+
+  it("doesn't offer the way out for a resource the exchange adds", () => {
+    renderResources({
+      resources: [makeCredit(), makeResource({ allocated: 0, isNew: true, minimumExchange: 1000, requested: 150 })],
+    });
+    expect(banner()).toHaveTextContent("The minimum increase for Compute Resource is 1,000 Core Hours.");
+    expect(banner()).not.toHaveTextContent("remaining");
+    expect(submitButton()).toBeDisabled();
+  });
+
+  it("enables Submit once the short increase spends every remaining credit", () => {
+    const { store } = renderResources({
+      resources: [makeCredit(), makeResource({ minimumExchange: 5000 })],
+    });
+    const request = (requested: number) =>
+      act(() => {
+        store.set(setResourceRequestAtom, { requestId: REQUEST_ID, resourceId: COMPUTE_ID, requested });
+      });
+
+    // 999 of the 1000 credits.
+    request(1099);
+    expect(banner()).toBeInTheDocument();
+    expect(submitButton()).toBeDisabled();
+
+    request(1100);
+    expect(store.get(apiStateAtom).requests[REQUEST_ID].resources[0].requested).toBe(0);
+    expect(banner()).toBeUndefined();
+    // Back to the ordinary edited-row highlight.
+    expect(rowOf("Compute Resource")).not.toHaveClass(gridStyle.invalid);
+    expect(rowOf("Compute Resource")).toHaveClass(gridStyle.edited);
     expect(submitButton()).toBeEnabled();
   });
 });

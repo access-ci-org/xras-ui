@@ -42,6 +42,17 @@
       background-color: #fbeeca;
     }
   }
+  // A row whose value blocks submission. The red is the `danger` alert's
+  // tint family (see shared/Alert.tsx), so a row matches the alert that
+  // explains it. Declared after `.edited`, which such a row usually also is,
+  // so that it wins at equal specificity.
+  .invalid td,
+  .invalid select {
+    background-color: #f5e5e5;
+    &.important {
+      background-color: #edcccc;
+    }
+  }
   .disabled td,
   .disabled select {
     background-color: #dddddd;
